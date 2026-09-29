@@ -1,0 +1,972 @@
+<!doctype html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>دکتر فروغ هاشمی — متخصص کودکان</title>
+<meta name="description" content="مراقبت گرم و تخصصی از نوزادان، کودکان و نوجوانان. رزرو نوبت با دکتر فروغ هاشمی." />
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+  tailwind.config = {
+    theme: {
+      extend: {
+        colors: {
+          ink: '#12302A', 'ink-soft': '#4A6058',
+          teal: { DEFAULT: '#157F76', deep: '#0E5F57', soft: '#E2F0EC' },
+          marigold: { DEFAULT: '#F4A72C', soft: '#FCEBCF' },
+          coral: '#FF8A6B', sage: '#F1F6F2', paper: '#FBFDFB',
+        },
+        fontFamily: {
+          display: ['Vazirmatn', 'sans-serif'],
+          sans: ['Vazirmatn', 'sans-serif'],
+        },
+      }
+    }
+  }
+</script>
+
+<style>
+  :root{
+    --teal:#157F76; --teal-deep:#0E5F57; --teal-soft:#E2F0EC;
+    --marigold:#F4A72C; --marigold-soft:#FCEBCF; --coral:#FF8A6B;
+    --ink:#12302A; --ink-soft:#4A6058; --sage:#F1F6F2; --paper:#FBFDFB;
+    --shadow-soft:0 10px 30px -14px rgba(14,95,87,.28);
+    --shadow-lift:0 28px 60px -26px rgba(14,95,87,.36);
+    --shadow-marigold:0 16px 34px -14px rgba(244,167,44,.45);
+    --r-card:24px; --r-lg:32px;
+  }
+  *{ -webkit-font-smoothing:antialiased; }
+  html{ scroll-behavior:smooth; }
+  body{ font-family:'Vazirmatn',sans-serif; color:var(--ink); background:var(--sage); overflow-x:hidden; line-height:1.7; }
+  h1,h2,h3,.font-display{ font-family:'Vazirmatn',sans-serif; letter-spacing:0; line-height:1.5; }
+  ::selection{ background:var(--marigold-soft); color:var(--ink); }
+
+  .bg-canvas{ position:fixed; inset:0; z-index:-2; pointer-events:none;
+    background:
+      radial-gradient(60% 45% at 18% 8%, rgba(244,167,44,.16), transparent 60%),
+      radial-gradient(55% 40% at 92% 22%, rgba(21,127,118,.12), transparent 60%),
+      radial-gradient(70% 55% at 50% 100%, rgba(21,127,118,.10), transparent 65%),
+      var(--sage);
+  }
+  .bg-grain{ position:fixed; inset:0; z-index:-1; pointer-events:none; opacity:.5;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.035'/%3E%3C/svg%3E");
+  }
+
+  .btn{ display:inline-flex; align-items:center; gap:.55rem; font-weight:600; border-radius:999px;
+    padding:.85rem 1.5rem; transition:transform .18s cubic-bezier(.34,1.56,.64,1), box-shadow .2s, background .2s; cursor:pointer; line-height:1; }
+  .btn:active{ transform:translateY(1px) scale(.99); }
+  .btn-primary{ background:var(--teal); color:#fff; box-shadow:var(--shadow-soft); }
+  .btn-primary:hover{ background:var(--teal-deep); transform:translateY(-2px); box-shadow:var(--shadow-lift); }
+  .btn-sun{ background:var(--marigold); color:var(--ink); box-shadow:var(--shadow-marigold); }
+  .btn-sun:hover{ transform:translateY(-2px); filter:brightness(1.03); }
+  .btn-ghost{ background:rgba(255,255,255,.7); color:var(--teal-deep); border:1.5px solid rgba(21,127,118,.25); backdrop-filter:blur(6px); }
+  .btn-ghost:hover{ border-color:var(--teal); background:#fff; transform:translateY(-2px); }
+
+  .eyebrow{ display:inline-flex; align-items:center; gap:.5rem; color:var(--teal-deep); font-weight:600; font-size:.95rem; }
+  .eyebrow svg{ color:var(--marigold); }
+
+  .card{ background:var(--paper); border:1px solid rgba(18,48,42,.06); border-radius:var(--r-card); box-shadow:var(--shadow-soft); }
+  .blob{ border-radius:42% 58% 56% 44% / 48% 42% 58% 52%; }
+
+  a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{
+    outline:3px solid var(--marigold); outline-offset:2px; border-radius:8px;
+  }
+
+  .nav-link{ position:relative; color:var(--ink-soft); font-weight:500; transition:color .2s; }
+  .nav-link:hover{ color:var(--teal-deep); }
+  .nav-link::after{ content:''; position:absolute; right:0; bottom:-6px; height:2px; width:0; background:var(--marigold); transition:width .25s; border-radius:2px; }
+  .nav-link:hover::after{ width:100%; }
+
+  .field{ width:100%; background:#fff; border:1.5px solid rgba(18,48,42,.14); border-radius:14px;
+    padding:.8rem .95rem; font-size:.98rem; color:var(--ink); font-family:'Vazirmatn',sans-serif; transition:border-color .18s, box-shadow .18s; }
+  .field::placeholder{ color:#9aada6; }
+  .field:focus{ border-color:var(--teal); box-shadow:0 0 0 4px rgba(21,127,118,.12); outline:none; }
+  .field.err{ border-color:#e26d5c; box-shadow:0 0 0 4px rgba(226,109,92,.12); }
+  .lbl{ font-weight:600; font-size:.9rem; color:var(--ink); margin-bottom:.35rem; display:block; }
+  .req{ color:var(--coral); }
+
+  .pill-select{ display:flex; flex-wrap:wrap; gap:.5rem; }
+  .pill-select input{ position:absolute; opacity:0; width:0; height:0; }
+  .pill-select label{ cursor:pointer; padding:.5rem .9rem; border-radius:999px; border:1.5px solid rgba(18,48,42,.14);
+    background:#fff; font-size:.9rem; font-weight:500; transition:all .18s; }
+  .pill-select input:checked + label{ background:var(--teal-soft); border-color:var(--teal); color:var(--teal-deep); font-weight:600; }
+  .pill-select input:focus-visible + label{ outline:3px solid var(--marigold); outline-offset:2px; }
+
+  .acc-item{ border-bottom:1px solid rgba(18,48,42,.10); }
+  .acc-btn{ width:100%; text-align:start; display:flex; justify-content:space-between; align-items:center; gap:1rem;
+    padding:1.25rem 0; font-weight:600; font-size:1.08rem; color:var(--ink); cursor:pointer; }
+  .acc-icon{ flex:none; width:30px; height:30px; border-radius:999px; background:var(--teal-soft); color:var(--teal-deep);
+    display:grid; place-items:center; transition:transform .3s, background .2s; }
+  .acc-btn[aria-expanded="true"] .acc-icon{ transform:rotate(45deg); background:var(--marigold); color:var(--ink); }
+  .acc-panel{ overflow:hidden; max-height:0; transition:max-height .35s ease; }
+  .acc-panel p{ padding-bottom:1.25rem; color:var(--ink-soft); line-height:1.9; max-width:64ch; }
+
+  .reveal{ opacity:0; transform:translateY(18px); transition:opacity .7s ease, transform .7s cubic-bezier(.22,1,.36,1); }
+  .reveal.in{ opacity:1; transform:none; }
+
+  @keyframes rise{ from{opacity:0; transform:translateY(22px);} to{opacity:1; transform:none;} }
+  @keyframes floaty{ 0%,100%{ transform:translateY(0);} 50%{ transform:translateY(-10px);} }
+  .hero-rise > *{ animation:rise .8s both; }
+  .hero-rise > *:nth-child(1){ animation-delay:.05s; } .hero-rise > *:nth-child(2){ animation-delay:.15s; }
+  .hero-rise > *:nth-child(3){ animation-delay:.25s; } .hero-rise > *:nth-child(4){ animation-delay:.35s; }
+  .hero-rise > *:nth-child(5){ animation-delay:.45s; }
+  .float{ animation:floaty 6s ease-in-out infinite; } .float.slow{ animation-duration:8s; }
+
+  #chatFab{ position:fixed; left:22px; bottom:22px; z-index:60; }
+  #chatFab .ping{ position:absolute; inset:0; border-radius:999px; background:var(--marigold); opacity:.55; animation:ping 2.4s cubic-bezier(0,0,.2,1) infinite; z-index:-1; }
+  @keyframes ping{ 0%{ transform:scale(1); opacity:.5;} 80%,100%{ transform:scale(1.9); opacity:0;} }
+  #chatWin{ position:fixed; left:22px; bottom:92px; z-index:60; width:min(380px,calc(100vw - 32px)); height:min(560px,calc(100vh - 130px));
+    background:var(--paper); border-radius:22px; box-shadow:var(--shadow-lift); display:flex; flex-direction:column; overflow:hidden;
+    border:1px solid rgba(18,48,42,.08); transform:translateY(16px) scale(.96); opacity:0; pointer-events:none; transform-origin:bottom left;
+    transition:transform .28s cubic-bezier(.34,1.56,.64,1), opacity .2s; }
+  #chatWin.open{ transform:none; opacity:1; pointer-events:auto; }
+  .msg{ max-width:82%; padding:.7rem .9rem; border-radius:16px; font-size:.92rem; line-height:1.7; animation:rise .3s both; }
+  .msg.bot{ background:var(--teal-soft); color:var(--ink); border-bottom-right-radius:5px; align-self:flex-start; }
+  .msg.user{ background:var(--teal); color:#fff; border-bottom-left-radius:5px; align-self:flex-end; }
+  .qchip{ font-size:.82rem; font-weight:600; color:var(--teal-deep); background:#fff; border:1.5px solid rgba(21,127,118,.28);
+    padding:.4rem .7rem; border-radius:999px; cursor:pointer; transition:all .15s; }
+  .qchip:hover{ background:var(--teal-soft); transform:translateY(-1px); }
+  .typing span{ display:inline-block; width:7px; height:7px; margin:0 1px; background:var(--teal); border-radius:50%; opacity:.4; animation:blink 1.2s infinite; }
+  .typing span:nth-child(2){ animation-delay:.2s; } .typing span:nth-child(3){ animation-delay:.4s; }
+  @keyframes blink{ 0%,100%{ opacity:.3; transform:translateY(0);} 50%{ opacity:1; transform:translateY(-3px);} }
+
+  .link-soft{ color:var(--teal-deep); font-weight:600; text-decoration:underline; text-decoration-color:rgba(21,127,118,.35); text-underline-offset:3px; }
+  .link-soft:hover{ text-decoration-color:var(--marigold); }
+  /* keep phone/email readable left-to-right inside RTL */
+  .ltr{ direction:ltr; unicode-bidi:embed; display:inline-block; }
+
+  @media (prefers-reduced-motion: reduce){
+    *{ animation:none !important; transition:none !important; scroll-behavior:auto !important; }
+    .reveal{ opacity:1; transform:none; }
+  }
+</style>
+</head>
+
+<body>
+<div class="bg-canvas"></div>
+<div class="bg-grain"></div>
+
+<!-- ===================== NAV ===================== -->
+<header class="sticky top-0 z-50">
+  <div id="navbar" class="transition-all duration-300">
+    <div class="max-w-6xl mx-auto px-5 md:px-8">
+      <nav class="flex items-center justify-between h-[70px]">
+        <a href="#top" class="flex items-center gap-2.5 group">
+          <span class="grid place-items-center w-10 h-10 rounded-2xl bg-teal text-white shadow-[var(--shadow-soft)]">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3v5a4 4 0 0 0 8 0V3"/><path d="M6 3H4M14 3h2"/><circle cx="18" cy="15" r="2.4"/><path d="M15.8 15.8c0 3-2.9 4.7-5 5.2-2.1-.5-5-2.2-5-5.2v-3.6"/></svg>
+          </span>
+          <span class="leading-tight">
+            <span class="block font-display font-semibold text-[1.12rem] text-ink">دکتر فروغ هاشمی</span>
+            <span class="block text-[.74rem] text-ink-soft font-medium -mt-0.5">متخصص کودکان و نوزادان</span>
+          </span>
+        </a>
+
+        <div class="hidden md:flex items-center gap-7 text-[.95rem]">
+          <a href="#about" class="nav-link">درباره</a>
+          <a href="#services" class="nav-link">خدمات</a>
+          <a href="#visit" class="nav-link">روند مراجعه</a>
+          <a href="#faq" class="nav-link">پرسش‌ها</a>
+          <a href="#contact" class="nav-link">تماس</a>
+          <a href="index.html" class="nav-link" lang="en" hreflang="en" title="English version">English</a>
+          <a href="#book" class="btn btn-primary !py-2.5 !px-5 text-[.92rem]">رزرو نوبت</a>
+        </div>
+
+        <button id="menuBtn" class="md:hidden grid place-items-center w-11 h-11 rounded-xl bg-white/70 border border-black/5" aria-label="باز کردن منو" aria-expanded="false">
+          <svg id="menuIcon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#12302A" stroke-width="2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+        </button>
+      </nav>
+    </div>
+  </div>
+
+  <div id="mobileMenu" class="md:hidden hidden px-5">
+    <div class="card p-3 mt-1 flex flex-col">
+      <a href="#about" class="mob-link px-4 py-3 rounded-xl hover:bg-teal-soft font-medium">درباره</a>
+      <a href="#services" class="mob-link px-4 py-3 rounded-xl hover:bg-teal-soft font-medium">خدمات</a>
+      <a href="#visit" class="mob-link px-4 py-3 rounded-xl hover:bg-teal-soft font-medium">روند مراجعه</a>
+      <a href="#faq" class="mob-link px-4 py-3 rounded-xl hover:bg-teal-soft font-medium">پرسش‌ها</a>
+      <a href="#contact" class="mob-link px-4 py-3 rounded-xl hover:bg-teal-soft font-medium">تماس</a>
+      <a href="index.html" class="px-4 py-3 rounded-xl hover:bg-teal-soft font-medium" lang="en">English</a>
+      <a href="#book" class="mob-link btn btn-primary justify-center mt-2">رزرو نوبت</a>
+    </div>
+  </div>
+</header>
+
+<main id="top">
+
+<!-- ===================== HERO ===================== -->
+<section class="max-w-6xl mx-auto px-5 md:px-8 pt-10 md:pt-16 pb-8">
+  <div class="grid lg:grid-cols-[1.05fr_.95fr] gap-10 lg:gap-8 items-center">
+    <div class="hero-rise">
+      <span class="eyebrow">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l2.4 4.9 5.4.8-3.9 3.8.9 5.4-4.8-2.5-4.8 2.5.9-5.4L4.1 7.7l5.4-.8z"/></svg>
+        متخصص کودکان، دارای بورد تخصصی · پذیرش بیماران جدید
+      </span>
+      <h1 class="mt-4 text-[2.4rem] sm:text-[3rem] lg:text-[3.3rem] leading-[1.35] font-bold text-ink">
+        مراقبت تخصصی و دلسوزانه، در تمام مراحل کودکی.
+      </h1>
+      <p class="mt-5 text-[1.08rem] text-ink-soft leading-loose max-w-[48ch]">
+        دکتر فروغ هاشمی از نوزادان تا نوجوانان را با حوصله و بدون عجله ویزیت می‌کند و به دغدغه‌های شما با دقت گوش می‌دهد. پذیرش سریع هنگام بیماری، معاینه‌ی آرام و بی‌اضطراب، و مشاوره‌ای که می‌توانید به آن تکیه کنید.
+      </p>
+      <div class="mt-7 flex flex-wrap gap-3">
+        <a href="#book" class="btn btn-sun">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="3"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+          رزرو نوبت
+        </a>
+        <a href="#about" class="btn btn-ghost">آشنایی با دکتر هاشمی</a>
+      </div>
+
+      <div class="mt-9 grid grid-cols-3 gap-4 max-w-md">
+        <div>
+          <div class="font-display text-[1.7rem] font-bold text-teal-deep">+۱۵</div>
+          <div class="text-[.82rem] text-ink-soft leading-tight mt-0.5">سال تجربه در طب کودکان</div>
+        </div>
+        <div>
+          <div class="font-display text-[1.7rem] font-bold text-teal-deep">+۵٬۰۰۰</div>
+          <div class="text-[.82rem] text-ink-soft leading-tight mt-0.5">خانواده تحت مراقبت</div>
+        </div>
+        <div>
+          <div class="font-display text-[1.7rem] font-bold text-teal-deep">۴٫۹<span class="text-marigold">★</span></div>
+          <div class="text-[.82rem] text-ink-soft leading-tight mt-0.5">میانگین امتیاز والدین</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="relative">
+      <div class="blob w-full aspect-square max-w-[460px] mx-auto relative overflow-hidden shadow-[var(--shadow-lift)]" style="background:linear-gradient(150deg,#1c8f85,#0E5F57);">
+        <img src="1.png" alt="نوزادی خندان هنگام معاینه نزد پزشک کودکان" class="absolute inset-0 w-full h-full object-cover" />
+        <div class="absolute inset-0" style="background:linear-gradient(to top, rgba(14,95,87,.28), transparent 42%);"></div>
+      </div>
+
+      <div class="absolute -right-1 sm:right-2 top-8 float">
+        <div class="card px-4 py-3 flex items-center gap-3">
+          <span class="grid place-items-center w-9 h-9 rounded-full bg-teal-soft text-teal-deep">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 6v6l4 2" stroke-linecap="round"/><circle cx="12" cy="12" r="9"/></svg>
+          </span>
+          <div class="leading-tight">
+            <div class="text-[.72rem] text-ink-soft">نزدیک‌ترین نوبت</div>
+            <div class="text-[.92rem] font-semibold text-ink" id="nextSlot">فردا، ۱۰:۳۰</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="absolute -left-1 sm:left-2 bottom-6 float slow">
+        <div class="card px-4 py-3 flex items-center gap-3">
+          <span class="grid place-items-center w-9 h-9 rounded-full bg-marigold-soft text-marigold">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
+          </span>
+          <div class="leading-tight">
+            <div class="text-[.92rem] font-semibold text-ink">بیشتر بیمه‌ها پذیرفته می‌شود</div>
+            <div class="text-[.72rem] text-ink-soft">تسویه با بیمه برعهده‌ی ماست</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== TRUST STRIP ===================== -->
+<section class="max-w-6xl mx-auto px-5 md:px-8 py-6">
+  <div class="card px-5 sm:px-8 py-5 grid sm:grid-cols-2 lg:grid-cols-4 gap-5">
+    <div class="flex items-center gap-3">
+      <span class="grid place-items-center w-11 h-11 rounded-xl bg-teal-soft text-teal-deep flex-none"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></span>
+      <div><div class="font-semibold text-[.95rem]">۶ روز هفته باز</div><div class="text-[.82rem] text-ink-soft">شنبه تا چهارشنبه ۸:۳۰–۱۷:۳۰، پنجشنبه ۹–۱۳</div></div>
+    </div>
+    <div class="flex items-center gap-3">
+      <span class="grid place-items-center w-11 h-11 rounded-xl bg-teal-soft text-teal-deep flex-none"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 6-9 12-9 12s-9-6-9-12a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg></span>
+      <div><div class="font-semibold text-[.95rem]">دسترسی آسان</div><div class="text-[.82rem] text-ink-soft">خیابان اصلی، پلاک ۱۲۸، واحد ۲۰۰</div></div>
+    </div>
+    <div class="flex items-center gap-3">
+      <span class="grid place-items-center w-11 h-11 rounded-xl bg-teal-soft text-teal-deep flex-none"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6 19.8 19.8 0 0 1-3.1-8.7A2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1.9.4 1.8.7 2.7a2 2 0 0 1-.5 2.1L8.1 9.9a16 16 0 0 0 6 6l1.4-1.2a2 2 0 0 1 2.1-.5c.9.3 1.8.6 2.7.7a2 2 0 0 1 1.7 2z"/></svg></span>
+      <div><div class="font-semibold text-[.95rem]">پذیرش سریع هنگام بیماری</div><div class="text-[.82rem] text-ink-soft">تماس: <span class="ltr">۰۲۱-۱۲۳۴۵۶۷۸</span></div></div>
+    </div>
+    <div class="flex items-center gap-3">
+      <span class="grid place-items-center w-11 h-11 rounded-xl bg-teal-soft text-teal-deep flex-none"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l8 4v6c0 5-3.4 8.5-8 10-4.6-1.5-8-5-8-10V6z"/><path d="M9 12l2 2 4-4"/></svg></span>
+      <div><div class="font-semibold text-[.95rem]">مشاوره‌ی پرستاری شبانه‌روزی</div><div class="text-[.82rem] text-ink-soft">پاسخ‌گویی در ساعات غیرکاری</div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== ABOUT ===================== -->
+<section id="about" class="max-w-6xl mx-auto px-5 md:px-8 py-16 md:py-20">
+  <div class="grid lg:grid-cols-2 gap-10 lg:gap-14 items-center">
+    <div class="reveal relative">
+      <div class="rounded-[var(--r-lg)] overflow-hidden shadow-[var(--shadow-lift)] max-w-[460px] aspect-[4/5]">
+        <img src="2.png" alt="معاینه‌ی کودک توسط پزشک" class="w-full h-full object-cover" />
+      </div>
+      <div class="card absolute -bottom-5 -left-2 sm:left-6 px-5 py-4 max-w-[230px]">
+        <div class="flex -space-x-2 mb-2">
+          <span class="w-8 h-8 rounded-full bg-marigold-soft border-2 border-white"></span>
+          <span class="w-8 h-8 rounded-full bg-teal-soft border-2 border-white"></span>
+          <span class="w-8 h-8 rounded-full bg-coral/30 border-2 border-white"></span>
+        </div>
+        <div class="text-[.85rem] text-ink-soft leading-relaxed">«بچه‌هایم کنارش احساس امنیت می‌کنند و به همه‌ی سؤال‌هایم پاسخ می‌دهد.»</div>
+      </div>
+    </div>
+
+    <div class="reveal">
+      <span class="eyebrow"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="10"/></svg>درباره‌ی دکتر</span>
+      <h2 class="mt-4 text-[2rem] md:text-[2.4rem] font-bold leading-[1.4]">پزشکی که کودک را می‌بیند، نه فقط بیماری را.</h2>
+      <p class="mt-5 text-ink-soft leading-loose max-w-[56ch]">
+        دکتر هاشمی بیش از پانزده سال است که در کنار خانواده‌هاست تا فرزندانی سالم و شاداب بزرگ شوند. به باور او، مراقبت خوب از کودک یعنی همراهی: توضیح روشن، پاسخ صادقانه و وقت کافی برای شنیدن حرف شما. از نخستین معاینه تا سال‌های نوجوانی، تکیه‌گاهی مطمئن برای پدر و مادرهاست.
+      </p>
+
+      <ul class="mt-6 space-y-3">
+        <li class="flex items-start gap-3"><span class="mt-1 grid place-items-center w-5 h-5 rounded-full bg-teal text-white flex-none"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg></span><span class="text-ink-soft"><span class="text-ink font-semibold">دارای بورد تخصصی</span> طب کودکان</span></li>
+        <li class="flex items-start gap-3"><span class="mt-1 grid place-items-center w-5 h-5 rounded-full bg-teal text-white flex-none"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg></span><span class="text-ink-soft"><span class="text-ink font-semibold">با تجربه در مراقبت از نوزادان و بخش NICU</span>؛ مراقبت ملایم از همان روز نخست</span></li>
+        <li class="flex items-start gap-3"><span class="mt-1 grid place-items-center w-5 h-5 rounded-full bg-teal text-white flex-none"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg></span><span class="text-ink-soft"><span class="text-ink font-semibold">ویزیت دوزبانه</span> به فارسی و انگلیسی</span></li>
+      </ul>
+
+      <a href="#book" class="btn btn-primary mt-8">رزرو نوبت با دکتر هاشمی</a>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== SERVICES ===================== -->
+<section id="services" class="max-w-6xl mx-auto px-5 md:px-8 py-16 md:py-20">
+  <div class="reveal max-w-2xl">
+    <span class="eyebrow"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l2.4 4.9 5.4.8-3.9 3.8.9 5.4-4.8-2.5-4.8 2.5.9-5.4L4.1 7.7l5.4-.8z"/></svg>خدمات برای هر سن</span>
+    <h2 class="mt-4 text-[2rem] md:text-[2.4rem] font-bold leading-[1.4]">از نوزادی تا نوجوانی، در کنار شما.</h2>
+    <p class="mt-4 text-ink-soft leading-loose">همه‌ی مراقبت‌های کودک شما در یک‌جا؛ پزشکی که سابقه و شرایط فرزندتان را از قبل می‌شناسد.</p>
+  </div>
+
+  <div class="mt-10 grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
+    <article class="reveal card overflow-hidden sm:col-span-2 flex flex-col sm:flex-row items-stretch" style="background:linear-gradient(160deg,#E2F0EC,#FBFDFB);">
+      <div class="p-6 sm:flex-1 order-2 sm:order-1">
+        <span class="grid place-items-center w-14 h-14 rounded-2xl bg-teal text-white flex-none shadow-[var(--shadow-soft)] mb-4"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 12a3 3 0 1 0 6 0 3 3 0 0 0-6 0z"/><path d="M12 3c-1.5 2-4 2.5-4 5 0 1 .5 1.8 1 2.4M12 3c1.5 2 4 2.5 4 5 0 1-.5 1.8-1 2.4"/><path d="M7 20c0-2.8 2.2-5 5-5s5 2.2 5 5"/></svg></span>
+        <h3 class="font-display text-[1.35rem] font-bold">مراقبت از نوزاد و شیرخوار</h3>
+        <p class="mt-2 text-ink-soft leading-loose max-w-[46ch]">کنترل وزن هفته‌های نخست، کمک در شیردهی، راهنمایی خواب و آرامش‌بخشی به پدر و مادرهای تازه‌کار؛ با وقت کافی برای همه‌ی پرسش‌های شما.</p>
+      </div>
+      <img src="3.png" alt="معاینه‌ی ملایم یک نوزاد" class="order-1 sm:order-2 w-full sm:w-[42%] h-44 sm:h-auto object-cover" />
+    </article>
+
+    <article class="reveal card p-6">
+      <span class="grid place-items-center w-12 h-12 rounded-2xl bg-marigold-soft text-marigold flex-none mb-4"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></span>
+      <h3 class="font-display text-[1.2rem] font-bold">معاینه‌های دوره‌ای سلامت</h3>
+      <p class="mt-2 text-ink-soft leading-loose">بررسی رشد، مراحل تکامل و پیشگیری در هر سنِ توصیه‌شده.</p>
+    </article>
+
+    <article class="reveal card p-6">
+      <span class="grid place-items-center w-12 h-12 rounded-2xl bg-teal-soft text-teal-deep flex-none mb-4"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20l6-6M14 4l6 6M10 8l6 6"/><path d="M15 3l6 6-4 4-6-6z"/></svg></span>
+      <h3 class="font-display text-[1.2rem] font-bold">واکسیناسیون</h3>
+      <p class="mt-2 text-ink-soft leading-loose">واکسن‌ها طبق برنامه، با توضیح روشن و تزریق ملایم.</p>
+    </article>
+
+    <article class="reveal card p-6">
+      <span class="grid place-items-center w-12 h-12 rounded-2xl bg-marigold-soft text-marigold flex-none mb-4"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2v4M16 2v4"/><path d="M3.5 9h17M5 6h14a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2z"/><path d="M12 13v4M10 15h4"/></svg></span>
+      <h3 class="font-display text-[1.2rem] font-bold">پذیرش سریع هنگام بیماری</h3>
+      <p class="mt-2 text-ink-soft leading-loose">تب، سرفه یا گوش‌درد؛ درست وقتی لازم است، زود ویزیت می‌شوند.</p>
+    </article>
+
+    <article class="reveal card p-6">
+      <span class="grid place-items-center w-12 h-12 rounded-2xl bg-teal-soft text-teal-deep flex-none mb-4"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a3 3 0 0 0-3 3v1a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z"/><path d="M6 21v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2"/></svg></span>
+      <h3 class="font-display text-[1.2rem] font-bold">رشد و رفتار</h3>
+      <p class="mt-2 text-ink-soft leading-loose">غربالگری و پشتیبانی در زمینه‌ی گفتار، یادگیری و احساسات کودک.</p>
+    </article>
+
+    <article class="reveal card p-6">
+      <span class="grid place-items-center w-12 h-12 rounded-2xl bg-marigold-soft text-marigold flex-none mb-4"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.6l-1-1a5.5 5.5 0 0 0-7.8 7.8l1 1L12 21l7.8-7.6 1-1a5.5 5.5 0 0 0 0-7.8z"/></svg></span>
+      <h3 class="font-display text-[1.2rem] font-bold">سلامت نوجوانان</h3>
+      <p class="mt-2 text-ink-soft leading-loose">معاینه‌ی ورزشی، سلامت روان و گفت‌وگوهای صادقانه و محرمانه.</p>
+    </article>
+  </div>
+</section>
+
+<!-- ===================== HOW IT WORKS ===================== -->
+<section id="visit" class="max-w-6xl mx-auto px-5 md:px-8 py-16 md:py-20">
+  <div class="rounded-[var(--r-lg)] px-6 sm:px-10 py-12 relative overflow-hidden" style="background:linear-gradient(155deg,#0E5F57,#157F76);">
+    <div class="relative z-10">
+      <div class="reveal max-w-xl">
+        <span class="eyebrow"><svg width="18" height="18" viewBox="0 0 24 24" fill="#F4A72C"><circle cx="12" cy="12" r="10"/></svg><span class="text-white/80">روند مراجعه، گام‌به‌گام</span></span>
+        <h2 class="mt-4 text-[1.9rem] md:text-[2.3rem] font-bold text-white leading-[1.4]">رزرو نوبت ساده است.</h2>
+      </div>
+      <div class="mt-9 grid md:grid-cols-3 gap-6">
+        <div class="reveal">
+          <div class="flex items-center gap-3">
+            <span class="grid place-items-center w-10 h-10 rounded-full bg-marigold text-ink font-display font-bold">۱</span>
+            <div class="h-px flex-1 bg-white/20"></div>
+          </div>
+          <h3 class="mt-4 font-display text-[1.25rem] font-bold text-white">درخواست زمان</h3>
+          <p class="mt-2 text-white/75 leading-loose text-[.96rem]">از فرم پایین، روز و ساعتی را که برای خانواده‌تان مناسب است انتخاب کنید.</p>
+        </div>
+        <div class="reveal">
+          <div class="flex items-center gap-3">
+            <span class="grid place-items-center w-10 h-10 rounded-full bg-marigold text-ink font-display font-bold">۲</span>
+            <div class="h-px flex-1 bg-white/20"></div>
+          </div>
+          <h3 class="mt-4 font-display text-[1.25rem] font-bold text-white">تأیید ما</h3>
+          <p class="mt-2 text-white/75 leading-loose text-[.96rem]">تیم ما ظرف یک روز کاری با تماس یا پیام، نوبت را قطعی می‌کند.</p>
+        </div>
+        <div class="reveal">
+          <div class="flex items-center gap-3">
+            <span class="grid place-items-center w-10 h-10 rounded-full bg-marigold text-ink font-display font-bold">۳</span>
+            <div class="h-px flex-1 bg-white/20"></div>
+          </div>
+          <h3 class="mt-4 font-display text-[1.25rem] font-bold text-white">مراجعه</h3>
+          <p class="mt-2 text-white/75 leading-loose text-[.96rem]">در مطبی آرام و کودک‌پسند، ویزیتی بی‌عجله خواهید داشت.</p>
+        </div>
+      </div>
+    </div>
+    <div class="absolute -left-16 -top-16 w-64 h-64 blob opacity-20" style="background:#F4A72C;"></div>
+  </div>
+</section>
+
+<!-- ===================== BOOKING ===================== -->
+<section id="book" class="max-w-6xl mx-auto px-5 md:px-8 py-16 md:py-20">
+  <div class="grid lg:grid-cols-[.85fr_1.15fr] gap-8 items-start">
+    <div class="reveal">
+      <span class="eyebrow"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="3"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>رزرو نوبت</span>
+      <h2 class="mt-4 text-[2rem] md:text-[2.4rem] font-bold leading-[1.4]">زمان مناسب‌تان را انتخاب کنید.</h2>
+      <p class="mt-4 text-ink-soft leading-loose max-w-[48ch]">یک وقت خالی را از تقویم انتخاب کنید و فقط نام و شماره‌تان را وارد کنید. برای قطعی‌شدن نوبت، پیامک می‌فرستیم یا تماس می‌گیریم؛ همین.</p>
+
+      <div class="mt-7 space-y-4">
+        <div class="flex items-start gap-3">
+          <span class="grid place-items-center w-10 h-10 rounded-xl bg-teal-soft text-teal-deep flex-none"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1.9.4 1.8.7 2.7a2 2 0 0 1-.5 2.1L8.1 9.9a16 16 0 0 0 6 6l1.4-1.2a2 2 0 0 1 2.1-.5c.9.3 1.8.6 2.7.7a2 2 0 0 1 1.7 2z"/></svg></span>
+          <div><div class="font-semibold">ترجیح می‌دهید تماس بگیرید؟</div><a href="tel:+982112345678" class="link-soft ltr">۰۲۱-۱۲۳۴۵۶۷۸</a><span class="text-ink-soft text-[.9rem]"> — شنبه تا چهارشنبه ۸:۳۰–۱۷:۳۰</span></div>
+        </div>
+        <div class="flex items-start gap-3">
+          <span class="grid place-items-center w-10 h-10 rounded-xl bg-marigold-soft text-marigold flex-none"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2z"/><path d="M12 8v4M12 16h.01"/></svg></span>
+          <div><div class="font-semibold">فوری است؟</div><span class="text-ink-soft text-[.9rem]">در مواقع اورژانسی با <strong>۱۱۵</strong> تماس بگیرید. برای مشاوره در ساعات غیرکاری، با خط پرستاری در تماس باشید.</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="reveal card p-5 sm:p-7">
+      <div id="scheduler">
+        <div class="flex items-center justify-between gap-3 mb-4">
+          <button type="button" id="prevWeek" class="grid place-items-center w-10 h-10 rounded-full bg-teal-soft text-teal-deep hover:bg-teal hover:text-white transition disabled:opacity-40 disabled:pointer-events-none" aria-label="هفته‌ی قبل">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg>
+          </button>
+          <div class="text-center">
+            <div id="weekRange" class="font-display text-[1.1rem] font-bold text-ink"></div>
+            <div class="text-[.78rem] text-ink-soft">روی یک زمان خالی بزنید</div>
+          </div>
+          <button type="button" id="nextWeek" class="grid place-items-center w-10 h-10 rounded-full bg-teal-soft text-teal-deep hover:bg-teal hover:text-white transition disabled:opacity-40 disabled:pointer-events-none" aria-label="هفته‌ی بعد">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+          </button>
+        </div>
+        <div id="weekGrid" class="flex gap-2 overflow-x-auto pb-1 -mx-1 px-1"></div>
+      </div>
+
+      <div id="pickHint" class="mt-5 pt-5 border-t border-black/5 text-center text-ink-soft text-[.92rem]">
+        یک زمان خالی را از بالا انتخاب کنید؛ فقط نام و شماره‌تان را می‌پرسیم.
+      </div>
+
+      <form id="bookForm" class="hidden mt-5 pt-5 border-t border-black/5" novalidate>
+        <div class="flex items-center justify-between gap-3 mb-5 bg-teal-soft rounded-2xl px-4 py-3">
+          <div class="flex items-center gap-3">
+            <span class="grid place-items-center w-9 h-9 rounded-full bg-teal text-white flex-none"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg></span>
+            <div class="leading-tight">
+              <div class="text-[.74rem] text-ink-soft">نوبت شما</div>
+              <div id="pickSummary" class="font-semibold text-ink"></div>
+            </div>
+          </div>
+          <button type="button" id="changePick" class="link-soft text-[.85rem]">تغییر</button>
+        </div>
+        <div class="grid sm:grid-cols-2 gap-4">
+          <div>
+            <label class="lbl" for="name">نام شما <span class="req">*</span></label>
+            <input class="field" id="name" name="name" type="text" placeholder="مثلاً سارا احمدی" required>
+          </div>
+          <div>
+            <label class="lbl" for="phone">شماره تماس <span class="req">*</span></label>
+            <input class="field" id="phone" name="phone" type="tel" inputmode="tel" placeholder="۰۹۱۲۰۰۰۰۰۰۰" required>
+          </div>
+        </div>
+        <div id="formError" class="hidden mt-4 text-[.9rem] text-[#c0492f] bg-[#fbe7e2] border border-[#f2c2b7] rounded-xl px-4 py-3"></div>
+        <button type="submit" class="btn btn-sun w-full justify-center mt-5 !py-3.5 text-[1.02rem]">
+          <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
+          تأیید نوبت
+        </button>
+        <p class="text-[.8rem] text-ink-soft text-center mt-3">شماره‌ی شما فقط برای تأیید همین نوبت استفاده می‌شود. اکنون پرداختی انجام نمی‌شود.</p>
+      </form>
+
+      <div id="bookSuccess" class="hidden text-center py-6">
+        <div class="mx-auto grid place-items-center w-16 h-16 rounded-full bg-teal-soft text-teal mb-4">
+          <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
+        </div>
+        <h3 class="font-display text-[1.5rem] font-bold">نوبت شما ثبت شد!</h3>
+        <p class="mt-2 text-ink-soft max-w-[44ch] mx-auto leading-loose" id="successMsg"></p>
+        <button id="bookAgain" class="btn btn-ghost mt-6">رزرو زمان دیگر</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== TESTIMONIALS ===================== -->
+<section class="max-w-6xl mx-auto px-5 md:px-8 py-16 md:py-20">
+  <div class="grid lg:grid-cols-[1.15fr_.85fr] gap-8 items-center mb-10">
+    <div class="reveal max-w-2xl">
+      <span class="eyebrow"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l2.4 4.9 5.4.8-3.9 3.8.9 5.4-4.8-2.5-4.8 2.5.9-5.4L4.1 7.7l5.4-.8z"/></svg>محبوب خانواده‌ها</span>
+      <h2 class="mt-4 text-[2rem] md:text-[2.4rem] font-bold leading-[1.4]">والدین این تفاوت را حس می‌کنند.</h2>
+      <p class="mt-4 text-ink-soft leading-loose">خانواده‌های واقعی، ویزیت‌های واقعی. این‌ها حرف‌های والدینی است که فرزندشان نزد دکتر هاشمی ویزیت شده است.</p>
+    </div>
+    <div class="reveal rounded-[var(--r-lg)] overflow-hidden shadow-[var(--shadow-lift)] aspect-[5/4]">
+      <img src="4.png" alt="کودکی شاد در کنار پزشک کودکان" class="w-full h-full object-cover" />
+    </div>
+  </div>
+  <div class="grid md:grid-cols-3 gap-5">
+    <figure class="reveal card p-6">
+      <div class="text-marigold text-[1.1rem]">★★★★★</div>
+      <blockquote class="mt-3 text-ink-soft leading-loose">«دکتر هاشمی هیچ‌وقت عجله نمی‌کند. طوری توضیح می‌دهد که پسرم نترسد و حتی جزئیات ویزیت قبلی‌مان را هم به خاطر می‌آورد.»</blockquote>
+      <figcaption class="mt-4 font-semibold text-[.95rem]">سارا الف. <span class="text-ink-soft font-normal">— مادر دو فرزند</span></figcaption>
+    </figure>
+    <figure class="reveal card p-6" style="background:linear-gradient(160deg,#FCEBCF,#FBFDFB);">
+      <div class="text-marigold text-[1.1rem]">★★★★★</div>
+      <blockquote class="mt-3 text-ink-soft leading-loose">«وقتی دخترمان تب کرد، همان روز نوبت گرفتیم. با آرامش و مهربانی ویزیتش کرد و با یک برنامه‌ی روشن بیرون آمدیم؛ دقیقاً همان چیزی که لازم داشتیم.»</blockquote>
+      <figcaption class="mt-4 font-semibold text-[.95rem]">دانیال ر. <span class="text-ink-soft font-normal">— پدر</span></figcaption>
+    </figure>
+    <figure class="reveal card p-6">
+      <div class="text-marigold text-[1.1rem]">★★★★★</div>
+      <blockquote class="mt-3 text-ink-soft leading-loose">«ما که تازه پدر و مادر شده بودیم، هزار تا سؤال داشتیم. به همه‌شان با حوصله جواب داد، بی‌آنکه حس بدی به ما بدهد. همه‌ی خانواده به او اعتماد داریم.»</blockquote>
+      <figcaption class="mt-4 font-semibold text-[.95rem]">مینا و آرش <span class="text-ink-soft font-normal">— والدین تازه‌کار</span></figcaption>
+    </figure>
+  </div>
+</section>
+
+<!-- ===================== FAQ ===================== -->
+<section id="faq" class="max-w-6xl mx-auto px-5 md:px-8 py-16 md:py-20">
+  <div class="grid lg:grid-cols-[.8fr_1.2fr] gap-10">
+    <div class="reveal">
+      <span class="eyebrow"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M9.1 9a3 3 0 0 1 5.8 1c0 2-3 3-3 3" stroke-linecap="round"/><path d="M12 17h.01" stroke-linecap="round"/></svg>سؤالات متداول</span>
+      <h2 class="mt-4 text-[2rem] md:text-[2.4rem] font-bold leading-[1.4]">پاسخ سؤال‌های شما، پیش از رزرو.</h2>
+      <p class="mt-4 text-ink-soft leading-loose">هنوز سؤالی دارید؟ از دستیار گوشه‌ی صفحه بپرسید یا در روزهای کاری با ما تماس بگیرید.</p>
+    </div>
+
+    <div class="reveal">
+      <div class="acc-item">
+        <button class="acc-btn" aria-expanded="false"><span>بیمار جدید می‌پذیرید؟ بیمه‌ام را قبول دارید؟</span><span class="acc-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></span></button>
+        <div class="acc-panel"><p>بله؛ از نوزادان تا ۱۸ سال بیمار جدید می‌پذیریم و بیشتر بیمه‌های اصلی را قبول داریم. کارت بیمه را به اولین ویزیت بیاورید؛ تسویه با بیمه را هم خودمان انجام می‌دهیم. اگر درباره‌ی بیمه‌تان مطمئن نیستید، تماس بگیرید تا برایتان بررسی کنیم.</p></div>
+      </div>
+      <div class="acc-item">
+        <button class="acc-btn" aria-expanded="false"><span>برای اولین ویزیت چه چیزهایی بیاوریم؟</span><span class="acc-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></span></button>
+        <div class="acc-panel"><p>کارت بیمه، یک کارت شناسایی عکس‌دار، کارت واکسن کودک (اگر دارید) و فهرست داروها یا حساسیت‌ها را همراه بیاورید. ۱۰ دقیقه زودتر آمدن کمک می‌کند فرم‌ها راحت‌تر پر شوند.</p></div>
+      </div>
+      <div class="acc-item">
+        <button class="acc-btn" aria-expanded="false"><span>کودکم امروز بیمار است؛ می‌توانیم ویزیت شویم؟</span><span class="acc-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></span></button>
+        <div class="acc-panel"><p>همیشه چند نوبت را برای بیماری‌های همان هفته باز نگه می‌داریم. از طریق فرم درخواست دهید یا اول صبح تماس بگیرید تا زودتر وقت بگیرید. اگر وضعیت اورژانسی است، با ۱۱۵ تماس بگیرید.</p></div>
+      </div>
+      <div class="acc-item">
+        <button class="acc-btn" aria-expanded="false"><span>تمدید نسخه چگونه انجام می‌شود؟</span><span class="acc-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></span></button>
+        <div class="acc-panel"><p>برای تمدید نسخه، از داروخانه بخواهید درخواست را بفرستد یا با مطب تماس بگیرید. بعضی داروها ابتدا به یک بررسی کوتاه نیاز دارند، پس تا دو روز کاری زمان در نظر بگیرید.</p></div>
+      </div>
+      <div class="acc-item">
+        <button class="acc-btn" aria-expanded="false"><span>بعد از تعطیلی مطب کمکی هست؟</span><span class="acc-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></span></button>
+        <div class="acc-panel"><p>بله. خط مشاوره‌ی پرستاری ما به‌صورت شبانه‌روزی برای پرسش‌ها و آرامش‌خاطر شما در دسترس است. در موارد جدی مانند مشکل تنفسی، تشنج یا آسیب شدید، فوراً با ۱۱۵ تماس بگیرید.</p></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== CONTACT / FOOTER ===================== -->
+<section id="contact" class="max-w-6xl mx-auto px-5 md:px-8 pt-8 pb-16">
+  <div class="card overflow-hidden">
+    <div class="grid md:grid-cols-2">
+      <div class="p-8 sm:p-10">
+        <span class="eyebrow"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 6-9 12-9 12s-9-6-9-12a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>به ما سر بزنید</span>
+        <h2 class="mt-4 text-[1.8rem] md:text-[2.1rem] font-bold leading-[1.4]">منتظر دیدن شما هستیم.</h2>
+        <div class="mt-6 space-y-4 text-[.98rem]">
+          <div class="flex items-start gap-3"><span class="text-teal-deep mt-0.5"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 6-9 12-9 12s-9-6-9-12a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg></span><div><div class="font-semibold">نشانی</div><div class="text-ink-soft">خیابان اصلی، پلاک ۱۲۸، واحد ۲۰۰<br>شهر شما</div></div></div>
+          <div class="flex items-start gap-3"><span class="text-teal-deep mt-0.5"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1.9.4 1.8.7 2.7a2 2 0 0 1-.5 2.1L8.1 9.9a16 16 0 0 0 6 6l1.4-1.2a2 2 0 0 1 2.1-.5c.9.3 1.8.6 2.7.7a2 2 0 0 1 1.7 2z"/></svg></span><div><div class="font-semibold">تلفن</div><a href="tel:+982112345678" class="link-soft ltr">۰۲۱-۱۲۳۴۵۶۷۸</a></div></div>
+          <div class="flex items-start gap-3"><span class="text-teal-deep mt-0.5"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="3"/><path d="M3 6l9 7 9-7"/></svg></span><div><div class="font-semibold">ایمیل</div><a href="mailto:hello@drhashemipeds.com" class="link-soft ltr">hello@drhashemipeds.com</a></div></div>
+          <div class="flex items-start gap-3"><span class="text-teal-deep mt-0.5"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></span><div><div class="font-semibold">ساعات کاری</div><div class="text-ink-soft">شنبه تا چهارشنبه ۸:۳۰ تا ۱۷:۳۰<br>پنجشنبه ۹ تا ۱۳ · جمعه تعطیل</div></div></div>
+        </div>
+        <a href="#book" class="btn btn-primary mt-7">رزرو نوبت</a>
+      </div>
+      <div class="relative min-h-[320px] bg-teal-soft">
+        <div class="absolute inset-0 opacity-60" style="background-image:radial-gradient(circle at 30% 40%, rgba(21,127,118,.18) 0 2px, transparent 2px),radial-gradient(circle at 70% 60%, rgba(244,167,44,.2) 0 2px, transparent 2px); background-size:34px 34px;"></div>
+        <div class="absolute inset-0 grid place-items-center">
+          <div class="text-center">
+            <span class="grid place-items-center w-14 h-14 rounded-full bg-teal text-white mx-auto shadow-[var(--shadow-lift)] float"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 6-9 12-9 12s-9-6-9-12a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg></span>
+            <p class="mt-3 text-teal-deep font-semibold">ما را روی نقشه پیدا کنید</p>
+            <p class="text-[.82rem] text-ink-soft">پارکینگ رایگان · مناسب کالسکه</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <footer class="mt-10 flex flex-col sm:flex-row items-center justify-between gap-4 text-[.86rem] text-ink-soft">
+    <div class="flex items-center gap-2">
+      <span class="grid place-items-center w-8 h-8 rounded-xl bg-teal text-white"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3v5a4 4 0 0 0 8 0V3"/><circle cx="18" cy="15" r="2.4"/><path d="M15.8 15.8c0 3-2.9 4.7-5 5.2-2.1-.5-5-2.2-5-5.2v-3.6"/></svg></span>
+      <span>© <span id="year"></span> مطب دکتر فروغ هاشمی. کلیه حقوق محفوظ است.</span>
+    </div>
+    <div class="text-center sm:text-left leading-relaxed">این سایت برای اطلاع‌رسانی و نوبت‌دهی است و توصیه‌ی پزشکی محسوب نمی‌شود. در موارد اورژانسی با ۱۱۵ تماس بگیرید.</div>
+  </footer>
+</section>
+
+</main>
+
+<!-- ===================== CHATBOT ===================== -->
+<button id="chatFab" class="btn btn-sun !p-0 w-16 h-16 !rounded-full justify-center relative" aria-label="باز کردن دستیار مطب">
+  <span class="ping"></span>
+  <svg id="fabOpen" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.4 8.4 0 0 1-8.5 8.5 8.6 8.6 0 0 1-3.8-.9L3 21l1.9-5.7A8.4 8.4 0 0 1 4 11.5 8.5 8.5 0 0 1 12.5 3 8.4 8.4 0 0 1 21 11.5z"/><path d="M8.5 11.5h.01M12.5 11.5h.01M16.5 11.5h.01"/></svg>
+  <svg id="fabClose" class="hidden" width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>
+</button>
+
+<div id="chatWin" role="dialog" aria-label="دستیار مطب" aria-modal="false">
+  <div class="px-4 py-3.5 flex items-center gap-3 text-white" style="background:linear-gradient(135deg,#157F76,#0E5F57);">
+    <span class="grid place-items-center w-10 h-10 rounded-full bg-white/15 flex-none"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a5 5 0 0 0-5 5v1a5 5 0 0 0 10 0V7a5 5 0 0 0-5-5z"/><path d="M5 22a7 7 0 0 1 14 0"/></svg></span>
+    <div class="leading-tight flex-1">
+      <div class="font-semibold">دستیار مطب</div>
+      <div class="text-[.74rem] text-white/75 flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-marigold inline-block"></span>ساعات کاری، نوبت و اطلاعات ویزیت</div>
+    </div>
+    <button id="chatClose" class="text-white/80 hover:text-white p-1" aria-label="بستن">✕</button>
+  </div>
+
+  <div id="chatBody" class="flex-1 overflow-y-auto p-4 flex flex-col gap-3" style="background:linear-gradient(180deg,#FBFDFB,#F1F6F2);"></div>
+
+  <div id="quickReplies" class="px-3 pt-2 flex flex-wrap gap-2 border-t border-black/5"></div>
+
+  <form id="chatForm" class="p-3 flex items-center gap-2 border-t border-black/5">
+    <input id="chatInput" class="field !rounded-full !py-2.5 flex-1" placeholder="سؤال خود را بنویسید…" autocomplete="off" aria-label="پیام">
+    <button class="btn btn-primary !p-0 w-11 h-11 !rounded-full justify-center flex-none" aria-label="ارسال"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="transform:scaleX(-1)"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4z"/></svg></button>
+  </form>
+  <div class="px-4 pb-2 text-[.68rem] text-ink-soft text-center">توصیه‌ی پزشکی نیست. در موارد اورژانسی با ۱۱۵ تماس بگیرید.</div>
+</div>
+
+<script>
+/* ---------- year (Persian numerals) ---------- */
+document.getElementById('year').textContent = new Date().getFullYear().toLocaleString('fa-IR',{useGrouping:false});
+
+/* ---------- next available slot ---------- */
+(function(){
+  const d = new Date(); d.setDate(d.getDate()+1);
+  const day = d.toLocaleDateString('fa-IR',{weekday:'long'});
+  document.getElementById('nextSlot').textContent = day + '، ۱۰:۳۰';
+})();
+
+/* ---------- navbar shadow on scroll ---------- */
+const navbar = document.getElementById('navbar');
+addEventListener('scroll', () => {
+  if (scrollY > 12) navbar.classList.add('bg-paper/80','backdrop-blur-md','shadow-[0_6px_24px_-16px_rgba(14,95,87,.4)]','border-b','border-black/5');
+  else navbar.classList.remove('bg-paper/80','backdrop-blur-md','shadow-[0_6px_24px_-16px_rgba(14,95,87,.4)]','border-b','border-black/5');
+}, {passive:true});
+
+/* ---------- mobile menu ---------- */
+const menuBtn = document.getElementById('menuBtn'), mobileMenu = document.getElementById('mobileMenu');
+menuBtn.addEventListener('click', () => {
+  const open = mobileMenu.classList.toggle('hidden') === false;
+  menuBtn.setAttribute('aria-expanded', open);
+});
+document.querySelectorAll('.mob-link').forEach(l => l.addEventListener('click', () => {
+  mobileMenu.classList.add('hidden'); menuBtn.setAttribute('aria-expanded','false');
+}));
+
+/* ---------- reveal on scroll ---------- */
+const io = new IntersectionObserver((entries) => {
+  entries.forEach(e => { if (e.isIntersecting){ e.target.classList.add('in'); io.unobserve(e.target); } });
+}, {threshold:.12});
+document.querySelectorAll('.reveal').forEach(el => io.observe(el));
+
+/* ---------- accordion ---------- */
+document.querySelectorAll('.acc-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const panel = btn.nextElementSibling;
+    const open = btn.getAttribute('aria-expanded') === 'true';
+    document.querySelectorAll('.acc-btn').forEach(b => {
+      if (b !== btn){ b.setAttribute('aria-expanded','false'); b.nextElementSibling.style.maxHeight = null; }
+    });
+    btn.setAttribute('aria-expanded', !open);
+    panel.style.maxHeight = open ? null : panel.scrollHeight + 'px';
+  });
+});
+
+/* ---------- رزرو نوبت: انتخابگر هفتگی زمان ---------- */
+(function(){
+  const CLOSED_DAY = 5;   // جمعه تعطیل
+  const HALF_DAY   = 4;   // پنجشنبه نیم‌روز
+  const FULL_SLOTS = ['09:00','10:00','11:00','12:00','14:00','15:00','16:00','17:00'];
+  const HALF_SLOTS = ['09:00','10:00','11:00','12:00'];
+  const MAX_WEEKS  = 4;
+
+  const grid = document.getElementById('weekGrid');
+  const weekRange = document.getElementById('weekRange');
+  const prevBtn = document.getElementById('prevWeek');
+  const nextBtn = document.getElementById('nextWeek');
+  const hint = document.getElementById('pickHint');
+  const form = document.getElementById('bookForm');
+  const summary = document.getElementById('pickSummary');
+  const errBox = document.getElementById('formError');
+  const success = document.getElementById('bookSuccess');
+  const successMsg = document.getElementById('successMsg');
+
+  let weekOffset = 0;
+  let selected = null;
+
+  const faDigit = s => String(s).replace(/\d/g, d => '۰۱۲۳۴۵۶۷۸۹'[d]);
+  const startOfToday = () => { const d = new Date(); d.setHours(0,0,0,0); return d; };
+  const iso = d => { const x=new Date(d); x.setMinutes(x.getMinutes()-x.getTimezoneOffset()); return x.toISOString().split('T')[0]; };
+  const fmtTime = t => faDigit(t);
+  const setErr = (el,on) => el.classList.toggle('err', on);
+
+  function slotsFor(day){
+    const wd = day.getDay();
+    if (wd === CLOSED_DAY) return [];
+    return wd === HALF_DAY ? HALF_SLOTS : FULL_SLOTS;
+  }
+  function isOpen(dISO, time){
+    let h=0; const s=dISO+time; for(let i=0;i<s.length;i++){ h=(h*31 + s.charCodeAt(i))>>>0; }
+    if (new Date(dISO+'T'+time+':00') < new Date()) return false;
+    return (h % 100) >= 35;
+  }
+
+  function render(){
+    grid.innerHTML = '';
+    const base = startOfToday();
+    base.setDate(base.getDate() + weekOffset*7);
+    const first = new Date(base), last = new Date(base); last.setDate(last.getDate()+6);
+    weekRange.textContent = first.toLocaleDateString('fa-IR',{month:'short',day:'numeric'}) + ' – ' + last.toLocaleDateString('fa-IR',{month:'short',day:'numeric'});
+    prevBtn.disabled = weekOffset <= 0;
+    nextBtn.disabled = weekOffset >= MAX_WEEKS;
+
+    const todayISO = iso(startOfToday());
+    for (let i=0;i<7;i++){
+      const day = new Date(base); day.setDate(day.getDate()+i);
+      const dISO = iso(day);
+      const isToday = dISO === todayISO;
+      const col = document.createElement('div');
+      col.className = 'flex-none w-[116px] lg:flex-1 lg:w-auto';
+      const head = document.createElement('div');
+      head.className = 'text-center mb-2';
+      head.innerHTML = `<div class="text-[.72rem] ${isToday?'text-teal-deep font-semibold':'text-ink-soft'}">${isToday?'امروز':day.toLocaleDateString('fa-IR',{weekday:'short'})}</div>
+                        <div class="text-[.95rem] font-semibold text-ink">${day.toLocaleDateString('fa-IR',{month:'short',day:'numeric'})}</div>`;
+      col.appendChild(head);
+
+      const slots = slotsFor(day);
+      if (!slots.length){
+        const closed = document.createElement('div');
+        closed.className = 'text-center text-[.74rem] text-ink-soft/70 py-3 rounded-xl bg-black/[.02]';
+        closed.textContent = 'تعطیل';
+        col.appendChild(closed);
+      } else {
+        const stack = document.createElement('div');
+        stack.className = 'flex flex-col gap-1.5';
+        let any = false;
+        slots.forEach(t => {
+          const open = isOpen(dISO, t);
+          const isSel = selected && selected.iso===dISO && selected.time===t;
+          const b = document.createElement('button');
+          b.type = 'button'; b.textContent = fmtTime(t); b.disabled = !open;
+          b.className = 'text-[.82rem] font-medium rounded-xl py-2 transition ' +
+            (isSel ? 'bg-teal text-white shadow-[var(--shadow-soft)]'
+             : open ? 'bg-teal-soft text-teal-deep hover:bg-teal hover:text-white'
+             : 'bg-black/[.03] text-ink-soft/50 line-through cursor-not-allowed');
+          if (open){ any = true; b.addEventListener('click', () => pick(day, dISO, t)); }
+          stack.appendChild(b);
+        });
+        col.appendChild(stack);
+        if (!any){
+          const none = document.createElement('div');
+          none.className = 'text-center text-[.7rem] text-ink-soft/60 mt-1'; none.textContent = 'تکمیل';
+          col.appendChild(none);
+        }
+      }
+      grid.appendChild(col);
+    }
+  }
+
+  function pick(day, dISO, time){
+    selected = { iso:dISO, time, date:new Date(dISO+'T'+time+':00') };
+    render();
+    hint.classList.add('hidden');
+    success.classList.add('hidden');
+    form.classList.remove('hidden');
+    summary.textContent = day.toLocaleDateString('fa-IR',{weekday:'long', month:'long', day:'numeric'}) + ' · ساعت ' + fmtTime(time);
+    form.scrollIntoView({behavior:'smooth', block:'center'});
+    setTimeout(()=>document.getElementById('name').focus({preventScroll:true}), 300);
+  }
+
+  document.getElementById('changePick').addEventListener('click', () => {
+    form.classList.add('hidden'); hint.classList.remove('hidden');
+    document.getElementById('scheduler').scrollIntoView({behavior:'smooth', block:'center'});
+  });
+  prevBtn.addEventListener('click', () => { if (weekOffset>0){ weekOffset--; render(); } });
+  nextBtn.addEventListener('click', () => { if (weekOffset<MAX_WEEKS){ weekOffset++; render(); } });
+  form.querySelectorAll('.field').forEach(el => el.addEventListener('input', () => setErr(el,false)));
+
+  form.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const name = document.getElementById('name'), phone = document.getElementById('phone');
+    let bad = false;
+    if (!name.value.trim()){ setErr(name,true); bad=true; }
+    if (phone.value.replace(/[^\d۰-۹]/g,'').length < 7){ setErr(phone,true); bad=true; }
+    if (bad || !selected){
+      errBox.textContent = !selected ? 'لطفاً ابتدا یک زمان را از بالا انتخاب کنید.' : 'لطفاً نام و یک شماره‌ی تماس معتبر وارد کنید.';
+      errBox.classList.remove('hidden');
+      return;
+    }
+    errBox.classList.add('hidden');
+    const rec = { name:name.value.trim(), phone:phone.value.trim(), date:selected.iso, time:selected.time, submittedAt:new Date().toISOString() };
+    try { const all = JSON.parse(localStorage.getItem('appointmentRequests')||'[]'); all.push(rec); localStorage.setItem('appointmentRequests', JSON.stringify(all)); } catch(_){}
+    const nice = selected.date.toLocaleDateString('fa-IR',{weekday:'long', month:'long', day:'numeric'});
+    const when = `${nice} ساعت ${fmtTime(selected.time)}`;
+    // ارسال درخواست به سرور مطب (تلگرام + پیامک). بدون انتظار: پیام تأیید در صفحه در هر حال نمایش داده می‌شود.
+    fetch('/api/book', { method:'POST', headers:{'content-type':'application/json'},
+      body: JSON.stringify({ name:rec.name, phone:rec.phone, date:rec.date, time:rec.time, when, lang:'fa' }) }).catch(()=>{});
+    successMsg.textContent = `با تشکر، ${rec.name.split(' ')[0]}! نوبت شما برای ${nice} ساعت ${fmtTime(selected.time)} ثبت شد. برای تأیید به شماره‌ی ${rec.phone} پیامک می‌زنیم.`;
+    form.classList.add('hidden');
+    success.classList.remove('hidden');
+    success.scrollIntoView({behavior:'smooth', block:'center'});
+  });
+
+  document.getElementById('bookAgain').addEventListener('click', () => {
+    form.reset(); selected = null;
+    success.classList.add('hidden'); hint.classList.remove('hidden');
+    render();
+    document.getElementById('scheduler').scrollIntoView({behavior:'smooth', block:'center'});
+  });
+
+  render();
+})();
+
+/* =====================================================
+   دستیار مطب (مبتنی بر قاعده، آفلاین، بدون توصیه‌ی پزشکی)
+   ===================================================== */
+const chatFab = document.getElementById('chatFab');
+const chatWin = document.getElementById('chatWin');
+const chatBody = document.getElementById('chatBody');
+const chatForm = document.getElementById('chatForm');
+const chatInput = document.getElementById('chatInput');
+const quickWrap = document.getElementById('quickReplies');
+const fabOpen = document.getElementById('fabOpen'), fabClose = document.getElementById('fabClose');
+let greeted = false;
+
+const CLINIC = {
+  phone: '۰۲۱-۱۲۳۴۵۶۷۸', phoneTel: '+982112345678',
+  afterHours: '۰۲۱-۱۲۳۴۵۶۷۹',
+  email: 'hello@drhashemipeds.com',
+  address: 'خیابان اصلی، پلاک ۱۲۸، واحد ۲۰۰',
+  hours: 'شنبه تا چهارشنبه ۸:۳۰ تا ۱۷:۳۰، پنجشنبه ۹ تا ۱۳، جمعه تعطیل',
+};
+const DEFAULT_CHIPS = ['رزرو نوبت','ساعات کاری','نشانی مطب','بیمه','چه سنینی؟'];
+
+function toggleChat(open){
+  const isOpen = open ?? !chatWin.classList.contains('open');
+  chatWin.classList.toggle('open', isOpen);
+  fabOpen.classList.toggle('hidden', isOpen);
+  fabClose.classList.toggle('hidden', !isOpen);
+  chatFab.setAttribute('aria-label', isOpen ? 'بستن دستیار مطب' : 'باز کردن دستیار مطب');
+  if (isOpen){
+    if (!greeted){
+      greeted = true;
+      botSay('سلام! دستیار مطب دکتر هاشمی هستم و می‌توانم درباره‌ی نوبت، ساعات کاری، نشانی و روند ویزیت راهنمایی‌تان کنم. چه کمکی از دستم برمی‌آید؟');
+      renderChips(DEFAULT_CHIPS);
+    }
+    setTimeout(() => chatInput.focus(), 300);
+  }
+}
+chatFab.addEventListener('click', () => toggleChat());
+document.getElementById('chatClose').addEventListener('click', () => toggleChat(false));
+addEventListener('keydown', e => { if (e.key === 'Escape' && chatWin.classList.contains('open')) toggleChat(false); });
+
+function bubble(text, who){
+  const el = document.createElement('div');
+  el.className = 'msg ' + who; el.innerHTML = text;
+  chatBody.appendChild(el); chatBody.scrollTop = chatBody.scrollHeight; return el;
+}
+function botSay(t){ bubble(t,'bot'); }
+function userSay(t){ bubble(t,'user'); }
+function renderChips(list){
+  quickWrap.innerHTML = '';
+  list.forEach(t => {
+    const b = document.createElement('button');
+    b.type='button'; b.className='qchip'; b.textContent=t;
+    b.addEventListener('click', () => handle(t));
+    quickWrap.appendChild(b);
+  });
+}
+function typing(){
+  const el = document.createElement('div');
+  el.className='msg bot typing'; el.innerHTML='<span></span><span></span><span></span>';
+  chatBody.appendChild(el); chatBody.scrollTop = chatBody.scrollHeight; return el;
+}
+
+function reply(text){
+  const t = text.toLowerCase();
+  const has = (...w) => w.some(x => t.includes(x));
+
+  // 1) اورژانس
+  if (has('اورژانس','۱۱۵','115','نفس نمی','نفس نمی‌کش','تشنج','بیهوش','خفگی','خون‌ریزی شدید','خونریزی شدید'))
+    return {m:`اگر مورد اورژانسی پزشکی است، لطفاً همین حالا با <strong>۱۱۵</strong> تماس بگیرید. برای مشاوره‌ی فوری خارج از ساعت کاری، خط پرستاری ما <span class="ltr">${CLINIC.afterHours}</span> است.`, chips:['رزرو نوبت','ساعات کاری']};
+
+  // 2) علائم پزشکی — بدون تشخیص
+  if (has('تب','سرفه','دانه','جوش','کهیر','استفراغ','بالا آورد','اسهال','مریض','بیمار','درد','گلودرد','گوش درد','گوش‌درد','عفونت','دارو','دوز','مقدار دارو','طبیعی است','نگران','علائم','تشخیص','دما'))
+    return {m:`من نمی‌توانم توصیه‌ی پزشکی یا تشخیص بدهم؛ این کار برعهده‌ی دکتر هاشمی است. ما <strong>پذیرش سریع هنگام بیماری</strong> داریم؛ می‌توانم کمک کنم نوبت بگیرید، یا با <a class="link-soft ltr" href="tel:${CLINIC.phoneTel}">${CLINIC.phone}</a> تماس بگیرید. در ساعات غیرکاری هم خط پرستاری <span class="ltr">${CLINIC.afterHours}</span> در دسترس است. برای موارد جدی با ۱۱۵ تماس بگیرید.`, chips:['رزرو نوبت بیماری','خط خارج از ساعت کاری']};
+
+  // 3) نوبت
+  if (has('نوبت','رزرو','وقت بگیر','گرفتن وقت','قرار ملاقات','رزرو نوبت بیماری'))
+    return {m:`با کمال میل! در بخش <strong>فرم نوبت</strong>، روز و ساعت را انتخاب کنید تا ظرف یک روز کاری تأییدش کنیم. ترجیح می‌دهید تلفنی صحبت کنید؟ با <a class="link-soft ltr" href="tel:${CLINIC.phoneTel}">${CLINIC.phone}</a> تماس بگیرید.`, action:'book', chips:['برو به فرم نوبت','ساعات کاری']};
+  if (has('برو به فرم','فرم را باز','فرم نوبت'))
+    return {m:`فرم نوبت را برایتان باز می‌کنم.`, action:'book'};
+
+  if (has('ساعت','ساعات','باز','بسته','کی باز','تعطیل','پنجشنبه','جمعه','آخر هفته','چه روزهایی','کی هستید'))
+    return {m:`ساعات کاری ما:<br><strong>${CLINIC.hours}</strong>.<br>پذیرش سریع هنگام بیماری هم در همان هفته امکان‌پذیر است.`, chips:['رزرو نوبت','نشانی مطب']};
+
+  if (has('کجا','نشانی','آدرس','مسیر','پارکینگ','نقشه','مطب کجا'))
+    return {m:`ما در <strong>${CLINIC.address}</strong>، شهر شما هستیم. پارکینگ رایگان داریم و مطب مناسب کالسکه است.`, chips:['ساعات کاری','رزرو نوبت']};
+
+  if (has('تلفن','تماس','شماره','ایمیل','ارتباط'))
+    return {m:`می‌توانید با <a class="link-soft ltr" href="tel:${CLINIC.phoneTel}">${CLINIC.phone}</a> یا <a class="link-soft ltr" href="mailto:${CLINIC.email}">${CLINIC.email}</a> با ما در ارتباط باشید. خط پرستاری خارج از ساعت کاری: <span class="ltr">${CLINIC.afterHours}</span>.`, chips:['رزرو نوبت','ساعات کاری']};
+
+  if (has('بیمه','هزینه','قیمت','پرداخت','ویزیت چند','چقدر'))
+    return {m:`ما <strong>اغلب بیمه‌های اصلی</strong> را می‌پذیریم و تسویه را برایتان انجام می‌دهیم. کارت بیمه را به اولین ویزیت بیاورید. درباره‌ی بیمه‌ی خود مطمئن نیستید؟ تماس بگیرید تا بررسی کنیم.`, chips:['رزرو نوبت','چه چیزی بیاوریم؟']};
+
+  if (has('سن','چند سال','نوزاد','شیرخوار','نوپا','نوجوان','کودک','بچه'))
+    return {m:`دکتر هاشمی از <strong>نوزادان تا ۱۸ سال</strong> مراقبت می‌کند؛ از نخستین معاینه‌ها و واکسیناسیون تا سلامت نوجوانان.`, chips:['خدمات ما','رزرو نوبت']};
+
+  if (has('خدمات','واکسن','واکسیناسیون','معاینه','غربالگری','رشد','چه کارهایی'))
+    return {m:`ما مراقبت از نوزاد و شیرخوار، معاینه‌های دوره‌ای، واکسیناسیون، پذیرش سریع هنگام بیماری، غربالگری رشد و رفتار، و سلامت نوجوانان را ارائه می‌دهیم. مورد خاصی مدنظرتان است؟`, chips:['رزرو نوبت','چه سنینی؟']};
+
+  if (has('بیاور','اولین ویزیت','بیمار جدید','مدارک','سابقه','کارت واکسن','چه چیزی لازم','چه چیزی بیاوریم'))
+    return {m:`برای اولین ویزیت، <strong>کارت بیمه، کارت شناسایی عکس‌دار، کارت واکسن</strong> (در صورت وجود) و فهرست داروها یا حساسیت‌ها را بیاورید. ۱۰ دقیقه زودتر رسیدن به تکمیل فرم‌ها کمک می‌کند.`, chips:['رزرو نوبت','بیمه']};
+
+  if (has('نسخه','تمدید','داروخانه'))
+    return {m:`برای تمدید نسخه، از داروخانه بخواهید درخواست را ارسال کند یا با مطب تماس بگیرید. برخی داروها ابتدا به بررسی کوتاه نیاز دارند، پس تا دو روز کاری زمان در نظر بگیرید.`, chips:['تماس با مطب','رزرو نوبت']};
+
+  if (has('لغو','کنسل','تغییر','جابه‌جا','عوض کردن نوبت'))
+    return {m:`مشکلی نیست — برای تغییر یا لغو نوبت با <a class="link-soft ltr" href="tel:${CLINIC.phoneTel}">${CLINIC.phone}</a> تماس بگیرید تا هماهنگ کنیم.`, chips:['ساعات کاری','رزرو نوبت']};
+
+  if (has('خارج از ساعت','شب','خط پرستاری','خط خارج از ساعت کاری'))
+    return {m:`<strong>خط مشاوره‌ی پرستاری شبانه‌روزی</strong> ما <span class="ltr">${CLINIC.afterHours}</span> برای پرسش‌های خارج از ساعت کاری در دسترس است. برای موارد شدید با ۱۱۵ تماس بگیرید.`, chips:['رزرو نوبت','ساعات کاری']};
+
+  if (has('سلام','درود','صبح بخیر','وقت بخیر','خسته نباشید'))
+    return {m:`سلام! 👋 چطور می‌توانم کمک کنم؟ رزرو نوبت، ساعات کاری یا چیز دیگری؟`, chips:DEFAULT_CHIPS};
+
+  if (has('ممنون','مرسی','سپاس','عالی','خوبه','لطف'))
+    return {m:`خواهش می‌کنم! کار دیگری هست که کمک کنم؟`, chips:DEFAULT_CHIPS};
+
+  return {m:`مطمئن نیستم درست متوجه شدم، اما می‌توانم درباره‌ی <strong>نوبت، ساعات کاری، نشانی، بیمه، خدمات و مدارک لازم</strong> کمک کنم. برای پرسش‌های پزشکی لطفاً با <a class="link-soft ltr" href="tel:${CLINIC.phoneTel}">${CLINIC.phone}</a> تماس بگیرید.`, chips:DEFAULT_CHIPS};
+}
+
+function handle(text){
+  userSay(text);
+  quickWrap.innerHTML = '';
+  const tp = typing();
+  setTimeout(() => {
+    tp.remove();
+    const r = reply(text);
+    botSay(r.m);
+    if (r.action === 'book'){
+      setTimeout(() => {
+        document.getElementById('book').scrollIntoView({behavior:'smooth'});
+      }, 400);
+    }
+    renderChips(r.chips || DEFAULT_CHIPS);
+  }, 550 + Math.random()*350);
+}
+
+chatForm.addEventListener('submit', e => {
+  e.preventDefault();
+  const v = chatInput.value.trim();
+  if (!v) return;
+  chatInput.value = '';
+  handle(v);
+});
+</script>
+</body>
+</html>

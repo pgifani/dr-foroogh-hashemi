@@ -1,0 +1,1011 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Dr. Foroogh Hashemi — Pediatrician</title>
+<meta name="description" content="Warm, expert pediatric care for newborns, children, and teens. Book an appointment with Dr. Foroogh Hashemi." />
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+  tailwind.config = {
+    theme: {
+      extend: {
+        colors: {
+          ink: '#12302A',
+          'ink-soft': '#4A6058',
+          teal: { DEFAULT: '#157F76', deep: '#0E5F57', soft: '#E2F0EC' },
+          marigold: { DEFAULT: '#F4A72C', soft: '#FCEBCF' },
+          coral: '#FF8A6B',
+          sage: '#F1F6F2',
+          paper: '#FBFDFB',
+        },
+        fontFamily: {
+          display: ['Fraunces', 'ui-serif', 'Georgia', 'serif'],
+          sans: ['"Plus Jakarta Sans"', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+        },
+      }
+    }
+  }
+</script>
+
+<style>
+  :root{
+    --teal:#157F76; --teal-deep:#0E5F57; --teal-soft:#E2F0EC;
+    --marigold:#F4A72C; --marigold-soft:#FCEBCF; --coral:#FF8A6B;
+    --ink:#12302A; --ink-soft:#4A6058; --sage:#F1F6F2; --paper:#FBFDFB;
+    --shadow-soft:0 10px 30px -14px rgba(14,95,87,.28);
+    --shadow-lift:0 28px 60px -26px rgba(14,95,87,.36);
+    --shadow-marigold:0 16px 34px -14px rgba(244,167,44,.45);
+    --r-card:24px; --r-lg:32px;
+  }
+  *{ -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility; }
+  html{ scroll-behavior:smooth; }
+  body{
+    font-family:'Plus Jakarta Sans',sans-serif; color:var(--ink);
+    background:var(--sage); overflow-x:hidden;
+  }
+  h1,h2,h3,.font-display{ font-family:'Fraunces',serif; font-optical-sizing:auto; font-variation-settings:'SOFT' 40,'WONK' 0; letter-spacing:-0.015em; }
+  ::selection{ background:var(--marigold-soft); color:var(--ink); }
+
+  /* soft ambient background glows + grain */
+  .bg-canvas{ position:fixed; inset:0; z-index:-2; pointer-events:none;
+    background:
+      radial-gradient(60% 45% at 82% 8%, rgba(244,167,44,.16), transparent 60%),
+      radial-gradient(55% 40% at 8% 22%, rgba(21,127,118,.12), transparent 60%),
+      radial-gradient(70% 55% at 50% 100%, rgba(21,127,118,.10), transparent 65%),
+      var(--sage);
+  }
+  .bg-grain{ position:fixed; inset:0; z-index:-1; pointer-events:none; opacity:.5;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.035'/%3E%3C/svg%3E");
+  }
+
+  /* buttons */
+  .btn{ display:inline-flex; align-items:center; gap:.55rem; font-weight:600; border-radius:999px;
+    padding:.85rem 1.5rem; transition:transform .18s cubic-bezier(.34,1.56,.64,1), box-shadow .2s, background .2s; cursor:pointer; line-height:1; }
+  .btn:active{ transform:translateY(1px) scale(.99); }
+  .btn-primary{ background:var(--teal); color:#fff; box-shadow:var(--shadow-soft); }
+  .btn-primary:hover{ background:var(--teal-deep); transform:translateY(-2px); box-shadow:var(--shadow-lift); }
+  .btn-sun{ background:var(--marigold); color:var(--ink); box-shadow:var(--shadow-marigold); }
+  .btn-sun:hover{ transform:translateY(-2px); filter:brightness(1.03); }
+  .btn-ghost{ background:rgba(255,255,255,.7); color:var(--teal-deep); border:1.5px solid rgba(21,127,118,.25); backdrop-filter:blur(6px); }
+  .btn-ghost:hover{ border-color:var(--teal); background:#fff; transform:translateY(-2px); }
+
+  .eyebrow{ display:inline-flex; align-items:center; gap:.5rem; color:var(--teal-deep); font-weight:600; font-size:.95rem; }
+  .eyebrow svg{ color:var(--marigold); }
+
+  .card{ background:var(--paper); border:1px solid rgba(18,48,42,.06); border-radius:var(--r-card); box-shadow:var(--shadow-soft); }
+
+  /* organic blob */
+  .blob{ border-radius:42% 58% 56% 44% / 48% 42% 58% 52%; }
+
+  /* focus visibility */
+  a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{
+    outline:3px solid var(--marigold); outline-offset:2px; border-radius:8px;
+  }
+
+  /* nav link underline */
+  .nav-link{ position:relative; color:var(--ink-soft); font-weight:500; transition:color .2s; }
+  .nav-link:hover{ color:var(--teal-deep); }
+  .nav-link::after{ content:''; position:absolute; left:0; bottom:-6px; height:2px; width:0; background:var(--marigold); transition:width .25s; border-radius:2px; }
+  .nav-link:hover::after{ width:100%; }
+
+  /* form fields */
+  .field{ width:100%; background:#fff; border:1.5px solid rgba(18,48,42,.14); border-radius:14px;
+    padding:.8rem .95rem; font-size:.98rem; color:var(--ink); transition:border-color .18s, box-shadow .18s; }
+  .field::placeholder{ color:#9aada6; }
+  .field:focus{ border-color:var(--teal); box-shadow:0 0 0 4px rgba(21,127,118,.12); outline:none; }
+  .field.err{ border-color:#e26d5c; box-shadow:0 0 0 4px rgba(226,109,92,.12); }
+  .lbl{ font-weight:600; font-size:.9rem; color:var(--ink); margin-bottom:.35rem; display:block; }
+  .req{ color:var(--coral); }
+
+  .pill-select{ display:flex; flex-wrap:wrap; gap:.5rem; }
+  .pill-select input{ position:absolute; opacity:0; width:0; height:0; }
+  .pill-select label{ cursor:pointer; padding:.5rem .9rem; border-radius:999px; border:1.5px solid rgba(18,48,42,.14);
+    background:#fff; font-size:.9rem; font-weight:500; transition:all .18s; }
+  .pill-select input:checked + label{ background:var(--teal-soft); border-color:var(--teal); color:var(--teal-deep); font-weight:600; }
+  .pill-select input:focus-visible + label{ outline:3px solid var(--marigold); outline-offset:2px; }
+
+  /* accordion */
+  .acc-item{ border-bottom:1px solid rgba(18,48,42,.10); }
+  .acc-btn{ width:100%; text-align:left; display:flex; justify-content:space-between; align-items:center; gap:1rem;
+    padding:1.25rem 0; font-weight:600; font-size:1.08rem; color:var(--ink); cursor:pointer; }
+  .acc-icon{ flex:none; width:30px; height:30px; border-radius:999px; background:var(--teal-soft); color:var(--teal-deep);
+    display:grid; place-items:center; transition:transform .3s, background .2s; }
+  .acc-btn[aria-expanded="true"] .acc-icon{ transform:rotate(45deg); background:var(--marigold); color:var(--ink); }
+  .acc-panel{ overflow:hidden; max-height:0; transition:max-height .35s ease; }
+  .acc-panel p{ padding-bottom:1.25rem; color:var(--ink-soft); line-height:1.7; max-width:60ch; }
+
+  /* reveal */
+  .reveal{ opacity:0; transform:translateY(18px); transition:opacity .7s ease, transform .7s cubic-bezier(.22,1,.36,1); }
+  .reveal.in{ opacity:1; transform:none; }
+
+  /* hero entrance */
+  @keyframes rise{ from{opacity:0; transform:translateY(22px);} to{opacity:1; transform:none;} }
+  @keyframes floaty{ 0%,100%{ transform:translateY(0);} 50%{ transform:translateY(-10px);} }
+  @keyframes sway{ 0%,100%{ transform:rotate(-2deg);} 50%{ transform:rotate(2deg);} }
+  .hero-rise > *{ animation:rise .8s both; }
+  .hero-rise > *:nth-child(1){ animation-delay:.05s; }
+  .hero-rise > *:nth-child(2){ animation-delay:.15s; }
+  .hero-rise > *:nth-child(3){ animation-delay:.25s; }
+  .hero-rise > *:nth-child(4){ animation-delay:.35s; }
+  .hero-rise > *:nth-child(5){ animation-delay:.45s; }
+  .float{ animation:floaty 6s ease-in-out infinite; }
+  .float.slow{ animation-duration:8s; }
+
+  /* chatbot */
+  #chatFab{ position:fixed; right:22px; bottom:22px; z-index:60; }
+  #chatFab .ping{ position:absolute; inset:0; border-radius:999px; background:var(--marigold); opacity:.55; animation:ping 2.4s cubic-bezier(0,0,.2,1) infinite; z-index:-1; }
+  @keyframes ping{ 0%{ transform:scale(1); opacity:.5;} 80%,100%{ transform:scale(1.9); opacity:0;} }
+  #chatWin{ position:fixed; right:22px; bottom:92px; z-index:60; width:min(380px,calc(100vw - 32px)); height:min(560px,calc(100vh - 130px));
+    background:var(--paper); border-radius:22px; box-shadow:var(--shadow-lift); display:flex; flex-direction:column; overflow:hidden;
+    border:1px solid rgba(18,48,42,.08); transform:translateY(16px) scale(.96); opacity:0; pointer-events:none; transform-origin:bottom right;
+    transition:transform .28s cubic-bezier(.34,1.56,.64,1), opacity .2s; }
+  #chatWin.open{ transform:none; opacity:1; pointer-events:auto; }
+  .msg{ max-width:82%; padding:.7rem .9rem; border-radius:16px; font-size:.92rem; line-height:1.5; animation:rise .3s both; }
+  .msg.bot{ background:var(--teal-soft); color:var(--ink); border-bottom-left-radius:5px; align-self:flex-start; }
+  .msg.user{ background:var(--teal); color:#fff; border-bottom-right-radius:5px; align-self:flex-end; }
+  .qchip{ font-size:.82rem; font-weight:600; color:var(--teal-deep); background:#fff; border:1.5px solid rgba(21,127,118,.28);
+    padding:.4rem .7rem; border-radius:999px; cursor:pointer; transition:all .15s; }
+  .qchip:hover{ background:var(--teal-soft); transform:translateY(-1px); }
+  .typing span{ display:inline-block; width:7px; height:7px; margin:0 1px; background:var(--teal); border-radius:50%; opacity:.4; animation:blink 1.2s infinite; }
+  .typing span:nth-child(2){ animation-delay:.2s; } .typing span:nth-child(3){ animation-delay:.4s; }
+  @keyframes blink{ 0%,100%{ opacity:.3; transform:translateY(0);} 50%{ opacity:1; transform:translateY(-3px);} }
+
+  .link-soft{ color:var(--teal-deep); font-weight:600; text-decoration:underline; text-decoration-color:rgba(21,127,118,.35); text-underline-offset:3px; }
+  .link-soft:hover{ text-decoration-color:var(--marigold); }
+
+  @media (prefers-reduced-motion: reduce){
+    *{ animation:none !important; transition:none !important; scroll-behavior:auto !important; }
+    .reveal{ opacity:1; transform:none; }
+  }
+</style>
+</head>
+
+<body>
+<div class="bg-canvas"></div>
+<div class="bg-grain"></div>
+
+<!-- ===================== NAV ===================== -->
+<header class="sticky top-0 z-50">
+  <div id="navbar" class="transition-all duration-300">
+    <div class="max-w-6xl mx-auto px-5 md:px-8">
+      <nav class="flex items-center justify-between h-[70px]">
+        <a href="#top" class="flex items-center gap-2.5 group">
+          <span class="grid place-items-center w-10 h-10 rounded-2xl bg-teal text-white shadow-[var(--shadow-soft)]">
+            <!-- stethoscope-heart mark -->
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3v5a4 4 0 0 0 8 0V3"/><path d="M6 3H4M14 3h2"/><circle cx="18" cy="15" r="2.4"/><path d="M15.8 15.8c0 3-2.9 4.7-5 5.2-2.1-.5-5-2.2-5-5.2v-3.6"/></svg>
+          </span>
+          <span class="leading-tight">
+            <span class="block font-display font-semibold text-[1.12rem] text-ink">Dr. Foroogh Hashemi</span>
+            <span class="block text-[.74rem] text-ink-soft font-medium -mt-0.5">Pediatrics &amp; Newborn Care</span>
+          </span>
+        </a>
+
+        <div class="hidden md:flex items-center gap-7 text-[.95rem]">
+          <a href="#about" class="nav-link">About</a>
+          <a href="#services" class="nav-link">Care</a>
+          <a href="#visit" class="nav-link">Your visit</a>
+          <a href="#faq" class="nav-link">FAQ</a>
+          <a href="#contact" class="nav-link">Contact</a>
+          <a href="fa.html" class="nav-link" lang="fa" hreflang="fa" title="نسخه فارسی">فارسی</a>
+          <a href="#book" class="btn btn-primary !py-2.5 !px-5 text-[.92rem]">Book a visit</a>
+        </div>
+
+        <button id="menuBtn" class="md:hidden grid place-items-center w-11 h-11 rounded-xl bg-white/70 border border-black/5" aria-label="Open menu" aria-expanded="false">
+          <svg id="menuIcon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#12302A" stroke-width="2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+        </button>
+      </nav>
+    </div>
+  </div>
+
+  <!-- mobile drawer -->
+  <div id="mobileMenu" class="md:hidden hidden px-5">
+    <div class="card p-3 mt-1 flex flex-col">
+      <a href="#about" class="mob-link px-4 py-3 rounded-xl hover:bg-teal-soft font-medium">About</a>
+      <a href="#services" class="mob-link px-4 py-3 rounded-xl hover:bg-teal-soft font-medium">Care</a>
+      <a href="#visit" class="mob-link px-4 py-3 rounded-xl hover:bg-teal-soft font-medium">Your visit</a>
+      <a href="#faq" class="mob-link px-4 py-3 rounded-xl hover:bg-teal-soft font-medium">FAQ</a>
+      <a href="#contact" class="mob-link px-4 py-3 rounded-xl hover:bg-teal-soft font-medium">Contact</a>
+      <a href="fa.html" class="px-4 py-3 rounded-xl hover:bg-teal-soft font-medium" lang="fa">فارسی</a>
+      <a href="#book" class="mob-link btn btn-primary justify-center mt-2">Book a visit</a>
+    </div>
+  </div>
+</header>
+
+<main id="top">
+
+<!-- ===================== HERO ===================== -->
+<section class="max-w-6xl mx-auto px-5 md:px-8 pt-10 md:pt-16 pb-8">
+  <div class="grid lg:grid-cols-[1.05fr_.95fr] gap-10 lg:gap-8 items-center">
+    <div class="hero-rise">
+      <span class="eyebrow">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l2.4 4.9 5.4.8-3.9 3.8.9 5.4-4.8-2.5-4.8 2.5.9-5.4L4.1 7.7l5.4-.8z"/></svg>
+        Board-certified pediatrician · accepting new patients
+      </span>
+      <h1 class="mt-4 text-[2.6rem] sm:text-[3.2rem] lg:text-[3.5rem] leading-[1.05] font-semibold text-ink">
+        Warm, expert care for every stage of childhood.
+      </h1>
+      <p class="mt-5 text-[1.08rem] text-ink-soft leading-relaxed max-w-[46ch]">
+        Dr. Foroogh Hashemi cares for newborns, children, and teens with unhurried visits and a team that truly listens. Same-week sick appointments, gentle check-ups, and guidance you can trust.
+      </p>
+      <div class="mt-7 flex flex-wrap gap-3">
+        <a href="#book" class="btn btn-sun">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="3"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+          Book an appointment
+        </a>
+        <a href="#about" class="btn btn-ghost">Meet Dr. Hashemi</a>
+      </div>
+
+      <div class="mt-9 grid grid-cols-3 gap-4 max-w-md">
+        <div>
+          <div class="font-display text-[1.7rem] font-semibold text-teal-deep">15+</div>
+          <div class="text-[.82rem] text-ink-soft leading-tight mt-0.5">years in pediatrics</div>
+        </div>
+        <div>
+          <div class="font-display text-[1.7rem] font-semibold text-teal-deep">5,000+</div>
+          <div class="text-[.82rem] text-ink-soft leading-tight mt-0.5">families cared for</div>
+        </div>
+        <div>
+          <div class="font-display text-[1.7rem] font-semibold text-teal-deep">4.9<span class="text-marigold">★</span></div>
+          <div class="text-[.82rem] text-ink-soft leading-tight mt-0.5">average parent rating</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- hero visual -->
+    <div class="relative">
+      <div class="blob w-full aspect-square max-w-[460px] mx-auto relative overflow-hidden shadow-[var(--shadow-lift)]"
+           style="background:linear-gradient(150deg,#1c8f85,#0E5F57);">
+        <img src="1.png" alt="A smiling baby at a checkup with a pediatrician" class="absolute inset-0 w-full h-full object-cover" />
+        <div class="absolute inset-0" style="background:linear-gradient(to top, rgba(14,95,87,.28), transparent 42%);"></div>
+      </div>
+
+      <!-- floating chips -->
+      <div class="absolute -left-1 sm:left-2 top-8 float">
+        <div class="card px-4 py-3 flex items-center gap-3">
+          <span class="grid place-items-center w-9 h-9 rounded-full bg-teal-soft text-teal-deep">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 6v6l4 2" stroke-linecap="round"/><circle cx="12" cy="12" r="9"/></svg>
+          </span>
+          <div class="leading-tight">
+            <div class="text-[.72rem] text-ink-soft">Next available</div>
+            <div class="text-[.92rem] font-semibold text-ink" id="nextSlot">Tomorrow, 10:30 am</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="absolute -right-1 sm:right-2 bottom-6 float slow">
+        <div class="card px-4 py-3 flex items-center gap-3">
+          <span class="grid place-items-center w-9 h-9 rounded-full bg-marigold-soft text-marigold">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
+          </span>
+          <div class="leading-tight">
+            <div class="text-[.92rem] font-semibold text-ink">Most insurance</div>
+            <div class="text-[.72rem] text-ink-soft">accepted &amp; billed for you</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== TRUST STRIP ===================== -->
+<section class="max-w-6xl mx-auto px-5 md:px-8 py-6">
+  <div class="card px-5 sm:px-8 py-5 grid sm:grid-cols-2 lg:grid-cols-4 gap-5">
+    <div class="flex items-center gap-3">
+      <span class="grid place-items-center w-11 h-11 rounded-xl bg-teal-soft text-teal-deep flex-none"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></span>
+      <div><div class="font-semibold text-[.95rem]">Open 6 days</div><div class="text-[.82rem] text-ink-soft">Mon–Fri 8:30–5:30, Sat 9–1</div></div>
+    </div>
+    <div class="flex items-center gap-3">
+      <span class="grid place-items-center w-11 h-11 rounded-xl bg-teal-soft text-teal-deep flex-none"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 6-9 12-9 12s-9-6-9-12a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg></span>
+      <div><div class="font-semibold text-[.95rem]">Easy to reach</div><div class="text-[.82rem] text-ink-soft">128 Maple Grove Ave, Suite 200</div></div>
+    </div>
+    <div class="flex items-center gap-3">
+      <span class="grid place-items-center w-11 h-11 rounded-xl bg-teal-soft text-teal-deep flex-none"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6 19.8 19.8 0 0 1-3.1-8.7A2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1.9.4 1.8.7 2.7a2 2 0 0 1-.5 2.1L8.1 9.9a16 16 0 0 0 6 6l1.4-1.2a2 2 0 0 1 2.1-.5c.9.3 1.8.6 2.7.7a2 2 0 0 1 1.7 2z"/></svg></span>
+      <div><div class="font-semibold text-[.95rem]">Same-week sick visits</div><div class="text-[.82rem] text-ink-soft">Call (555) 213-4600</div></div>
+    </div>
+    <div class="flex items-center gap-3">
+      <span class="grid place-items-center w-11 h-11 rounded-xl bg-teal-soft text-teal-deep flex-none"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l8 4v6c0 5-3.4 8.5-8 10-4.6-1.5-8-5-8-10V6z"/><path d="M9 12l2 2 4-4"/></svg></span>
+      <div><div class="font-semibold text-[.95rem]">24/7 nurse advice</div><div class="text-[.82rem] text-ink-soft">After-hours line for parents</div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== ABOUT ===================== -->
+<section id="about" class="max-w-6xl mx-auto px-5 md:px-8 py-16 md:py-20">
+  <div class="grid lg:grid-cols-2 gap-10 lg:gap-14 items-center">
+    <div class="reveal relative">
+      <div class="rounded-[var(--r-lg)] overflow-hidden shadow-[var(--shadow-lift)] max-w-[460px] aspect-[4/5]">
+        <img src="2.png" alt="Dr. Hashemi examining a young patient" class="w-full h-full object-cover" />
+      </div>
+      <div class="card absolute -bottom-5 -right-2 sm:right-6 px-5 py-4 max-w-[220px]">
+        <div class="flex -space-x-2 mb-2">
+          <span class="w-8 h-8 rounded-full bg-marigold-soft border-2 border-white"></span>
+          <span class="w-8 h-8 rounded-full bg-teal-soft border-2 border-white"></span>
+          <span class="w-8 h-8 rounded-full bg-coral/30 border-2 border-white"></span>
+        </div>
+        <div class="text-[.85rem] text-ink-soft leading-snug">“She makes my kids feel safe — and answers every question.”</div>
+      </div>
+    </div>
+
+    <div class="reveal">
+      <span class="eyebrow"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="10"/></svg>About the doctor</span>
+      <h2 class="mt-4 text-[2.1rem] md:text-[2.5rem] font-semibold leading-[1.1]">A pediatrician who treats the whole family, not just the chart.</h2>
+      <p class="mt-5 text-ink-soft leading-relaxed max-w-[54ch]">
+        Dr. Hashemi has spent more than fifteen years helping families raise healthy, happy kids. She believes good pediatric care is a partnership: clear explanations, honest answers, and enough time to actually talk. From first checkups to teenage years, she is a steady hand parents can count on.
+      </p>
+
+      <ul class="mt-6 space-y-3">
+        <li class="flex items-start gap-3"><span class="mt-1 grid place-items-center w-5 h-5 rounded-full bg-teal text-white flex-none"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg></span><span class="text-ink-soft"><span class="text-ink font-semibold">Board-certified</span> in Pediatrics, American Board of Pediatrics</span></li>
+        <li class="flex items-start gap-3"><span class="mt-1 grid place-items-center w-5 h-5 rounded-full bg-teal text-white flex-none"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg></span><span class="text-ink-soft"><span class="text-ink font-semibold">Newborn &amp; NICU-experienced</span> — gentle care from day one</span></li>
+        <li class="flex items-start gap-3"><span class="mt-1 grid place-items-center w-5 h-5 rounded-full bg-teal text-white flex-none"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg></span><span class="text-ink-soft"><span class="text-ink font-semibold">Bilingual visits</span> available in English and Farsi</span></li>
+      </ul>
+
+      <a href="#book" class="btn btn-primary mt-8">Book with Dr. Hashemi</a>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== SERVICES ===================== -->
+<section id="services" class="max-w-6xl mx-auto px-5 md:px-8 py-16 md:py-20">
+  <div class="reveal max-w-2xl">
+    <span class="eyebrow"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l2.4 4.9 5.4.8-3.9 3.8.9 5.4-4.8-2.5-4.8 2.5.9-5.4L4.1 7.7l5.4-.8z"/></svg>Care for every age</span>
+    <h2 class="mt-4 text-[2.1rem] md:text-[2.5rem] font-semibold leading-[1.1]">From first breaths to first jobs.</h2>
+    <p class="mt-4 text-ink-soft leading-relaxed">Comprehensive pediatric care under one roof, so your family sees a doctor who already knows your story.</p>
+  </div>
+
+  <div class="mt-10 grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
+    <!-- large feature card spans 2 on lg -->
+    <article class="reveal card overflow-hidden sm:col-span-2 lg:row-span-1 flex flex-col sm:flex-row items-stretch" style="background:linear-gradient(160deg,#E2F0EC,#FBFDFB);">
+      <div class="p-6 sm:flex-1 order-2 sm:order-1">
+        <span class="grid place-items-center w-14 h-14 rounded-2xl bg-teal text-white flex-none shadow-[var(--shadow-soft)] mb-4"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 12a3 3 0 1 0 6 0 3 3 0 0 0-6 0z"/><path d="M12 3c-1.5 2-4 2.5-4 5 0 1 .5 1.8 1 2.4M12 3c1.5 2 4 2.5 4 5 0 1-.5 1.8-1 2.4"/><path d="M7 20c0-2.8 2.2-5 5-5s5 2.2 5 5"/></svg></span>
+        <h3 class="font-display text-[1.35rem] font-semibold">Newborn &amp; infant care</h3>
+        <p class="mt-2 text-ink-soft leading-relaxed max-w-[42ch]">First-week weight checks, feeding support, sleep guidance, and reassurance for new parents — with extra time built in for your questions.</p>
+      </div>
+      <img src="3.png" alt="A newborn during a gentle checkup" class="order-1 sm:order-2 w-full sm:w-[42%] h-44 sm:h-auto object-cover" />
+    </article>
+
+    <article class="reveal card p-6">
+      <span class="grid place-items-center w-12 h-12 rounded-2xl bg-marigold-soft text-marigold flex-none mb-4"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></span>
+      <h3 class="font-display text-[1.2rem] font-semibold">Well-child check-ups</h3>
+      <p class="mt-2 text-ink-soft leading-relaxed">Growth, milestones, and prevention at every recommended age.</p>
+    </article>
+
+    <article class="reveal card p-6">
+      <span class="grid place-items-center w-12 h-12 rounded-2xl bg-teal-soft text-teal-deep flex-none mb-4"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20l6-6M14 4l6 6M10 8l6 6"/><path d="M15 3l6 6-4 4-6-6z"/></svg></span>
+      <h3 class="font-display text-[1.2rem] font-semibold">Vaccinations</h3>
+      <p class="mt-2 text-ink-soft leading-relaxed">On-schedule immunizations, explained clearly and given gently.</p>
+    </article>
+
+    <article class="reveal card p-6">
+      <span class="grid place-items-center w-12 h-12 rounded-2xl bg-marigold-soft text-marigold flex-none mb-4"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2v4M16 2v4"/><path d="M3.5 9h17M5 6h14a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2z"/><path d="M12 13v4M10 15h4"/></svg></span>
+      <h3 class="font-display text-[1.2rem] font-semibold">Same-week sick visits</h3>
+      <p class="mt-2 text-ink-soft leading-relaxed">Fevers, coughs, ear aches — seen quickly when it counts.</p>
+    </article>
+
+    <article class="reveal card p-6">
+      <span class="grid place-items-center w-12 h-12 rounded-2xl bg-teal-soft text-teal-deep flex-none mb-4"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a3 3 0 0 0-3 3v1a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z"/><path d="M6 21v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2"/></svg></span>
+      <h3 class="font-display text-[1.2rem] font-semibold">Development &amp; behavior</h3>
+      <p class="mt-2 text-ink-soft leading-relaxed">Screening and support for speech, learning, and big feelings.</p>
+    </article>
+
+    <article class="reveal card p-6">
+      <span class="grid place-items-center w-12 h-12 rounded-2xl bg-marigold-soft text-marigold flex-none mb-4"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.6l-1-1a5.5 5.5 0 0 0-7.8 7.8l1 1L12 21l7.8-7.6 1-1a5.5 5.5 0 0 0 0-7.8z"/></svg></span>
+      <h3 class="font-display text-[1.2rem] font-semibold">Teen &amp; adolescent health</h3>
+      <p class="mt-2 text-ink-soft leading-relaxed">Sports physicals, mental health, and honest, private conversations.</p>
+    </article>
+  </div>
+</section>
+
+<!-- ===================== HOW IT WORKS (genuine sequence) ===================== -->
+<section id="visit" class="max-w-6xl mx-auto px-5 md:px-8 py-16 md:py-20">
+  <div class="rounded-[var(--r-lg)] px-6 sm:px-10 py-12 relative overflow-hidden" style="background:linear-gradient(155deg,#0E5F57,#157F76);">
+    <div class="relative z-10">
+      <div class="reveal max-w-xl">
+        <span class="eyebrow text-marigold-soft"><svg width="18" height="18" viewBox="0 0 24 24" fill="#F4A72C"><circle cx="12" cy="12" r="10"/></svg><span class="text-white/80">Your visit, step by step</span></span>
+        <h2 class="mt-4 text-[2rem] md:text-[2.4rem] font-semibold text-white leading-[1.12]">Booking a visit is simple.</h2>
+      </div>
+      <div class="mt-9 grid md:grid-cols-3 gap-6">
+        <div class="reveal">
+          <div class="flex items-center gap-3">
+            <span class="grid place-items-center w-10 h-10 rounded-full bg-marigold text-ink font-display font-bold">1</span>
+            <div class="h-px flex-1 bg-white/20"></div>
+          </div>
+          <h3 class="mt-4 font-display text-[1.25rem] font-semibold text-white">Request a time</h3>
+          <p class="mt-2 text-white/75 leading-relaxed text-[.96rem]">Use the form below and pick a day and time that works for your family.</p>
+        </div>
+        <div class="reveal">
+          <div class="flex items-center gap-3">
+            <span class="grid place-items-center w-10 h-10 rounded-full bg-marigold text-ink font-display font-bold">2</span>
+            <div class="h-px flex-1 bg-white/20"></div>
+          </div>
+          <h3 class="mt-4 font-display text-[1.25rem] font-semibold text-white">We confirm</h3>
+          <p class="mt-2 text-white/75 leading-relaxed text-[.96rem]">Our team calls or emails within one business day to lock in your visit.</p>
+        </div>
+        <div class="reveal">
+          <div class="flex items-center gap-3">
+            <span class="grid place-items-center w-10 h-10 rounded-full bg-marigold text-ink font-display font-bold">3</span>
+            <div class="h-px flex-1 bg-white/20"></div>
+          </div>
+          <h3 class="mt-4 font-display text-[1.25rem] font-semibold text-white">Come on in</h3>
+          <p class="mt-2 text-white/75 leading-relaxed text-[.96rem]">Arrive to a calm, kid-friendly clinic and an unhurried appointment.</p>
+        </div>
+      </div>
+    </div>
+    <div class="absolute -right-16 -top-16 w-64 h-64 blob opacity-20" style="background:#F4A72C;"></div>
+  </div>
+</section>
+
+<!-- ===================== BOOKING ===================== -->
+<section id="book" class="max-w-6xl mx-auto px-5 md:px-8 py-16 md:py-20">
+  <div class="grid lg:grid-cols-[.85fr_1.15fr] gap-8 items-start">
+    <!-- reassurance -->
+    <div class="reveal">
+      <span class="eyebrow"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="3"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>Book an appointment</span>
+      <h2 class="mt-4 text-[2.1rem] md:text-[2.5rem] font-semibold leading-[1.1]">Pick a time that works for you.</h2>
+      <p class="mt-4 text-ink-soft leading-relaxed max-w-[46ch]">Choose an open slot from the calendar, then leave your name and number. We'll text or call to confirm — that's it.</p>
+
+      <div class="mt-7 space-y-4">
+        <div class="flex items-start gap-3">
+          <span class="grid place-items-center w-10 h-10 rounded-xl bg-teal-soft text-teal-deep flex-none"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1.9.4 1.8.7 2.7a2 2 0 0 1-.5 2.1L8.1 9.9a16 16 0 0 0 6 6l1.4-1.2a2 2 0 0 1 2.1-.5c.9.3 1.8.6 2.7.7a2 2 0 0 1 1.7 2z"/></svg></span>
+          <div><div class="font-semibold">Prefer to call?</div><a href="tel:+15552134600" class="link-soft">(555) 213-4600</a><span class="text-ink-soft text-[.9rem]"> — Mon–Fri 8:30–5:30</span></div>
+        </div>
+        <div class="flex items-start gap-3">
+          <span class="grid place-items-center w-10 h-10 rounded-xl bg-marigold-soft text-marigold flex-none"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2z"/><path d="M12 8v4M12 16h.01"/></svg></span>
+          <div><div class="font-semibold">Is it urgent?</div><span class="text-ink-soft text-[.9rem]">For a medical emergency call <strong>911</strong>. For after-hours advice, call our nurse line.</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- scheduler -->
+    <div class="reveal card p-5 sm:p-7">
+      <div id="scheduler">
+        <div class="flex items-center justify-between gap-3 mb-4">
+          <button type="button" id="prevWeek" class="grid place-items-center w-10 h-10 rounded-full bg-teal-soft text-teal-deep hover:bg-teal hover:text-white transition disabled:opacity-40 disabled:pointer-events-none" aria-label="Previous week">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+          </button>
+          <div class="text-center">
+            <div id="weekRange" class="font-display text-[1.1rem] font-semibold text-ink"></div>
+            <div class="text-[.78rem] text-ink-soft">Tap an available time</div>
+          </div>
+          <button type="button" id="nextWeek" class="grid place-items-center w-10 h-10 rounded-full bg-teal-soft text-teal-deep hover:bg-teal hover:text-white transition disabled:opacity-40 disabled:pointer-events-none" aria-label="Next week">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg>
+          </button>
+        </div>
+        <div id="weekGrid" class="flex gap-2 overflow-x-auto pb-1 -mx-1 px-1"></div>
+      </div>
+
+      <div id="pickHint" class="mt-5 pt-5 border-t border-black/5 text-center text-ink-soft text-[.92rem]">
+        Select an open time above — we'll only ask for your name and number.
+      </div>
+
+      <form id="bookForm" class="hidden mt-5 pt-5 border-t border-black/5" novalidate>
+        <div class="flex items-center justify-between gap-3 mb-5 bg-teal-soft rounded-2xl px-4 py-3">
+          <div class="flex items-center gap-3">
+            <span class="grid place-items-center w-9 h-9 rounded-full bg-teal text-white flex-none"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg></span>
+            <div class="leading-tight">
+              <div class="text-[.74rem] text-ink-soft">Your appointment</div>
+              <div id="pickSummary" class="font-semibold text-ink"></div>
+            </div>
+          </div>
+          <button type="button" id="changePick" class="link-soft text-[.85rem]">Change</button>
+        </div>
+        <div class="grid sm:grid-cols-2 gap-4">
+          <div>
+            <label class="lbl" for="name">Your name <span class="req">*</span></label>
+            <input class="field" id="name" name="name" type="text" placeholder="e.g. Sara Ahmadi" required>
+          </div>
+          <div>
+            <label class="lbl" for="phone">Phone number <span class="req">*</span></label>
+            <input class="field" id="phone" name="phone" type="tel" inputmode="tel" placeholder="(555) 000-0000" required>
+          </div>
+        </div>
+        <div id="formError" class="hidden mt-4 text-[.9rem] text-[#c0492f] bg-[#fbe7e2] border border-[#f2c2b7] rounded-xl px-4 py-3"></div>
+        <button type="submit" class="btn btn-sun w-full justify-center mt-5 !py-3.5 text-[1.02rem]">
+          <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
+          Confirm appointment
+        </button>
+        <p class="text-[.8rem] text-ink-soft text-center mt-3">We'll only use your number to confirm this visit. No payment now.</p>
+      </form>
+
+      <!-- success state -->
+      <div id="bookSuccess" class="hidden text-center py-6">
+        <div class="mx-auto grid place-items-center w-16 h-16 rounded-full bg-teal-soft text-teal mb-4">
+          <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
+        </div>
+        <h3 class="font-display text-[1.5rem] font-semibold">You're booked!</h3>
+        <p class="mt-2 text-ink-soft max-w-[42ch] mx-auto" id="successMsg"></p>
+        <button id="bookAgain" class="btn btn-ghost mt-6">Book another time</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== TESTIMONIALS ===================== -->
+<section class="max-w-6xl mx-auto px-5 md:px-8 py-16 md:py-20">
+  <div class="grid lg:grid-cols-[1.15fr_.85fr] gap-8 items-center mb-10">
+    <div class="reveal max-w-2xl">
+      <span class="eyebrow"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l2.4 4.9 5.4.8-3.9 3.8.9 5.4-4.8-2.5-4.8 2.5.9-5.4L4.1 7.7l5.4-.8z"/></svg>Loved by local families</span>
+      <h2 class="mt-4 text-[2.1rem] md:text-[2.5rem] font-semibold leading-[1.1]">Parents feel the difference.</h2>
+      <p class="mt-4 text-ink-soft leading-relaxed">Real families, real visits. Here's what parents say after their child sees Dr. Hashemi.</p>
+    </div>
+    <div class="reveal rounded-[var(--r-lg)] overflow-hidden shadow-[var(--shadow-lift)] aspect-[5/4]">
+      <img src="4.png" alt="A happy child laughing with the pediatrician" class="w-full h-full object-cover" />
+    </div>
+  </div>
+  <div class="grid md:grid-cols-3 gap-5">
+    <figure class="reveal card p-6">
+      <div class="text-marigold text-[1.1rem]">★★★★★</div>
+      <blockquote class="mt-3 text-ink-soft leading-relaxed">“Dr. Hashemi never rushes us. She explains everything so my son isn't scared, and she remembers the little details from our last visit.”</blockquote>
+      <figcaption class="mt-4 font-semibold text-[.95rem]">Sara A. <span class="text-ink-soft font-normal">— mom of two</span></figcaption>
+    </figure>
+    <figure class="reveal card p-6" style="background:linear-gradient(160deg,#FCEBCF,#FBFDFB);">
+      <div class="text-marigold text-[1.1rem]">★★★★★</div>
+      <blockquote class="mt-3 text-ink-soft leading-relaxed">“We got a same-day appointment when our daughter spiked a fever. Calm, kind, and we left with a clear plan. Exactly what you want.”</blockquote>
+      <figcaption class="mt-4 font-semibold text-[.95rem]">Daniel R. <span class="text-ink-soft font-normal">— dad</span></figcaption>
+    </figure>
+    <figure class="reveal card p-6">
+      <div class="text-marigold text-[1.1rem]">★★★★★</div>
+      <blockquote class="mt-3 text-ink-soft leading-relaxed">“As first-time parents we had a hundred questions. She answered every one without making us feel silly. Our whole family trusts her.”</blockquote>
+      <figcaption class="mt-4 font-semibold text-[.95rem]">Mina &amp; Josh <span class="text-ink-soft font-normal">— new parents</span></figcaption>
+    </figure>
+  </div>
+</section>
+
+<!-- ===================== FAQ ===================== -->
+<section id="faq" class="max-w-6xl mx-auto px-5 md:px-8 py-16 md:py-20">
+  <div class="grid lg:grid-cols-[.8fr_1.2fr] gap-10">
+    <div class="reveal">
+      <span class="eyebrow"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M9.1 9a3 3 0 0 1 5.8 1c0 2-3 3-3 3" stroke-linecap="round"/><path d="M12 17h.01" stroke-linecap="round"/></svg>Good questions</span>
+      <h2 class="mt-4 text-[2.1rem] md:text-[2.5rem] font-semibold leading-[1.1]">Answers before you book.</h2>
+      <p class="mt-4 text-ink-soft leading-relaxed">Still unsure about something? Ask the care assistant in the corner, or call us any weekday.</p>
+    </div>
+
+    <div class="reveal">
+      <div class="acc-item">
+        <button class="acc-btn" aria-expanded="false"><span>Do you accept new patients and my insurance?</span><span class="acc-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></span></button>
+        <div class="acc-panel"><p>Yes — we're welcoming new patients from newborns through age 18, and we accept most major insurance plans. Bring your card to your first visit and we'll handle the billing. Not sure about your plan? Call us and we'll check for you.</p></div>
+      </div>
+      <div class="acc-item">
+        <button class="acc-btn" aria-expanded="false"><span>What should we bring to the first visit?</span><span class="acc-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></span></button>
+        <div class="acc-panel"><p>Please bring your insurance card, a photo ID, your child's immunization records if you have them, and a list of any medications or allergies. Arriving 10 minutes early gives us time for the paperwork.</p></div>
+      </div>
+      <div class="acc-item">
+        <button class="acc-btn" aria-expanded="false"><span>My child is sick today — can we be seen?</span><span class="acc-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></span></button>
+        <div class="acc-panel"><p>We keep same-week slots open for sick visits. Request a time through the form or call us early in the day for the best availability. If this is a medical emergency, call 911.</p></div>
+      </div>
+      <div class="acc-item">
+        <button class="acc-btn" aria-expanded="false"><span>How do prescription refills work?</span><span class="acc-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></span></button>
+        <div class="acc-panel"><p>Ask your pharmacy to send a refill request, or call our office. Some medications need a quick check-in first, so please allow up to two business days.</p></div>
+      </div>
+      <div class="acc-item">
+        <button class="acc-btn" aria-expanded="false"><span>Is there help after the clinic closes?</span><span class="acc-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></span></button>
+        <div class="acc-panel"><p>Yes. Our 24/7 nurse advice line is here for after-hours questions and reassurance. For anything severe — trouble breathing, a seizure, or a serious injury — call 911 right away.</p></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== CONTACT / FOOTER ===================== -->
+<section id="contact" class="max-w-6xl mx-auto px-5 md:px-8 pt-8 pb-16">
+  <div class="card overflow-hidden">
+    <div class="grid md:grid-cols-2">
+      <div class="p-8 sm:p-10">
+        <span class="eyebrow"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 6-9 12-9 12s-9-6-9-12a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>Visit us</span>
+        <h2 class="mt-4 text-[1.9rem] md:text-[2.2rem] font-semibold leading-[1.12]">Come say hello.</h2>
+        <div class="mt-6 space-y-4 text-[.98rem]">
+          <div class="flex items-start gap-3"><span class="text-teal-deep mt-0.5"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 6-9 12-9 12s-9-6-9-12a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg></span><div><div class="font-semibold">Address</div><div class="text-ink-soft">128 Maple Grove Ave, Suite 200<br>Your City, ST 00000</div></div></div>
+          <div class="flex items-start gap-3"><span class="text-teal-deep mt-0.5"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1.9.4 1.8.7 2.7a2 2 0 0 1-.5 2.1L8.1 9.9a16 16 0 0 0 6 6l1.4-1.2a2 2 0 0 1 2.1-.5c.9.3 1.8.6 2.7.7a2 2 0 0 1 1.7 2z"/></svg></span><div><div class="font-semibold">Phone</div><a href="tel:+15552134600" class="link-soft">(555) 213-4600</a></div></div>
+          <div class="flex items-start gap-3"><span class="text-teal-deep mt-0.5"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="3"/><path d="M3 6l9 7 9-7"/></svg></span><div><div class="font-semibold">Email</div><a href="mailto:hello@drhashemipeds.com" class="link-soft">hello@drhashemipeds.com</a></div></div>
+          <div class="flex items-start gap-3"><span class="text-teal-deep mt-0.5"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></span><div><div class="font-semibold">Hours</div><div class="text-ink-soft">Mon–Fri 8:30 am – 5:30 pm<br>Sat 9:00 am – 1:00 pm · Sun closed</div></div></div>
+        </div>
+        <a href="#book" class="btn btn-primary mt-7">Book an appointment</a>
+      </div>
+      <!-- map placeholder -->
+      <div class="relative min-h-[320px] bg-teal-soft">
+        <div class="absolute inset-0 opacity-60" style="background-image:radial-gradient(circle at 30% 40%, rgba(21,127,118,.18) 0 2px, transparent 2px),radial-gradient(circle at 70% 60%, rgba(244,167,44,.2) 0 2px, transparent 2px); background-size:34px 34px;"></div>
+        <div class="absolute inset-0 grid place-items-center">
+          <div class="text-center">
+            <span class="grid place-items-center w-14 h-14 rounded-full bg-teal text-white mx-auto shadow-[var(--shadow-lift)] float"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 6-9 12-9 12s-9-6-9-12a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg></span>
+            <p class="mt-3 text-teal-deep font-semibold">Find us on Maple Grove Ave</p>
+            <p class="text-[.82rem] text-ink-soft">Free parking · stroller accessible</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <footer class="mt-10 flex flex-col sm:flex-row items-center justify-between gap-4 text-[.86rem] text-ink-soft">
+    <div class="flex items-center gap-2">
+      <span class="grid place-items-center w-8 h-8 rounded-xl bg-teal text-white"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3v5a4 4 0 0 0 8 0V3"/><circle cx="18" cy="15" r="2.4"/><path d="M15.8 15.8c0 3-2.9 4.7-5 5.2-2.1-.5-5-2.2-5-5.2v-3.6"/></svg></span>
+      <span>© <span id="year"></span> Dr. Foroogh Hashemi Pediatrics. All rights reserved.</span>
+    </div>
+    <div class="text-center sm:text-right">This site is for information and scheduling. It is not medical advice. In an emergency, call 911.</div>
+  </footer>
+</section>
+
+</main>
+
+<!-- ===================== CHATBOT ===================== -->
+<button id="chatFab" class="btn btn-sun !p-0 w-16 h-16 !rounded-full justify-center relative" aria-label="Open care assistant">
+  <span class="ping"></span>
+  <svg id="fabOpen" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.4 8.4 0 0 1-8.5 8.5 8.6 8.6 0 0 1-3.8-.9L3 21l1.9-5.7A8.4 8.4 0 0 1 4 11.5 8.5 8.5 0 0 1 12.5 3 8.4 8.4 0 0 1 21 11.5z"/><path d="M8.5 11.5h.01M12.5 11.5h.01M16.5 11.5h.01"/></svg>
+  <svg id="fabClose" class="hidden" width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>
+</button>
+
+<div id="chatWin" role="dialog" aria-label="Care assistant" aria-modal="false">
+  <div class="px-4 py-3.5 flex items-center gap-3 text-white" style="background:linear-gradient(135deg,#157F76,#0E5F57);">
+    <span class="grid place-items-center w-10 h-10 rounded-full bg-white/15 flex-none"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a5 5 0 0 0-5 5v1a5 5 0 0 0 10 0V7a5 5 0 0 0-5-5z"/><path d="M5 22a7 7 0 0 1 14 0"/></svg></span>
+    <div class="leading-tight flex-1">
+      <div class="font-semibold">Care Assistant</div>
+      <div class="text-[.74rem] text-white/75 flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-marigold inline-block"></span>Hours, booking &amp; visit info</div>
+    </div>
+    <button id="chatClose" class="text-white/80 hover:text-white p-1" aria-label="Close">✕</button>
+  </div>
+
+  <div id="chatBody" class="flex-1 overflow-y-auto p-4 flex flex-col gap-3" style="background:linear-gradient(180deg,#FBFDFB,#F1F6F2);"></div>
+
+  <div id="quickReplies" class="px-3 pt-2 flex flex-wrap gap-2 border-t border-black/5"></div>
+
+  <form id="chatForm" class="p-3 flex items-center gap-2 border-t border-black/5">
+    <input id="chatInput" class="field !rounded-full !py-2.5 flex-1" placeholder="Type your question…" autocomplete="off" aria-label="Message">
+    <button class="btn btn-primary !p-0 w-11 h-11 !rounded-full justify-center flex-none" aria-label="Send"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4z"/></svg></button>
+  </form>
+  <div class="px-4 pb-2 text-[.68rem] text-ink-soft text-center">Not medical advice. For emergencies call 911.</div>
+</div>
+
+<script>
+/* ---------- year ---------- */
+document.getElementById('year').textContent = new Date().getFullYear();
+
+/* ---------- next available slot (cosmetic) ---------- */
+(function(){
+  const d = new Date(); d.setDate(d.getDate()+1);
+  const day = d.toLocaleDateString(undefined,{weekday:'long'});
+  document.getElementById('nextSlot').textContent = day + ', 10:30 am';
+})();
+
+/* ---------- navbar shadow on scroll ---------- */
+const navbar = document.getElementById('navbar');
+addEventListener('scroll', () => {
+  if (scrollY > 12) navbar.classList.add('bg-paper/80','backdrop-blur-md','shadow-[0_6px_24px_-16px_rgba(14,95,87,.4)]','border-b','border-black/5');
+  else navbar.classList.remove('bg-paper/80','backdrop-blur-md','shadow-[0_6px_24px_-16px_rgba(14,95,87,.4)]','border-b','border-black/5');
+}, {passive:true});
+
+/* ---------- mobile menu ---------- */
+const menuBtn = document.getElementById('menuBtn'), mobileMenu = document.getElementById('mobileMenu');
+menuBtn.addEventListener('click', () => {
+  const open = mobileMenu.classList.toggle('hidden') === false;
+  menuBtn.setAttribute('aria-expanded', open);
+});
+document.querySelectorAll('.mob-link').forEach(l => l.addEventListener('click', () => {
+  mobileMenu.classList.add('hidden'); menuBtn.setAttribute('aria-expanded','false');
+}));
+
+/* ---------- reveal on scroll ---------- */
+const io = new IntersectionObserver((entries) => {
+  entries.forEach(e => { if (e.isIntersecting){ e.target.classList.add('in'); io.unobserve(e.target); } });
+}, {threshold:.12});
+document.querySelectorAll('.reveal').forEach(el => io.observe(el));
+
+/* ---------- accordion ---------- */
+document.querySelectorAll('.acc-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const panel = btn.nextElementSibling;
+    const open = btn.getAttribute('aria-expanded') === 'true';
+    document.querySelectorAll('.acc-btn').forEach(b => {
+      if (b !== btn){ b.setAttribute('aria-expanded','false'); b.nextElementSibling.style.maxHeight = null; }
+    });
+    btn.setAttribute('aria-expanded', !open);
+    panel.style.maxHeight = open ? null : panel.scrollHeight + 'px';
+  });
+});
+
+/* ---------- booking: weekly slot picker ---------- */
+(function(){
+  const CLOSED_DAY = 0;   // Sunday closed
+  const HALF_DAY   = 6;   // Saturday half day
+  const FULL_SLOTS = ['09:00','10:00','11:00','12:00','14:00','15:00','16:00','17:00'];
+  const HALF_SLOTS = ['09:00','10:00','11:00','12:00'];
+  const MAX_WEEKS  = 4;
+
+  const grid = document.getElementById('weekGrid');
+  const weekRange = document.getElementById('weekRange');
+  const prevBtn = document.getElementById('prevWeek');
+  const nextBtn = document.getElementById('nextWeek');
+  const hint = document.getElementById('pickHint');
+  const form = document.getElementById('bookForm');
+  const summary = document.getElementById('pickSummary');
+  const errBox = document.getElementById('formError');
+  const success = document.getElementById('bookSuccess');
+  const successMsg = document.getElementById('successMsg');
+
+  let weekOffset = 0;
+  let selected = null;
+
+  const startOfToday = () => { const d = new Date(); d.setHours(0,0,0,0); return d; };
+  const iso = d => { const x=new Date(d); x.setMinutes(x.getMinutes()-x.getTimezoneOffset()); return x.toISOString().split('T')[0]; };
+  const fmtTime = t => { let [h,m]=t.split(':').map(Number); const ap=h<12?'AM':'PM'; const hh=((h+11)%12)+1; return `${hh}:${String(m).padStart(2,'0')} ${ap}`; };
+  const setErr = (el,on) => el.classList.toggle('err', on);
+
+  function slotsFor(day){
+    const wd = day.getDay();
+    if (wd === CLOSED_DAY) return [];
+    return wd === HALF_DAY ? HALF_SLOTS : FULL_SLOTS;
+  }
+  function isOpen(dISO, time){
+    let h=0; const s=dISO+time; for(let i=0;i<s.length;i++){ h=(h*31 + s.charCodeAt(i))>>>0; }
+    if (new Date(dISO+'T'+time+':00') < new Date()) return false;   // no past times
+    return (h % 100) >= 35;                                          // ~65% open
+  }
+
+  function render(){
+    grid.innerHTML = '';
+    const base = startOfToday();
+    base.setDate(base.getDate() + weekOffset*7);
+    const first = new Date(base), last = new Date(base); last.setDate(last.getDate()+6);
+    weekRange.textContent = first.toLocaleDateString('en-US',{month:'short',day:'numeric'}) + ' – ' + last.toLocaleDateString('en-US',{month:'short',day:'numeric'});
+    prevBtn.disabled = weekOffset <= 0;
+    nextBtn.disabled = weekOffset >= MAX_WEEKS;
+
+    const todayISO = iso(startOfToday());
+    for (let i=0;i<7;i++){
+      const day = new Date(base); day.setDate(day.getDate()+i);
+      const dISO = iso(day);
+      const isToday = dISO === todayISO;
+      const col = document.createElement('div');
+      col.className = 'flex-none w-[116px] lg:flex-1 lg:w-auto';
+      const head = document.createElement('div');
+      head.className = 'text-center mb-2';
+      head.innerHTML = `<div class="text-[.72rem] ${isToday?'text-teal-deep font-semibold':'text-ink-soft'}">${isToday?'Today':day.toLocaleDateString('en-US',{weekday:'short'})}</div>
+                        <div class="text-[.95rem] font-semibold text-ink">${day.toLocaleDateString('en-US',{month:'short',day:'numeric'})}</div>`;
+      col.appendChild(head);
+
+      const slots = slotsFor(day);
+      if (!slots.length){
+        const closed = document.createElement('div');
+        closed.className = 'text-center text-[.74rem] text-ink-soft/70 py-3 rounded-xl bg-black/[.02]';
+        closed.textContent = 'Closed';
+        col.appendChild(closed);
+      } else {
+        const stack = document.createElement('div');
+        stack.className = 'flex flex-col gap-1.5';
+        let any = false;
+        slots.forEach(t => {
+          const open = isOpen(dISO, t);
+          const isSel = selected && selected.iso===dISO && selected.time===t;
+          const b = document.createElement('button');
+          b.type = 'button'; b.textContent = fmtTime(t); b.disabled = !open;
+          b.className = 'text-[.82rem] font-medium rounded-xl py-2 transition ' +
+            (isSel ? 'bg-teal text-white shadow-[var(--shadow-soft)]'
+             : open ? 'bg-teal-soft text-teal-deep hover:bg-teal hover:text-white'
+             : 'bg-black/[.03] text-ink-soft/50 line-through cursor-not-allowed');
+          if (open){ any = true; b.addEventListener('click', () => pick(day, dISO, t)); }
+          stack.appendChild(b);
+        });
+        col.appendChild(stack);
+        if (!any){
+          const none = document.createElement('div');
+          none.className = 'text-center text-[.7rem] text-ink-soft/60 mt-1'; none.textContent = 'Full';
+          col.appendChild(none);
+        }
+      }
+      grid.appendChild(col);
+    }
+  }
+
+  function pick(day, dISO, time){
+    selected = { iso:dISO, time, date:new Date(dISO+'T'+time+':00') };
+    render();
+    hint.classList.add('hidden');
+    success.classList.add('hidden');
+    form.classList.remove('hidden');
+    summary.textContent = day.toLocaleDateString('en-US',{weekday:'long', month:'long', day:'numeric'}) + ' · ' + fmtTime(time);
+    form.scrollIntoView({behavior:'smooth', block:'center'});
+    setTimeout(()=>document.getElementById('name').focus({preventScroll:true}), 300);
+  }
+
+  document.getElementById('changePick').addEventListener('click', () => {
+    form.classList.add('hidden'); hint.classList.remove('hidden');
+    document.getElementById('scheduler').scrollIntoView({behavior:'smooth', block:'center'});
+  });
+  prevBtn.addEventListener('click', () => { if (weekOffset>0){ weekOffset--; render(); } });
+  nextBtn.addEventListener('click', () => { if (weekOffset<MAX_WEEKS){ weekOffset++; render(); } });
+  form.querySelectorAll('.field').forEach(el => el.addEventListener('input', () => setErr(el,false)));
+
+  form.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const name = document.getElementById('name'), phone = document.getElementById('phone');
+    let bad = false;
+    if (!name.value.trim()){ setErr(name,true); bad=true; }
+    if (phone.value.replace(/\D/g,'').length < 7){ setErr(phone,true); bad=true; }
+    if (bad || !selected){
+      errBox.textContent = !selected ? 'Please pick a time above first.' : 'Please add your name and a valid phone number.';
+      errBox.classList.remove('hidden');
+      return;
+    }
+    errBox.classList.add('hidden');
+    const rec = { name:name.value.trim(), phone:phone.value.trim(), date:selected.iso, time:selected.time, submittedAt:new Date().toISOString() };
+    try { const all = JSON.parse(localStorage.getItem('appointmentRequests')||'[]'); all.push(rec); localStorage.setItem('appointmentRequests', JSON.stringify(all)); } catch(_){}
+    const nice = selected.date.toLocaleDateString('en-US',{weekday:'long', month:'long', day:'numeric'});
+    const when = `${nice} at ${fmtTime(selected.time)}`;
+    // Send the request to the clinic backend (Telegram + SMS). Fire-and-forget: the on-page
+    // confirmation shows regardless, so the picker still works if the backend isn't running.
+    fetch('/api/book', { method:'POST', headers:{'content-type':'application/json'},
+      body: JSON.stringify({ name:rec.name, phone:rec.phone, date:rec.date, time:rec.time, when, lang:'en' }) }).catch(()=>{});
+    successMsg.textContent = `Thanks, ${rec.name.split(' ')[0]}! Your appointment is set for ${nice} at ${fmtTime(selected.time)}. We'll text ${rec.phone} to confirm.`;
+    form.classList.add('hidden');
+    success.classList.remove('hidden');
+    success.scrollIntoView({behavior:'smooth', block:'center'});
+  });
+
+  document.getElementById('bookAgain').addEventListener('click', () => {
+    form.reset(); selected = null;
+    success.classList.add('hidden'); hint.classList.remove('hidden');
+    render();
+    document.getElementById('scheduler').scrollIntoView({behavior:'smooth', block:'center'});
+  });
+
+  render();
+})();
+
+/* =====================================================
+   CARE ASSISTANT (rule-based, offline, no medical advice)
+   ===================================================== */
+const chatFab = document.getElementById('chatFab');
+const chatWin = document.getElementById('chatWin');
+const chatBody = document.getElementById('chatBody');
+const chatForm = document.getElementById('chatForm');
+const chatInput = document.getElementById('chatInput');
+const quickWrap = document.getElementById('quickReplies');
+const fabOpen = document.getElementById('fabOpen'), fabClose = document.getElementById('fabClose');
+let greeted = false;
+
+const CLINIC = {
+  phone: '(555) 213-4600',
+  afterHours: '(555) 213-4699',
+  email: 'hello@drhashemipeds.com',
+  address: '128 Maple Grove Ave, Suite 200',
+  hours: 'Mon–Fri 8:30 am–5:30 pm, Sat 9 am–1 pm, closed Sunday',
+};
+
+const DEFAULT_CHIPS = ['Book a visit', 'Opening hours', 'Where are you?', 'Insurance', 'What ages?'];
+
+function toggleChat(open){
+  const isOpen = open ?? !chatWin.classList.contains('open');
+  chatWin.classList.toggle('open', isOpen);
+  fabOpen.classList.toggle('hidden', isOpen);
+  fabClose.classList.toggle('hidden', !isOpen);
+  chatFab.setAttribute('aria-label', isOpen ? 'Close care assistant' : 'Open care assistant');
+  if (isOpen){
+    if (!greeted){
+      greeted = true;
+      botSay("Hi! I'm the care assistant for Dr. Hashemi's office. I can help with appointments, hours, location, and what to expect. What do you need?");
+      renderChips(DEFAULT_CHIPS);
+    }
+    setTimeout(() => chatInput.focus(), 300);
+  }
+}
+chatFab.addEventListener('click', () => toggleChat());
+document.getElementById('chatClose').addEventListener('click', () => toggleChat(false));
+addEventListener('keydown', e => { if (e.key === 'Escape' && chatWin.classList.contains('open')) toggleChat(false); });
+
+function bubble(text, who){
+  const el = document.createElement('div');
+  el.className = 'msg ' + who;
+  el.innerHTML = text;
+  chatBody.appendChild(el);
+  chatBody.scrollTop = chatBody.scrollHeight;
+  return el;
+}
+function botSay(text){ bubble(text, 'bot'); }
+function userSay(text){ bubble(text, 'user'); }
+
+function renderChips(list){
+  quickWrap.innerHTML = '';
+  list.forEach(t => {
+    const b = document.createElement('button');
+    b.type = 'button'; b.className = 'qchip'; b.textContent = t;
+    b.addEventListener('click', () => handle(t));
+    quickWrap.appendChild(b);
+  });
+}
+
+function typing(){
+  const el = document.createElement('div');
+  el.className = 'msg bot typing';
+  el.innerHTML = '<span></span><span></span><span></span>';
+  chatBody.appendChild(el); chatBody.scrollTop = chatBody.scrollHeight;
+  return el;
+}
+
+/* intent matching */
+function reply(text){
+  const t = text.toLowerCase();
+  const has = (...w) => w.some(x => t.includes(x));
+
+  // 1) emergencies / medical symptoms — never advise, route to care
+  if (has('emergency','911','can\'t breath','cant breath','not breathing','seizure','unconscious','choking','bleeding a lot'))
+    return {m:`If this is a medical emergency, please call <strong>911</strong> now. For urgent after-hours advice, our nurse line is <a class="link-soft" href="tel:+15552134699">${CLINIC.afterHours}</a>.`, chips:['Book a visit','Opening hours']};
+
+  if (has('fever','cough','rash','vomit','throw up','diarrhea','sick','pain','hurts','hurt','symptom','sore throat','ear ache','earache','infection','medicine','dose','dosage','is it normal','should i worry','temperature'))
+    return {m:`I can't give medical advice or a diagnosis — Dr. Hashemi is the right person for that. We keep <strong>same-week sick visits</strong> open; I can help you request one, or call <a class="link-soft" href="tel:+15552134600">${CLINIC.phone}</a>. After hours, the nurse line is ${CLINIC.afterHours}. For anything severe, call 911.`, chips:['Book a sick visit','After-hours line']};
+
+  // 2) logistics
+  if (has('book','appointment','appt','schedule','visit','reserve','see the doctor','sick visit'))
+    return {m:`Happy to help you book! Scroll to the <strong>appointment form</strong> and pick a day and time — we'll confirm within one business day. Prefer to talk? Call <a class="link-soft" href="tel:+15552134600">${CLINIC.phone}</a>.`, action:'book', chips:['Take me to booking','Opening hours']};
+
+  if (has('take me to booking','go to booking','open the form'))
+    return {m:`Opening the booking form for you now.`, action:'book'};
+
+  if (has('hour','open','close','time','when are you','weekend','saturday','sunday'))
+    return {m:`Our hours are:<br><strong>${CLINIC.hours}</strong>.<br>Same-week sick visits are available — just ask.`, chips:['Book a visit','Where are you?']};
+
+  if (has('where','address','location','directions','parking','find you','map'))
+    return {m:`We're at <strong>${CLINIC.address}</strong>, Your City. There's free parking and the clinic is stroller accessible.`, chips:['Opening hours','Book a visit']};
+
+  if (has('phone','call','number','contact','email','reach'))
+    return {m:`You can reach us at <a class="link-soft" href="tel:+15552134600">${CLINIC.phone}</a> or <a class="link-soft" href="mailto:${CLINIC.email}">${CLINIC.email}</a>. After-hours nurse line: ${CLINIC.afterHours}.`, chips:['Book a visit','Opening hours']};
+
+  if (has('insurance','insured','coverage','cost','price','pay','fee','bill'))
+    return {m:`We accept <strong>most major insurance plans</strong> and bill them for you. Bring your card to the first visit. Not sure about your plan? Call us and we'll check.`, chips:['Book a visit','What to bring']};
+
+  if (has('age','how old','newborn','baby','infant','toddler','teen','adolescent','years old','child'))
+    return {m:`Dr. Hashemi cares for <strong>newborns through age 18</strong> — from first checkups and vaccinations to teen and adolescent health.`, chips:['Our services','Book a visit']};
+
+  if (has('service','offer','do you do','vaccin','immuniz','check-up','checkup','wellness','well child','physical','development','screening'))
+    return {m:`We offer newborn &amp; infant care, well-child check-ups, vaccinations, same-week sick visits, development &amp; behavior screening, and teen health. Anything specific I can point you to?`, chips:['Book a visit','What ages?']};
+
+  if (has('bring','first visit','new patient','paperwork','record','what do i need'))
+    return {m:`For a first visit, bring your <strong>insurance card, a photo ID, immunization records</strong> (if any), and a list of medications or allergies. Arriving 10 minutes early helps with paperwork.`, chips:['Book a visit','Insurance']};
+
+  if (has('refill','prescription','pharmacy','medication refill'))
+    return {m:`For refills, ask your pharmacy to send a request or call our office. Some medications need a quick check-in first, so please allow up to two business days.`, chips:['Call the office','Book a visit']};
+
+  if (has('cancel','reschedule','change my','move my'))
+    return {m:`No problem — to change or cancel a visit, call <a class="link-soft" href="tel:+15552134600">${CLINIC.phone}</a> and we'll sort it out.`, chips:['Opening hours','Book a visit']};
+
+  if (has('after hours','after-hours','night','weekend advice','nurse line'))
+    return {m:`Our <strong>24/7 nurse advice line</strong> is ${CLINIC.afterHours} for after-hours questions. For anything severe, call 911.`, chips:['Book a visit','Opening hours']};
+
+  if (has('hello','hi ','hey','salam','good morning','good afternoon') || t.trim()==='hi')
+    return {m:`Hello! 👋 How can I help — booking a visit, hours, or something else?`, chips:DEFAULT_CHIPS};
+
+  if (has('thank','thanks','great','awesome','perfect'))
+    return {m:`You're very welcome! Anything else I can help with?`, chips:DEFAULT_CHIPS};
+
+  // fallback
+  return {m:`I'm not sure I caught that, but I can help with <strong>booking, hours, location, insurance, services, and what to bring</strong>. For medical questions, please call <a class="link-soft" href="tel:+15552134600">${CLINIC.phone}</a>.`, chips:DEFAULT_CHIPS};
+}
+
+function handle(text){
+  userSay(text);
+  quickWrap.innerHTML = '';
+  const t = typing();
+  setTimeout(() => {
+    t.remove();
+    const r = reply(text);
+    botSay(r.m);
+    if (r.action === 'book'){
+      setTimeout(() => {
+        document.getElementById('book').scrollIntoView({behavior:'smooth'});
+      }, 400);
+    }
+    renderChips(r.chips || DEFAULT_CHIPS);
+  }, 550 + Math.random()*350);
+}
+
+chatForm.addEventListener('submit', e => {
+  e.preventDefault();
+  const v = chatInput.value.trim();
+  if (!v) return;
+  chatInput.value = '';
+  handle(v);
+});
+</script>
+</body>
+</html>

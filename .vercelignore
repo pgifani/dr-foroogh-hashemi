@@ -1,0 +1,13 @@
+# Server-side files (not used on Vercel's static hosting; they run on your VPS)
+server.mjs
+serve.mjs
+
+# Secrets and data — never deploy
+.env
+.env.*
+bookings.json
+
+# Local dev / docs
+.claude
+CLAUDE.md
+TELEGRAM-SETUP.md

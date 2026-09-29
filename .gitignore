@@ -1,0 +1,10 @@
+# Secrets and patient data — never commit
+.env
+.env.*
+bookings.json
+
+# Tooling
+node_modules
+.vercel
+
+.vercel
