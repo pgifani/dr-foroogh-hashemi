@@ -8,6 +8,7 @@ node_modules
 .env
 .env.*
 bookings.json
+blocks.json
 data
 
 # Not needed at runtime

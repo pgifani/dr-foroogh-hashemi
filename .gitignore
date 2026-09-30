@@ -2,6 +2,7 @@
 .env
 .env.*
 bookings.json
+blocks.json
 
 # Tooling
 node_modules

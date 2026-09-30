@@ -6,6 +6,7 @@ serve.mjs
 .env
 .env.*
 bookings.json
+blocks.json
 
 # Local dev / docs
 .claude

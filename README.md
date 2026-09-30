@@ -1,8 +1,11 @@
 # Ainoor — Pediatric Clinic Website & Booking Backend
 
 A bilingual (English + Persian/RTL) website for a doctor, with an online **appointment
-booking system**, an **AI-style care-assistant chatbot**, and a small **Node backend** that
-sends new bookings to the clinic's **Telegram** (and optionally **WhatsApp/SMS**).
+booking system**, an **AI-style care-assistant chatbot**, and a small **Node backend**. New
+bookings are pushed to the clinic's messaging apps — **Telegram and Bale (بله)** — with
+Confirm/Decline buttons, and the doctor can **manage availability (days off, blocked slots)
+straight from the bot** using Persian (Jalali/شمسی) or Gregorian dates. Patient SMS/WhatsApp is
+optional (Twilio).
 
 This README is both the documentation for this project **and a step-by-step playbook** so you
 can build and deploy the next doctor's site from scratch.
@@ -20,7 +23,7 @@ can build and deploy the next doctor's site from scratch.
 5. [Configuration (environment variables)](#5-configuration-environment-variables)
 6. [Deploy option A — Vercel (quick static demo)](#6-deploy-option-a--vercel-quick-static-demo)
 7. [Deploy option B — Your own VPS with Coolify (production)](#7-deploy-option-b--your-own-vps-with-coolify-production)
-8. [Turn on Telegram / WhatsApp / SMS](#8-turn-on-telegram--whatsapp--sms)
+8. [Messaging channels & bot commands (Telegram + Bale)](#8-messaging-channels--bot-commands-telegram--bale)
 9. [How to add a NEW client site](#9-how-to-add-a-new-client-site)
 10. [Troubleshooting (the gotchas we hit)](#10-troubleshooting-the-gotchas-we-hit)
 11. [Security notes](#11-security-notes)
@@ -34,15 +37,22 @@ A single, self-contained web project:
 
 - **Two pages:** `index.html` (English) and `fa.html` (Persian, right-to-left) with a language
   switcher. Same design, translated content.
-- **Appointment booking:** a weekly calendar of time slots. The patient taps a free slot, then
-  gives just their **name + phone**. Shows an instant on-page confirmation.
+- **Appointment booking:** a weekly calendar showing **real availability** — a slot is open
+  unless it's in the past, already booked, or blocked by the doctor. The patient taps a free
+  slot, gives just their **name + phone**, and sees an instant on-page confirmation. The Persian
+  page shows Jalali (شمسی) dates.
 - **AI care assistant:** a floating chatbot answering logistics (hours, location, insurance,
   services, what to bring). It is rule-based and **deliberately never gives medical advice** —
   it routes symptoms to the doctor and emergencies to the local emergency number.
-- **Backend (`server.mjs`):** serves the site **and** exposes `POST /api/book`. On a booking it
-  messages a **Telegram** staff chat (with Confirm/Decline buttons) and can text the patient via
-  **Twilio SMS/WhatsApp**. Runs in a safe **mock mode** (prints messages to the console) until you
-  add credentials.
+- **Booking → Telegram + Bale:** every booking is pushed to the clinic's **Telegram and Bale**
+  chats with **✅ Confirm / ❌ Decline** buttons; confirming on one updates both. The bot also
+  lists appointments (`/bookings`, `/pending`, `/today`).
+- **Availability managed from the bot:** the doctor closes a day or a single time from the chat
+  (`/availability` buttons, `/off فردا`, `/block 1405/07/11 10:00`, …) and the website's calendar
+  reflects it immediately. Persian (Jalali) **and** Gregorian dates both work.
+- **Backend (`server.mjs`):** serves the site and exposes `POST /api/book` + `GET /api/availability`.
+  **Zero npm dependencies.** Runs in a safe **mock mode** (prints messages to the console) until you
+  add credentials. Patient **SMS/WhatsApp via Twilio** is optional.
 
 **Design choices:** custom teal + marigold palette (not generic "medical blue"), Fraunces +
 Plus Jakarta Sans fonts (English), Vazirmatn (Persian). No frameworks, no build step.
@@ -54,18 +64,21 @@ Plus Jakarta Sans fonts (English), Vazirmatn (Persian). No frameworks, no build 
 ```
   Patient's browser
         │  loads index.html / fa.html  (+ 1.png … 4.png)
+        │  GET  /api/availability   → greys out days off / blocked / already-booked slots
         │  POST /api/book  { name, phone, date, time, lang }
         ▼
   server.mjs  (Node 22, zero npm dependencies)
         ├─ serves the static site
-        ├─ stores the booking → bookings.json   (DATA_DIR)
-        ├─ Telegram sendMessage → staff chat  (Confirm / Decline buttons)
-        ├─ Twilio SMS / WhatsApp → patient
-        └─ long-polls Telegram for the staff's Confirm/Decline tap → texts the patient the result
+        ├─ stores bookings → bookings.json  ·  availability blocks → blocks.json   (DATA_DIR)
+        ├─ pushes the booking to Telegram AND Bale staff chats (Confirm / Decline buttons)
+        ├─ (optional) Twilio SMS / WhatsApp → patient
+        └─ long-polls each channel for: Confirm/Decline taps, and /bookings, /off, /block … commands
 ```
 
-- **No database** — bookings are appended to a `bookings.json` file. Simple and enough for one
-  clinic. (Move to SQLite/Postgres later if you want.)
+- **Channel-agnostic bot:** Telegram and Bale share the same bot API, so one code path serves
+  both. Adding another (e.g. Eitaa) is one more entry in the `CHANNELS` array in `server.mjs`.
+- **No database** — bookings/blocks are small JSON files on the data volume. Enough for a clinic;
+  move to SQLite/Postgres later if you want.
 - **No dependencies** — uses Node's built-in `http` and `fetch`. That's why it deploys anywhere
   with just `node server.mjs`.
 
@@ -78,20 +91,22 @@ website/
 ├── index.html            English site (structure, styles, and all JS inline)
 ├── fa.html               Persian (RTL) site
 ├── 1.png … 4.png         Photos used on the pages
-├── server.mjs            The production server: static + /api/book + Telegram + Twilio
+├── server.mjs            Production server: static + /api/book + /api/availability
+│                         + Telegram/Bale bot + Twilio ; includes Jalali↔Gregorian conversion
 ├── serve.mjs             A tiny static-only server (local preview, no backend)
 ├── Dockerfile            How Coolify/Docker builds and runs the app
-├── .dockerignore         Files kept out of the Docker image (secrets, docs, serve.mjs…)
+├── .dockerignore         Files kept out of the Docker image (secrets, data, docs, serve.mjs…)
 ├── vercel.json           Config for the Vercel static deploy (framework: null = static)
 ├── .vercelignore         Files kept out of the Vercel deploy
-├── .gitignore            Never commit .env or bookings.json
-├── TELEGRAM-SETUP.md      Full Telegram + Twilio setup guide
+├── .gitignore            Never commit .env, bookings.json or blocks.json
+├── TELEGRAM-SETUP.md      Telegram + Bale + Twilio setup guide
 ├── CLAUDE.md             Notes for the AI assistant working on this repo
 └── README.md             ← this file
 ```
 
-Files that are **never committed** (in `.gitignore`): `.env` (secrets) and `bookings.json`
-(patient data).
+Runtime data files created on the data volume (never committed): `bookings.json` (patient
+requests) and `blocks.json` (the doctor's days off / blocked slots). `.env` holds secrets and is
+also never committed.
 
 ---
 
@@ -124,9 +139,11 @@ local runs) or in your host's environment-variable settings (Vercel / Coolify).
 | Variable | What it does |
 |---|---|
 | `PORT` | Port to listen on (default `3000`). |
-| `DATA_DIR` | Folder for `bookings.json`. Set to a mounted volume in production (e.g. `/app/data`) so data survives redeploys. |
-| `TELEGRAM_BOT_TOKEN` | From **@BotFather**. Enables Telegram. Without it → mock mode. |
-| `TELEGRAM_STAFF_CHAT_ID` | The chat that receives bookings. Message the bot `/id` to learn it. |
+| `DATA_DIR` | Folder for `bookings.json` + `blocks.json`. Set to a mounted volume in production (e.g. `/app/data`) so data survives redeploys. |
+| `TELEGRAM_BOT_TOKEN` | From **@BotFather** (in Telegram). Enables Telegram. |
+| `TELEGRAM_STAFF_CHAT_ID` | The Telegram chat that receives bookings. Message the bot `/id` to learn it. |
+| `BALE_BOT_TOKEN` | From **@BotFather** (in the **Bale** app). Enables Bale — the same features as Telegram. |
+| `BALE_STAFF_CHAT_ID` | The Bale chat that receives bookings. Message the Bale bot `/id` to learn it. |
 | `TWILIO_ACCOUNT_SID` | Twilio account SID (enables real SMS/WhatsApp). |
 | `TWILIO_AUTH_TOKEN` | Twilio auth token. |
 | `TWILIO_FROM_NUMBER` | Your Twilio SMS number (`+1555…`). Enables **SMS**. |
@@ -232,21 +249,47 @@ and any `TWILIO_*` values → **Redeploy**. (See section 8.)
 
 ---
 
-## 8. Turn on Telegram / WhatsApp / SMS
+## 8. Messaging channels & bot commands (Telegram + Bale)
 
-Full details in `TELEGRAM-SETUP.md`. In short:
+The bot runs on **Telegram and/or Bale (بله)** — identical features on both (they share one bot
+API). Any channel whose token is set becomes active; with none set, the app is in mock mode.
+Full setup in `TELEGRAM-SETUP.md`.
 
-1. **Telegram bot:** open **@BotFather** → `/newbot` → copy the token → set
-   `TELEGRAM_BOT_TOKEN`.
-2. **Staff chat id:** message your new bot `/id`; it replies with the number → set
-   `TELEGRAM_STAFF_CHAT_ID`.
-3. **SMS (optional):** create a Twilio account, get a number, set `TWILIO_ACCOUNT_SID`,
-   `TWILIO_AUTH_TOKEN`, `TWILIO_FROM_NUMBER`, `TWILIO_DEFAULT_COUNTRY`.
-4. **WhatsApp (optional):** same Twilio account; use the WhatsApp **sandbox** for testing, then a
-   registered sender + approved template for production. Set `TWILIO_WHATSAPP_FROM`.
+### Connect a channel
+1. **Create the bot** — open **@BotFather** in **Telegram** and/or in the **Bale** app → `/newbot`
+   → choose a name + username → copy the token.
+2. **Add the token** in Coolify → Environment Variables → **Redeploy**:
+   - Telegram → `TELEGRAM_BOT_TOKEN`  ·  Bale → `BALE_BOT_TOKEN`
+3. **Get the chat id** — open your bot in that app and send `/id`; it replies with the number.
+   Add it as `TELEGRAM_STAFF_CHAT_ID` / `BALE_STAFF_CHAT_ID` → **Redeploy**.
 
-Redeploy after changing env vars. Test a booking → the staff chat gets it with Confirm/Decline
-buttons; tapping notifies the patient.
+### Bot commands (staff chat only)
+**Appointments**
+- `/bookings` – list all · `/pending` – awaiting confirmation · `/today` – today's
+
+**Availability** (the website calendar updates immediately)
+- `/availability` – next 14 days as buttons (Persian dates); tap to turn a day **⛔ off** / **✅ on**
+- `/off <date>` · `/on <date>` – close / reopen a whole day
+- `/block <date> <time>` · `/unblock <date> <time>` – block / free one slot
+- `/blocked` – list current days off & blocked slots
+
+**Dates** accept `today`/`امروز`, `tomorrow`/`فردا`, a **Jalali** date `1405/07/11` (Persian
+digits OK), or a **Gregorian** date `2026-10-08`. A year under 1700 is treated as Jalali and
+converted automatically. The grid buttons and confirmations are shown in Persian.
+
+When a booking arrives, staff tap **✅ Confirm / ❌ Decline** — this updates the message on every
+channel and (if Twilio is configured) texts the patient.
+
+### Patient SMS / WhatsApp (optional — Twilio)
+- **SMS:** create a Twilio account + number, set `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`,
+  `TWILIO_FROM_NUMBER`, `TWILIO_DEFAULT_COUNTRY` (e.g. `+44`).
+- **WhatsApp:** same account; test with the WhatsApp **sandbox**, then a registered sender +
+  approved template for production. Set `TWILIO_WHATSAPP_FROM`.
+- **Until Twilio is configured, no patient text is actually sent** (it's logged, not delivered).
+  The on-page confirmation still shows and the doctor still gets every booking on Telegram/Bale.
+  If you're not using SMS yet, soften the confirmation copy so it doesn't promise a text.
+
+Redeploy after changing any env var.
 
 ---
 
@@ -263,7 +306,8 @@ The repeatable process for each new doctor:
 4. **In Coolify → + New Resource → Public Git Repository** → Dockerfile build → port 3000 → Deploy.
 5. **Add a subdomain** for the client (`clinic-name.ainoor.io` or the client's own domain) and
    redeploy for HTTPS.
-6. **Add that client's own** Telegram/Twilio env vars.
+6. **Add that client's own** channel env vars (`TELEGRAM_*` and/or `BALE_*`, plus `TWILIO_*` if
+   using SMS), and a persistent-storage mount at `/app/data`.
 
 > Tip: register a client's **own domain in the client's name** so they own their brand. Keep the
 > bare `ainoor.io` for your agency. One VPS can host many client sites — scale the server up
@@ -283,15 +327,21 @@ The repeatable process for each new doctor:
 | Coolify app status **"Exited"** | Build strategy was **Railpack/Nixpacks**, which can't run an app with no `package.json`. Fix: set Build strategy to **Dockerfile**. |
 | Domain shows **404** / SSL cert invalid after adding it in Coolify | The proxy/cert only apply on the next deploy. Fix: **Redeploy** the app. |
 | Bookings disappear after a redeploy | `bookings.json` was inside the container. Fix: add **Persistent Storage** at `/app/data` + env `DATA_DIR=/app/data`. |
-| Telegram/SMS not sending | Running in mock mode (messages print to the container logs). Add the `TELEGRAM_*` / `TWILIO_*` env vars and redeploy. |
+| Telegram/Bale not sending | Running in mock mode (messages print to the container logs). Add `TELEGRAM_BOT_TOKEN`/`BALE_BOT_TOKEN` + the matching `*_STAFF_CHAT_ID` and redeploy. |
+| Booking says "we'll text you" but no SMS arrives | Twilio isn't configured, so patient SMS is mock (logged only). Add `TWILIO_*` env vars, or change the confirmation copy so it doesn't promise a text. |
+| Bot doesn't reply to `/id` | Token not active yet — check you added it in Coolify and **redeployed**; look for `telegram: polling started` / `bale: polling started` in the logs. |
+| Website calendar / Persian page not updating after a change | Browser cache. Do a **hard refresh** (Ctrl/Cmd+Shift+R) or open in a private window. The server sends `no-store`, but tabs can hold a stale copy. |
 | DNS not resolving | Wait a few minutes after adding the A record; verify with `nslookup <subdomain>`. |
 
 ---
 
 ## 11. Security notes
 
-- **Never commit secrets.** `.env` and `bookings.json` are gitignored. Secrets live only in the
-  host's environment variables.
+- **Never commit secrets or patient data.** `.env`, `bookings.json` and `blocks.json` are
+  gitignored. Secrets live only in the host's environment variables.
+- **Staff-only bot commands.** `/bookings` and all availability commands only respond to the
+  configured staff chat id — so if someone else finds the bot, they can't see patient data or
+  change availability.
 - **Patient data = privacy law** (GDPR/etc.). Collect the minimum (name + phone), add a privacy
   policy + consent before going fully live, and keep the chatbot to **non-medical** logistics.
 - **Coolify admin:** register it immediately (first visitor becomes admin) and use a strong
