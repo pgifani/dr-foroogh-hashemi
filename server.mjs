@@ -57,6 +57,31 @@ try { if (existsSync(DB)) bookings = JSON.parse(readFileSync(DB, "utf8")); } cat
 const save = () => { try { writeFileSync(DB, JSON.stringify(bookings, null, 2)); } catch (e) { console.error("save failed:", e.message); } };
 const newId = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
 
+/* ---------- availability blocks (days off + blocked slots), set from the bot ---------- */
+const BLOCKS_DB = join(DATA_DIR, "blocks.json");
+let blocks = { days: [], slots: [] };   // days: ["YYYY-MM-DD"], slots: ["YYYY-MM-DD HH:MM"]
+try { if (existsSync(BLOCKS_DB)) blocks = { days: [], slots: [], ...JSON.parse(readFileSync(BLOCKS_DB, "utf8")) }; } catch {}
+const saveBlocks = () => { try { writeFileSync(BLOCKS_DB, JSON.stringify(blocks, null, 2)); } catch (e) { console.error("saveBlocks failed:", e.message); } };
+const isoAdd = (days) => { const d = new Date(); d.setUTCHours(0, 0, 0, 0); d.setUTCDate(d.getUTCDate() + days); return d.toISOString().split("T")[0]; };
+function parseDate(s) {
+  s = (s || "").trim().toLowerCase();
+  if (s === "today") return isoAdd(0);
+  if (s === "tomorrow") return isoAdd(1);
+  return /^\d{4}-\d{2}-\d{2}$/.test(s) ? s : null;
+}
+// Inline keyboard: next 14 days, tap to toggle a whole day off/on.
+function dayGridMarkup() {
+  const rows = [];
+  for (let i = 0; i < 14; i++) {
+    const iso = isoAdd(i);
+    const off = blocks.days.includes(iso);
+    const label = `${off ? "⛔" : "✅"} ${new Date(iso + "T00:00:00Z").toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short", timeZone: "UTC" })}`;
+    if (i % 2 === 0) rows.push([]);
+    rows[rows.length - 1].push({ text: label, callback_data: `dayoff:${iso}` });
+  }
+  return { inline_keyboard: rows };
+}
+
 /* ---------- messaging helpers (Telegram + Bale use the same bot API) ---------- */
 async function api(ch, method, payload) {
   try {
@@ -151,7 +176,23 @@ const patientMsg = (b, kind) => {
 
 /* ---------- bot updates: Confirm/Decline + commands (Telegram + Bale) ---------- */
 async function handleCallback(ch, cq) {
-  const [action, id] = (cq.data || "").split(":");
+  const data = cq.data || "";
+  const ci = data.indexOf(":");
+  const action = ci < 0 ? data : data.slice(0, ci);
+  const id = ci < 0 ? "" : data.slice(ci + 1);
+
+  // Day on/off toggle from the /availability grid (staff only).
+  if (action === "dayoff") {
+    if (ch.staff && String(cq.from && cq.from.id) !== String(ch.staff) && String(cq.message && cq.message.chat && cq.message.chat.id) !== String(ch.staff)) {
+      return void api(ch, "answerCallbackQuery", { callback_query_id: cq.id, text: "Staff only." });
+    }
+    const wasOff = blocks.days.includes(id);
+    blocks.days = wasOff ? blocks.days.filter((x) => x !== id) : [...blocks.days, id];
+    saveBlocks();
+    await api(ch, "editMessageReplyMarkup", { chat_id: cq.message.chat.id, message_id: cq.message.message_id, reply_markup: dayGridMarkup() });
+    return void api(ch, "answerCallbackQuery", { callback_query_id: cq.id, text: wasOff ? `${id} reopened` : `${id} closed` });
+  }
+
   const b = bookings.find((x) => x.id === id);
   if (!b) { await api(ch, "answerCallbackQuery", { callback_query_id: cq.id, text: "This booking is no longer available." }); return; }
   if (b.status !== "pending") { await api(ch, "answerCallbackQuery", { callback_query_id: cq.id, text: `Already ${b.status}.` }); return; }
@@ -174,18 +215,60 @@ async function handleCallback(ch, cq) {
 
 async function handleMessage(ch, m) {
   const chat = m.chat.id;
-  const t = (m.text || "").trim().toLowerCase();
+  const raw = (m.text || "").trim();
+  const parts = raw.split(/\s+/);
+  const t = (parts[0] || "").toLowerCase();       // the command word
   const envName = ch.name === "bale" ? "BALE_STAFF_CHAT_ID" : "TELEGRAM_STAFF_CHAT_ID";
+  const isStaff = !ch.staff || String(chat) === String(ch.staff);
+  const say = (text, extra = {}) => api(ch, "sendMessage", { chat_id: chat, text, ...extra });
 
   if (t === "/id" || t === "/start" || t === "/help")
-    return void api(ch, "sendMessage", { chat_id: chat, text:
+    return void say(
       `Your chat ID is ${chat}\nPut it in ${envName} to receive booking requests here.\n\n` +
-      `Commands:\n/bookings – list all appointments\n/pending – only pending\n/today – today's appointments` });
+      `APPOINTMENTS\n/bookings – list all\n/pending – pending only\n/today – today's\n\n` +
+      `AVAILABILITY (staff)\n/availability – tap days to turn off/on\n/off <date> – close a day (e.g. /off tomorrow  ·  /off 2026-10-08)\n/on <date> – reopen a day\n/block <date> <time> – block one slot (e.g. /block 2026-10-08 10:00)\n/unblock <date> <time> – unblock a slot\n/blocked – show current blocks`);
+
+  // ----- availability management (staff only) -----
+  if (["/availability", "/dayoff", "/off", "/on", "/block", "/unblock", "/blocked"].includes(t)) {
+    if (!isStaff) return void say("This command is only available to the clinic staff chat.");
+
+    if (t === "/availability" || t === "/dayoff")
+      return void say("Tap a day to turn it OFF (⛔) or back ON (✅) for bookings:", { reply_markup: dayGridMarkup() });
+
+    if (t === "/blocked") {
+      const days = blocks.days.slice().sort(), slots = blocks.slots.slice().sort();
+      if (!days.length && !slots.length) return void say("No blocks — all business hours are open.");
+      let txt = "⛔ Current blocks:";
+      if (days.length) txt += "\n\nDays off:\n" + days.map((d) => "• " + d).join("\n");
+      if (slots.length) txt += "\n\nBlocked slots:\n" + slots.map((s) => "• " + s).join("\n");
+      return void say(txt);
+    }
+
+    if (t === "/off" || t === "/on") {
+      const d = parseDate(parts[1]);
+      if (!d) return void say("Give a date, e.g.  /off tomorrow  or  /off 2026-10-08");
+      if (t === "/off") { if (!blocks.days.includes(d)) blocks.days.push(d); }
+      else blocks.days = blocks.days.filter((x) => x !== d);
+      saveBlocks();
+      return void say(t === "/off" ? `⛔ ${d} is now closed for bookings.` : `✅ ${d} is open again.`);
+    }
+
+    if (t === "/block" || t === "/unblock") {
+      const d = parseDate(parts[1]);
+      const mt = (parts[2] || "").trim().match(/^(\d{1,2}):(\d{2})$/);
+      if (!d || !mt) return void say("Use:  /block 2026-10-08 10:00");
+      const key = `${d} ${mt[1].padStart(2, "0")}:${mt[2]}`;
+      if (t === "/block") { if (!blocks.slots.includes(key)) blocks.slots.push(key); }
+      else blocks.slots = blocks.slots.filter((x) => x !== key);
+      saveBlocks();
+      return void say(t === "/block" ? `⛔ Slot ${key} is blocked.` : `✅ Slot ${key} is unblocked.`);
+    }
+  }
 
   if (["/bookings", "/list", "/appointments", "/pending", "/today"].includes(t)) {
     // Patient data: only the configured staff chat may list bookings.
-    if (ch.staff && String(chat) !== String(ch.staff))
-      return void api(ch, "sendMessage", { chat_id: chat, text: "This command is only available to the clinic staff chat." });
+    if (!isStaff)
+      return void say("This command is only available to the clinic staff chat.");
 
     let list = bookings.slice().sort((a, b) => (a.date + a.time).localeCompare(b.date + b.time));
     let title = "All appointments";
@@ -276,6 +359,11 @@ createServer(async (req, res) => {
   const path = (req.url || "/").split("?")[0];
   if (req.method === "POST" && path === "/api/book") return handleBook(req, res);
   if (req.method === "GET" && path === "/api/bookings") return json(res, 200, bookings); // local convenience view
+  if (req.method === "GET" && path === "/api/availability") {
+    // The website reads this to grey out days off, blocked slots, and already-taken slots.
+    const bookedSlots = bookings.filter((b) => b.status !== "declined").map((b) => `${b.date} ${b.time}`);
+    return json(res, 200, { blockedDays: blocks.days, blockedSlots: blocks.slots, bookedSlots });
+  }
   if (req.method === "GET") return serveStatic(req, res);
   res.writeHead(405); res.end("405");
 }).listen(PORT, () => {
@@ -291,6 +379,10 @@ const BOT_COMMANDS = [
   { command: "bookings", description: "List all appointments" },
   { command: "pending", description: "Show pending appointments" },
   { command: "today", description: "Today's appointments" },
+  { command: "availability", description: "Turn days off/on (buttons)" },
+  { command: "off", description: "Close a day — /off tomorrow" },
+  { command: "on", description: "Reopen a day — /on 2026-10-08" },
+  { command: "blocked", description: "Show current blocks" },
   { command: "id", description: "Show this chat's ID" },
 ];
 for (const ch of CHANNELS) {

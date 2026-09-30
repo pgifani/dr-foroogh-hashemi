@@ -697,6 +697,15 @@ document.querySelectorAll('.acc-btn').forEach(btn => {
 
   let weekOffset = 0;
   let selected = null;
+  let blockedDays = new Set(), blockedSlots = new Set(), bookedSlots = new Set();
+  async function loadAvailability(){
+    try {
+      const a = await (await fetch('/api/availability', {cache:'no-store'})).json();
+      blockedDays  = new Set(a.blockedDays  || []);
+      blockedSlots = new Set(a.blockedSlots || []);
+      bookedSlots  = new Set(a.bookedSlots  || []);
+    } catch(_){}
+  }
 
   const faDigit = s => String(s).replace(/\d/g, d => '۰۱۲۳۴۵۶۷۸۹'[d]);
   const startOfToday = () => { const d = new Date(); d.setHours(0,0,0,0); return d; };
@@ -710,9 +719,10 @@ document.querySelectorAll('.acc-btn').forEach(btn => {
     return wd === HALF_DAY ? HALF_SLOTS : FULL_SLOTS;
   }
   function isOpen(dISO, time){
-    let h=0; const s=dISO+time; for(let i=0;i<s.length;i++){ h=(h*31 + s.charCodeAt(i))>>>0; }
     if (new Date(dISO+'T'+time+':00') < new Date()) return false;
-    return (h % 100) >= 35;
+    if (blockedSlots.has(dISO + ' ' + time)) return false;
+    if (bookedSlots.has(dISO + ' ' + time)) return false;
+    return true;
   }
 
   function render(){
@@ -737,11 +747,12 @@ document.querySelectorAll('.acc-btn').forEach(btn => {
                         <div class="text-[.95rem] font-semibold text-ink">${day.toLocaleDateString('fa-IR',{month:'short',day:'numeric'})}</div>`;
       col.appendChild(head);
 
-      const slots = slotsFor(day);
+      const dayOff = blockedDays.has(dISO);
+      const slots = dayOff ? [] : slotsFor(day);
       if (!slots.length){
         const closed = document.createElement('div');
         closed.className = 'text-center text-[.74rem] text-ink-soft/70 py-3 rounded-xl bg-black/[.02]';
-        closed.textContent = 'تعطیل';
+        closed.textContent = dayOff ? 'مرخصی' : 'تعطیل';
         col.appendChild(closed);
       } else {
         const stack = document.createElement('div');
@@ -817,11 +828,11 @@ document.querySelectorAll('.acc-btn').forEach(btn => {
   document.getElementById('bookAgain').addEventListener('click', () => {
     form.reset(); selected = null;
     success.classList.add('hidden'); hint.classList.remove('hidden');
-    render();
+    loadAvailability().then(render);
     document.getElementById('scheduler').scrollIntoView({behavior:'smooth', block:'center'});
   });
 
-  render();
+  loadAvailability().then(render);
 })();
 
 /* =====================================================
