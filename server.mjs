@@ -164,9 +164,35 @@ async function handleCallback(cq) {
 }
 
 async function handleMessage(m) {
+  const chat = m.chat.id;
   const t = (m.text || "").trim().toLowerCase();
-  if (t === "/id" || t === "/start")
-    await tg("sendMessage", { chat_id: m.chat.id, text: `Your chat ID is ${m.chat.id}\nPut it in TELEGRAM_STAFF_CHAT_ID to receive booking requests here.` });
+
+  if (t === "/id" || t === "/start" || t === "/help")
+    return void tg("sendMessage", { chat_id: chat, text:
+      `Your chat ID is ${chat}\nPut it in TELEGRAM_STAFF_CHAT_ID to receive booking requests here.\n\n` +
+      `Commands:\n/bookings – list all appointments\n/pending – only pending\n/today – today's appointments` });
+
+  if (["/bookings", "/list", "/appointments", "/pending", "/today"].includes(t)) {
+    // Patient data: only the configured staff chat may list bookings.
+    if (STAFF && String(chat) !== String(STAFF))
+      return void tg("sendMessage", { chat_id: chat, text: "This command is only available to the clinic staff chat." });
+
+    let list = bookings.slice().sort((a, b) => (a.date + a.time).localeCompare(b.date + b.time));
+    let title = "All appointments";
+    if (t === "/pending") { list = list.filter(b => b.status === "pending"); title = "Pending appointments"; }
+    if (t === "/today") { const today = new Date().toISOString().split("T")[0]; list = list.filter(b => b.date === today); title = "Today's appointments"; }
+
+    if (!list.length)
+      return void tg("sendMessage", { chat_id: chat, text: `📋 ${title}: none yet.` });
+
+    const icon = s => (s === "confirmed" ? "✅" : s === "declined" ? "❌" : "⏳");
+    const MAX = 30;
+    const lines = list.slice(0, MAX).map(b =>
+      `${icon(b.status)} ${b.name}\n   📞 ${b.phone} · 🕒 ${b.when}${b.lang === "fa" ? " · 🌐 FA" : ""}`);
+    let text = `📋 ${title} (${list.length})\n\n` + lines.join("\n\n");
+    if (list.length > MAX) text += `\n\n… and ${list.length - MAX} more.`;
+    return void tg("sendMessage", { chat_id: chat, text });
+  }
 }
 
 async function poll() {
@@ -252,4 +278,13 @@ createServer(async (req, res) => {
   console.log(WA_FROM ? "Patient WhatsApp: Twilio configured." : "Patient WhatsApp: off (set TWILIO_WHATSAPP_FROM to enable).");
 });
 
-if (!MOCK) poll();
+if (!MOCK) {
+  // Show the commands in Telegram's menu.
+  tg("setMyCommands", { commands: [
+    { command: "bookings", description: "List all appointments" },
+    { command: "pending", description: "Show pending appointments" },
+    { command: "today", description: "Today's appointments" },
+    { command: "id", description: "Show this chat's ID" },
+  ]});
+  poll();
+}
