@@ -39,10 +39,15 @@ function loadEnv() {
   return env;
 }
 const ENV = loadEnv();
-const TOKEN = (ENV.TELEGRAM_BOT_TOKEN || "").trim();
-const STAFF = (ENV.TELEGRAM_STAFF_CHAT_ID || "").trim();
 const PORT = Number(ENV.PORT) || 3000;
-const MOCK = !TOKEN;
+
+// Staff messaging channels. Telegram and Bale share the same bot API, so one code path serves both.
+// A channel is "active" when its bot token is set.
+const CHANNELS = [
+  { name: "telegram", base: "https://api.telegram.org/bot", token: (ENV.TELEGRAM_BOT_TOKEN || "").trim(), staff: (ENV.TELEGRAM_STAFF_CHAT_ID || "").trim() },
+  { name: "bale",     base: "https://tapi.bale.ai/bot",     token: (ENV.BALE_BOT_TOKEN || "").trim(),     staff: (ENV.BALE_STAFF_CHAT_ID || "").trim() },
+].filter((c) => c.token);
+const MOCK = CHANNELS.length === 0;
 
 /* ---------- booking store (persisted to bookings.json) ---------- */
 const DATA_DIR = process.env.DATA_DIR || ROOT;   // mount a volume here in prod (Coolify)
@@ -52,36 +57,38 @@ try { if (existsSync(DB)) bookings = JSON.parse(readFileSync(DB, "utf8")); } cat
 const save = () => { try { writeFileSync(DB, JSON.stringify(bookings, null, 2)); } catch (e) { console.error("save failed:", e.message); } };
 const newId = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
 
-/* ---------- Telegram helpers ---------- */
-async function tg(method, payload) {
-  if (MOCK) { console.log(`[MOCK telegram.${method}]`, JSON.stringify(payload)); return { ok: true, mock: true }; }
+/* ---------- messaging helpers (Telegram + Bale use the same bot API) ---------- */
+async function api(ch, method, payload) {
   try {
-    const r = await fetch(`https://api.telegram.org/bot${TOKEN}/${method}`, {
+    const r = await fetch(`${ch.base}${ch.token}/${method}`, {
       method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(payload),
     });
     const j = await r.json();
-    if (!j.ok) console.error(`telegram.${method} error:`, j.description);
+    if (!j.ok) console.error(`${ch.name}.${method} error:`, j.description || JSON.stringify(j).slice(0, 200));
     return j;
-  } catch (e) { console.error(`telegram.${method} failed:`, e.message); return { ok: false }; }
+  } catch (e) { console.error(`${ch.name}.${method} failed:`, e.message); return { ok: false }; }
 }
 
-function staffText(b) {
+function staffText(b) {   // plain text so it renders identically on Telegram and Bale
   const site = b.lang === "fa" ? "Persian site" : "English site";
-  return `🗓 *New appointment request*\n\n` +
-    `👤 ${escapeMd(b.name)}\n📞 ${escapeMd(b.phone)}\n🕒 ${escapeMd(b.when)}\n🌐 ${site}\n\n` +
-    `Status: ⏳ pending`;
+  return `🗓 New appointment request\n\n👤 ${b.name}\n📞 ${b.phone}\n🕒 ${b.when}\n🌐 ${site}\n\nStatus: ⏳ pending`;
 }
-const escapeMd = (s) => String(s).replace(/([_*[\]()~`>#+\-=|{}.!])/g, "\\$1");
+const bookingMarkup = (b) => ({ inline_keyboard: [[
+  { text: "✅ Confirm", callback_data: `confirm:${b.id}` },
+  { text: "❌ Decline", callback_data: `decline:${b.id}` },
+]] });
 
+// Send the booking to every active channel's staff chat.
 async function notifyStaff(b) {
-  const res = await tg("sendMessage", {
-    chat_id: STAFF || "@MOCK", text: staffText(b), parse_mode: "MarkdownV2",
-    reply_markup: { inline_keyboard: [[
-      { text: "✅ Confirm", callback_data: `confirm:${b.id}` },
-      { text: "❌ Decline", callback_data: `decline:${b.id}` },
-    ]] },
-  });
-  if (res.result) { b.staffChatId = res.result.chat.id; b.staffMsgId = res.result.message_id; save(); }
+  const text = staffText(b);
+  b.staffMsgs = b.staffMsgs || {};
+  if (MOCK) { console.log(`[MOCK staff message]\n${text}`); return; }
+  for (const ch of CHANNELS) {
+    if (!ch.staff) continue;
+    const res = await api(ch, "sendMessage", { chat_id: ch.staff, text, reply_markup: bookingMarkup(b) });
+    if (res.result) b.staffMsgs[ch.name] = { chatId: res.result.chat.id, msgId: res.result.message_id };
+  }
+  save();
 }
 
 /* ---------- patient SMS (Twilio via REST, optional) ---------- */
@@ -142,40 +149,43 @@ const patientMsg = (b, kind) => {
     : `Sorry, ${b.when} isn't available. Please call us to pick another time. — Dr. Hashemi's office`;
 };
 
-/* ---------- Telegram long-poll (Confirm/Decline + /id onboarding) ---------- */
-async function handleCallback(cq) {
+/* ---------- bot updates: Confirm/Decline + commands (Telegram + Bale) ---------- */
+async function handleCallback(ch, cq) {
   const [action, id] = (cq.data || "").split(":");
   const b = bookings.find((x) => x.id === id);
-  if (!b) { await tg("answerCallbackQuery", { callback_query_id: cq.id, text: "This booking is no longer available." }); return; }
-  if (b.status !== "pending") { await tg("answerCallbackQuery", { callback_query_id: cq.id, text: `Already ${b.status}.` }); return; }
+  if (!b) { await api(ch, "answerCallbackQuery", { callback_query_id: cq.id, text: "This booking is no longer available." }); return; }
+  if (b.status !== "pending") { await api(ch, "answerCallbackQuery", { callback_query_id: cq.id, text: `Already ${b.status}.` }); return; }
 
   b.status = action === "confirm" ? "confirmed" : "declined";
   b.decidedAt = new Date().toISOString();
   save();
 
   const mark = b.status === "confirmed" ? "✅ CONFIRMED" : "❌ DECLINED";
-  await tg("editMessageText", {
-    chat_id: cq.message.chat.id, message_id: cq.message.message_id,
-    text: staffText(b).replace(/Status: ⏳ pending/, `Status: ${mark} by ${escapeMd(cq.from.first_name || "staff")}`),
-    parse_mode: "MarkdownV2",
-  });
-  await tg("answerCallbackQuery", { callback_query_id: cq.id, text: b.status === "confirmed" ? "Confirmed — patient notified." : "Declined — patient notified." });
+  const who = (cq.from && (cq.from.first_name || cq.from.username)) || "staff";
+  const finalText = staffText(b).replace("Status: ⏳ pending", `Status: ${mark} by ${who}`);
+  // Reflect the decision on every channel that received this booking (and remove the buttons).
+  for (const c of CHANNELS) {
+    const rec = b.staffMsgs && b.staffMsgs[c.name];
+    if (rec) await api(c, "editMessageText", { chat_id: rec.chatId, message_id: rec.msgId, text: finalText });
+  }
+  await api(ch, "answerCallbackQuery", { callback_query_id: cq.id, text: b.status === "confirmed" ? "Confirmed — patient notified." : "Declined — patient notified." });
   await notifyPatient(b, b.status);
 }
 
-async function handleMessage(m) {
+async function handleMessage(ch, m) {
   const chat = m.chat.id;
   const t = (m.text || "").trim().toLowerCase();
+  const envName = ch.name === "bale" ? "BALE_STAFF_CHAT_ID" : "TELEGRAM_STAFF_CHAT_ID";
 
   if (t === "/id" || t === "/start" || t === "/help")
-    return void tg("sendMessage", { chat_id: chat, text:
-      `Your chat ID is ${chat}\nPut it in TELEGRAM_STAFF_CHAT_ID to receive booking requests here.\n\n` +
+    return void api(ch, "sendMessage", { chat_id: chat, text:
+      `Your chat ID is ${chat}\nPut it in ${envName} to receive booking requests here.\n\n` +
       `Commands:\n/bookings – list all appointments\n/pending – only pending\n/today – today's appointments` });
 
   if (["/bookings", "/list", "/appointments", "/pending", "/today"].includes(t)) {
     // Patient data: only the configured staff chat may list bookings.
-    if (STAFF && String(chat) !== String(STAFF))
-      return void tg("sendMessage", { chat_id: chat, text: "This command is only available to the clinic staff chat." });
+    if (ch.staff && String(chat) !== String(ch.staff))
+      return void api(ch, "sendMessage", { chat_id: chat, text: "This command is only available to the clinic staff chat." });
 
     let list = bookings.slice().sort((a, b) => (a.date + a.time).localeCompare(b.date + b.time));
     let title = "All appointments";
@@ -183,7 +193,7 @@ async function handleMessage(m) {
     if (t === "/today") { const today = new Date().toISOString().split("T")[0]; list = list.filter(b => b.date === today); title = "Today's appointments"; }
 
     if (!list.length)
-      return void tg("sendMessage", { chat_id: chat, text: `📋 ${title}: none yet.` });
+      return void api(ch, "sendMessage", { chat_id: chat, text: `📋 ${title}: none yet.` });
 
     const icon = s => (s === "confirmed" ? "✅" : s === "declined" ? "❌" : "⏳");
     const MAX = 30;
@@ -191,24 +201,23 @@ async function handleMessage(m) {
       `${icon(b.status)} ${b.name}\n   📞 ${b.phone} · 🕒 ${b.when}${b.lang === "fa" ? " · 🌐 FA" : ""}`);
     let text = `📋 ${title} (${list.length})\n\n` + lines.join("\n\n");
     if (list.length > MAX) text += `\n\n… and ${list.length - MAX} more.`;
-    return void tg("sendMessage", { chat_id: chat, text });
+    return void api(ch, "sendMessage", { chat_id: chat, text });
   }
 }
 
-async function poll() {
+async function pollChannel(ch) {
   let offset = 0;
-  // clear any backlog first
-  try { const r = await tg("getUpdates", { timeout: 0 }); if (r.result?.length) offset = r.result[r.result.length - 1].update_id + 1; } catch {}
-  console.log("Telegram polling started.");
+  try { const r = await api(ch, "getUpdates", { timeout: 0 }); if (r.result?.length) offset = r.result[r.result.length - 1].update_id + 1; } catch {}
+  console.log(`${ch.name}: polling started.`);
   for (;;) {
     try {
-      const r = await tg("getUpdates", { offset, timeout: 30 });
+      const r = await api(ch, "getUpdates", { offset, timeout: 30 });
       for (const u of r.result || []) {
         offset = u.update_id + 1;
-        if (u.callback_query) await handleCallback(u.callback_query);
-        else if (u.message) await handleMessage(u.message);
+        if (u.callback_query) await handleCallback(ch, u.callback_query);
+        else if (u.message) await handleMessage(ch, u.message);
       }
-    } catch (e) { console.error("poll error:", e.message); await new Promise((r) => setTimeout(r, 3000)); }
+    } catch (e) { console.error(`${ch.name} poll error:`, e.message); await new Promise((r) => setTimeout(r, 3000)); }
   }
 }
 
@@ -272,19 +281,19 @@ createServer(async (req, res) => {
 }).listen(PORT, () => {
   console.log(`Serving ${ROOT} at http://localhost:${PORT}`);
   console.log(MOCK
-    ? "Telegram: MOCK mode (no TELEGRAM_BOT_TOKEN). Bookings work; messages are printed to the console."
-    : `Telegram: LIVE. Staff chat: ${STAFF || "NOT SET — message the bot /id and set TELEGRAM_STAFF_CHAT_ID"}`);
+    ? "Staff channels: MOCK mode (no TELEGRAM_BOT_TOKEN / BALE_BOT_TOKEN). Messages print to the console."
+    : `Staff channels: ${CHANNELS.map(c => `${c.name}${c.staff ? "" : " (chat id NOT set — message the bot /id)"}`).join(", ")}`);
   console.log(SMS.from ? "Patient SMS: Twilio configured." : "Patient SMS: MOCK (set TWILIO_* to send real texts).");
   console.log(WA_FROM ? "Patient WhatsApp: Twilio configured." : "Patient WhatsApp: off (set TWILIO_WHATSAPP_FROM to enable).");
 });
 
-if (!MOCK) {
-  // Show the commands in Telegram's menu.
-  tg("setMyCommands", { commands: [
-    { command: "bookings", description: "List all appointments" },
-    { command: "pending", description: "Show pending appointments" },
-    { command: "today", description: "Today's appointments" },
-    { command: "id", description: "Show this chat's ID" },
-  ]});
-  poll();
+const BOT_COMMANDS = [
+  { command: "bookings", description: "List all appointments" },
+  { command: "pending", description: "Show pending appointments" },
+  { command: "today", description: "Today's appointments" },
+  { command: "id", description: "Show this chat's ID" },
+];
+for (const ch of CHANNELS) {
+  api(ch, "setMyCommands", { commands: BOT_COMMANDS });   // best-effort; ignored if unsupported
+  pollChannel(ch);
 }
