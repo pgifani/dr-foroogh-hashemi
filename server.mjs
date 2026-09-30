@@ -63,19 +63,65 @@ let blocks = { days: [], slots: [] };   // days: ["YYYY-MM-DD"], slots: ["YYYY-M
 try { if (existsSync(BLOCKS_DB)) blocks = { days: [], slots: [], ...JSON.parse(readFileSync(BLOCKS_DB, "utf8")) }; } catch {}
 const saveBlocks = () => { try { writeFileSync(BLOCKS_DB, JSON.stringify(blocks, null, 2)); } catch (e) { console.error("saveBlocks failed:", e.message); } };
 const isoAdd = (days) => { const d = new Date(); d.setUTCHours(0, 0, 0, 0); d.setUTCDate(d.getUTCDate() + days); return d.toISOString().split("T")[0]; };
-function parseDate(s) {
-  s = (s || "").trim().toLowerCase();
-  if (s === "today") return isoAdd(0);
-  if (s === "tomorrow") return isoAdd(1);
-  return /^\d{4}-\d{2}-\d{2}$/.test(s) ? s : null;
+/* ---------- Jalali (Persian) <-> Gregorian, for Persian date input & display ---------- */
+const _div = (a, b) => Math.trunc(a / b);
+const FA_MONTHS = ["فروردین","اردیبهشت","خرداد","تیر","مرداد","شهریور","مهر","آبان","آذر","دی","بهمن","اسفند"];
+const FA_WEEK = ["یکشنبه","دوشنبه","سه‌شنبه","چهارشنبه","پنجشنبه","جمعه","شنبه"]; // index = JS getUTCDay (0=Sun)
+const toFa = (s) => String(s).replace(/\d/g, (d) => "۰۱۲۳۴۵۶۷۸۹"[d]);
+function g2j(gy, gm, gd) {
+  const gdm = [0,31,59,90,120,151,181,212,243,273,304,334];
+  let jy; if (gy > 1600) { jy = 979; gy -= 1600; } else { jy = 0; gy -= 621; }
+  const gy2 = gm > 2 ? gy + 1 : gy;
+  let days = 365*gy + _div(gy2+3,4) - _div(gy2+99,100) + _div(gy2+399,400) - 80 + gd + gdm[gm-1];
+  jy += 33*_div(days,12053); days %= 12053;
+  jy += 4*_div(days,1461); days %= 1461;
+  if (days > 365) { jy += _div(days-1,365); days = (days-1)%365; }
+  let jm, jd;
+  if (days < 186) { jm = 1 + _div(days,31); jd = 1 + (days % 31); }
+  else { jm = 7 + _div(days-186,30); jd = 1 + ((days-186) % 30); }
+  return [jy, jm, jd];
 }
-// Inline keyboard: next 14 days, tap to toggle a whole day off/on.
+function j2g(jy, jm, jd) {
+  let gy; if (jy > 979) { gy = 1600; jy -= 979; } else { gy = 621; }
+  let days = 365*jy + _div(jy,33)*8 + _div((jy%33)+3,4) + 78 + jd + (jm < 7 ? (jm-1)*31 : (jm-7)*30 + 186);
+  gy += 400*_div(days,146097); days %= 146097;
+  if (days > 36524) { days--; gy += 100*_div(days,36524); days %= 36524; if (days >= 365) days++; }
+  gy += 4*_div(days,1461); days %= 1461;
+  if (days > 365) { gy += _div(days-1,365); days = (days-1)%365; }
+  let gd = days + 1;
+  const sal = [0,31,((gy%4===0&&gy%100!==0)||(gy%400===0))?29:28,31,30,31,30,31,31,30,31,30,31];
+  let gm; for (gm = 0; gm < 13; gm++) { const v = sal[gm]; if (gd <= v) break; gd -= v; }
+  return [gy, gm, gd];
+}
+// ISO Gregorian "YYYY-MM-DD" -> Persian label, e.g. "پنجشنبه ۹ مهر ۱۴۰۵"
+function faDate(iso, withYear = true) {
+  const [gy, gm, gd] = iso.split("-").map(Number);
+  const [jy, jm, jd] = g2j(gy, gm, gd);
+  const wd = new Date(iso + "T00:00:00Z").getUTCDay();
+  return `${FA_WEEK[wd]} ${toFa(jd)} ${FA_MONTHS[jm - 1]}${withYear ? " " + toFa(jy) : ""}`;
+}
+
+// Accepts: today/امروز, tomorrow/فردا, a Jalali date (e.g. 1405/07/11), or a Gregorian date (2026-10-08).
+// Persian digits are accepted. Returns an ISO Gregorian "YYYY-MM-DD".
+function parseDate(s) {
+  s = (s || "").trim().toLowerCase().replace(/[۰-۹]/g, (d) => "۰۱۲۳۴۵۶۷۸۹".indexOf(d));
+  if (s === "today" || s === "امروز") return isoAdd(0);
+  if (s === "tomorrow" || s === "فردا") return isoAdd(1);
+  const m = s.match(/^(\d{3,4})[-/](\d{1,2})[-/](\d{1,2})$/);
+  if (!m) return null;
+  let y = +m[1], mo = +m[2], d = +m[3];
+  if (mo < 1 || mo > 12 || d < 1 || d > 31) return null;
+  if (y < 1700) { const g = j2g(y, mo, d); y = g[0]; mo = g[1]; d = g[2]; }  // a Jalali year → convert
+  return `${y}-${String(mo).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
+}
+
+// Inline keyboard: next 14 days shown as Persian dates; tap to toggle a whole day off/on.
 function dayGridMarkup() {
   const rows = [];
   for (let i = 0; i < 14; i++) {
     const iso = isoAdd(i);
     const off = blocks.days.includes(iso);
-    const label = `${off ? "⛔" : "✅"} ${new Date(iso + "T00:00:00Z").toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short", timeZone: "UTC" })}`;
+    const label = `${off ? "⛔" : "✅"} ${faDate(iso, false)}`;
     if (i % 2 === 0) rows.push([]);
     rows[rows.length - 1].push({ text: label, callback_data: `dayoff:${iso}` });
   }
@@ -190,7 +236,7 @@ async function handleCallback(ch, cq) {
     blocks.days = wasOff ? blocks.days.filter((x) => x !== id) : [...blocks.days, id];
     saveBlocks();
     await api(ch, "editMessageReplyMarkup", { chat_id: cq.message.chat.id, message_id: cq.message.message_id, reply_markup: dayGridMarkup() });
-    return void api(ch, "answerCallbackQuery", { callback_query_id: cq.id, text: wasOff ? `${id} reopened` : `${id} closed` });
+    return void api(ch, "answerCallbackQuery", { callback_query_id: cq.id, text: `${faDate(id, false)} ${wasOff ? "باز شد ✅" : "بسته شد ⛔"}` });
   }
 
   const b = bookings.find((x) => x.id === id);
@@ -226,7 +272,7 @@ async function handleMessage(ch, m) {
     return void say(
       `Your chat ID is ${chat}\nPut it in ${envName} to receive booking requests here.\n\n` +
       `APPOINTMENTS\n/bookings – list all\n/pending – pending only\n/today – today's\n\n` +
-      `AVAILABILITY (staff)\n/availability – tap days to turn off/on\n/off <date> – close a day (e.g. /off tomorrow  ·  /off 2026-10-08)\n/on <date> – reopen a day\n/block <date> <time> – block one slot (e.g. /block 2026-10-08 10:00)\n/unblock <date> <time> – unblock a slot\n/blocked – show current blocks`);
+      `AVAILABILITY (staff)\n/availability – tap days to turn off/on (Persian dates)\n/off <date> – close a day (e.g. /off فردا  ·  /off 1405/07/11  ·  /off 2026-10-08)\n/on <date> – reopen a day\n/block <date> <time> – block one slot (e.g. /block 1405/07/11 10:00)\n/unblock <date> <time> – unblock a slot\n/blocked – show current blocks`);
 
   // ----- availability management (staff only) -----
   if (["/availability", "/dayoff", "/off", "/on", "/block", "/unblock", "/blocked"].includes(t)) {
@@ -237,31 +283,32 @@ async function handleMessage(ch, m) {
 
     if (t === "/blocked") {
       const days = blocks.days.slice().sort(), slots = blocks.slots.slice().sort();
-      if (!days.length && !slots.length) return void say("No blocks — all business hours are open.");
-      let txt = "⛔ Current blocks:";
-      if (days.length) txt += "\n\nDays off:\n" + days.map((d) => "• " + d).join("\n");
-      if (slots.length) txt += "\n\nBlocked slots:\n" + slots.map((s) => "• " + s).join("\n");
+      if (!days.length && !slots.length) return void say("موردی بسته نشده — همه‌ی ساعات کاری باز است.");
+      let txt = "⛔ موارد بسته‌شده:";
+      if (days.length) txt += "\n\nروزهای تعطیل:\n" + days.map((d) => "• " + faDate(d)).join("\n");
+      if (slots.length) txt += "\n\nساعت‌های بسته:\n" + slots.map((s) => { const [sd, st] = s.split(" "); return "• " + faDate(sd) + " ساعت " + toFa(st); }).join("\n");
       return void say(txt);
     }
 
     if (t === "/off" || t === "/on") {
       const d = parseDate(parts[1]);
-      if (!d) return void say("Give a date, e.g.  /off tomorrow  or  /off 2026-10-08");
+      if (!d) return void say("یک تاریخ بدهید، مثلاً:  /off فردا  ·  /off 1405/07/11  ·  /off 2026-10-08");
       if (t === "/off") { if (!blocks.days.includes(d)) blocks.days.push(d); }
       else blocks.days = blocks.days.filter((x) => x !== d);
       saveBlocks();
-      return void say(t === "/off" ? `⛔ ${d} is now closed for bookings.` : `✅ ${d} is open again.`);
+      return void say(t === "/off" ? `⛔ ${faDate(d)} برای نوبت‌دهی بسته شد.` : `✅ ${faDate(d)} دوباره باز شد.`);
     }
 
     if (t === "/block" || t === "/unblock") {
       const d = parseDate(parts[1]);
       const mt = (parts[2] || "").trim().match(/^(\d{1,2}):(\d{2})$/);
-      if (!d || !mt) return void say("Use:  /block 2026-10-08 10:00");
-      const key = `${d} ${mt[1].padStart(2, "0")}:${mt[2]}`;
+      if (!d || !mt) return void say("به این شکل بنویسید:  /block 1405/07/11 10:00");
+      const time = `${mt[1].padStart(2, "0")}:${mt[2]}`;
+      const key = `${d} ${time}`;
       if (t === "/block") { if (!blocks.slots.includes(key)) blocks.slots.push(key); }
       else blocks.slots = blocks.slots.filter((x) => x !== key);
       saveBlocks();
-      return void say(t === "/block" ? `⛔ Slot ${key} is blocked.` : `✅ Slot ${key} is unblocked.`);
+      return void say(t === "/block" ? `⛔ ${faDate(d)} ساعت ${toFa(time)} بسته شد.` : `✅ ${faDate(d)} ساعت ${toFa(time)} باز شد.`);
     }
   }
 
