@@ -45,7 +45,8 @@ const PORT = Number(ENV.PORT) || 3000;
 const MOCK = !TOKEN;
 
 /* ---------- booking store (persisted to bookings.json) ---------- */
-const DB = join(ROOT, "bookings.json");
+const DATA_DIR = process.env.DATA_DIR || ROOT;   // mount a volume here in prod (Coolify)
+const DB = join(DATA_DIR, "bookings.json");
 let bookings = [];
 try { if (existsSync(DB)) bookings = JSON.parse(readFileSync(DB, "utf8")); } catch { bookings = []; }
 const save = () => { try { writeFileSync(DB, JSON.stringify(bookings, null, 2)); } catch (e) { console.error("save failed:", e.message); } };

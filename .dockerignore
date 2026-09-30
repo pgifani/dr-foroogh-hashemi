@@ -1,0 +1,18 @@
+# Version control / tooling
+.git
+.vercel
+.claude
+node_modules
+
+# Secrets and local data (must never enter the image)
+.env
+.env.*
+bookings.json
+data
+
+# Not needed at runtime
+serve.mjs
+vercel.json
+.vercelignore
+CLAUDE.md
+TELEGRAM-SETUP.md
