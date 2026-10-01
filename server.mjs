@@ -1,17 +1,21 @@
 // All-in-one dev server for the pediatrics site:
 //   1. Serves the static site (same as serve.mjs).
-//   2. POST /api/book  -> notifies staff on Telegram with Confirm/Decline buttons,
-//                          texts the patient a "request received" SMS (Twilio).
-//   3. Long-polls Telegram: when staff taps Confirm/Decline, texts the patient the result.
+//   2. POST /api/book  -> notifies staff on Telegram/Bale with Confirm/Decline buttons,
+//                          emails the patient a "request received" note (Resend).
+//   3. Long-polls the bot: when staff taps Confirm/Decline, emails the patient the result.
 //
 // Runs on Node 18+ (uses built-in fetch). No npm install needed.
 //
 // Configuration (put these in website/.env or the workspace ../.env — NEVER in the page):
 //   TELEGRAM_BOT_TOKEN=123456:ABC...        (from @BotFather)
 //   TELEGRAM_STAFF_CHAT_ID=123456789         (message the bot "/id" to learn this)
+//   RESEND_API_KEY=re_...                    (enables patient email — resend.com)
+//   MAIL_FROM=Dr. Hashemi <booking@ainoor.io> (verified Resend sender)
+//   MAIL_REPLY_TO=clinic@ainoor.io            (optional — where patient replies go)
 //   TWILIO_ACCOUNT_SID=AC...                 (optional — enables patient SMS)
 //   TWILIO_AUTH_TOKEN=...
 //   TWILIO_FROM_NUMBER=+1555...
+//   TWILIO_WHATSAPP_FROM=whatsapp:+1555...   (optional — enables patient WhatsApp)
 //   TWILIO_DEFAULT_COUNTRY=+1                 (prefixed to local numbers without a +)
 //   PORT=3000
 //
@@ -142,7 +146,7 @@ async function api(ch, method, payload) {
 
 function staffText(b) {   // plain text so it renders identically on Telegram and Bale
   const site = b.lang === "fa" ? "Persian site" : "English site";
-  return `🗓 New appointment request\n\n👤 ${b.name}\n📞 ${b.phone}\n🕒 ${b.when}\n🌐 ${site}\n\nStatus: ⏳ pending`;
+  return `🗓 New appointment request\n\n👤 ${b.name}\n📞 ${b.phone}${b.email ? `\n📧 ${b.email}` : ""}\n🕒 ${b.when}\n🌐 ${site}\n\nStatus: ⏳ pending`;
 }
 const bookingMarkup = (b) => ({ inline_keyboard: [[
   { text: "✅ Confirm", callback_data: `confirm:${b.id}` },
@@ -197,12 +201,33 @@ async function sendWhatsApp(to, body) {
   const from = WA_FROM.startsWith("whatsapp:") ? WA_FROM : `whatsapp:${WA_FROM}`;
   return twilioSend({ To: `whatsapp:${toE164(to)}`, From: from, Body: body }, "whatsapp", to, body);
 }
-// Notify the patient on every configured channel (SMS and/or WhatsApp).
+/* ---------- patient email (Resend via REST, optional) ---------- */
+const MAIL = {
+  key: (ENV.RESEND_API_KEY || "").trim(),
+  from: (ENV.MAIL_FROM || "").trim(),        // e.g. "Dr. Hashemi <booking@ainoor.io>"
+  replyTo: (ENV.MAIL_REPLY_TO || "").trim(), // optional
+};
+const MAIL_ON = !!(MAIL.key && MAIL.from);
+async function sendEmail(to, subject, html, text) {
+  if (!MAIL_ON) { console.log(`[MOCK email -> ${to}] ${subject}`); return; }
+  try {
+    const r = await fetch("https://api.resend.com/emails", {
+      method: "POST",
+      headers: { Authorization: `Bearer ${MAIL.key}`, "content-type": "application/json" },
+      body: JSON.stringify({ from: MAIL.from, to: [to], subject, html, text, ...(MAIL.replyTo ? { reply_to: MAIL.replyTo } : {}) }),
+    });
+    if (!r.ok) console.error("email error:", ((await r.json().catch(() => ({}))).message) || r.status);
+  } catch (e) { console.error("email failed:", e.message); }
+}
+
+// Notify the patient on every configured channel: email (primary) + optional SMS/WhatsApp.
 async function notifyPatient(b, kind) {
   const msg = patientMsg(b, kind);
   const jobs = [];
+  if (MAIL_ON && b.email) { const em = emailContent(b, kind); jobs.push(sendEmail(b.email, em.subject, em.html, msg)); }
   if (WA_FROM) jobs.push(sendWhatsApp(b.phone, msg));
-  if (SMS.from || !WA_FROM) jobs.push(sendSms(b.phone, msg)); // SMS on if configured, or as the mock fallback
+  if (SMS.from) jobs.push(sendSms(b.phone, msg));
+  if (!jobs.length) console.log(`[MOCK notify -> ${b.email || b.phone}] ${msg}`); // nothing configured yet
   await Promise.allSettled(jobs);
 }
 
@@ -219,6 +244,84 @@ const patientMsg = (b, kind) => {
     ? `متأسفیم، ${b.when} در دسترس نیست. لطفاً برای زمان دیگری تماس بگیرید. دکتر هاشمی`
     : `Sorry, ${b.when} isn't available. Please call us to pick another time. — Dr. Hashemi's office`;
 };
+
+// Branded HTML email for the patient. Returns { subject, html }.
+function emailContent(b, kind) {
+  const fa = b.lang === "fa";
+  const name = esc(b.name.split(" ")[0]);
+  const when = esc(b.when);
+  const dir = fa ? "rtl" : "ltr";
+  const font = fa
+    ? "Vazirmatn, 'Segoe UI', Tahoma, sans-serif"
+    : "'Segoe UI', Helvetica, Arial, sans-serif";
+  const t = {
+    received: {
+      subject: fa ? "درخواست نوبت شما دریافت شد" : "We received your appointment request",
+      badge: fa ? "در انتظار تأیید" : "Pending confirmation",
+      bg: "#0d6e66", accent: "#0d6e66",
+      head: fa ? `سلام ${name}،` : `Hi ${name},`,
+      body: fa
+        ? `درخواست نوبت شما نزد <strong>دکتر فروغ هاشمی</strong> ثبت شد. به‌محض بررسی، ایمیل تأیید برایتان ارسال می‌شود.`
+        : `Your appointment request with <strong>Dr. Foroogh Hashemi</strong> has been received. We'll email you a confirmation as soon as we review it.`,
+    },
+    confirmed: {
+      subject: fa ? "نوبت شما تأیید شد ✅" : "Your appointment is confirmed ✅",
+      badge: fa ? "تأیید شد" : "Confirmed",
+      bg: "#0d6e66", accent: "#15803d",
+      head: fa ? `${name} عزیز،` : `Dear ${name},`,
+      body: fa
+        ? `نوبت شما <strong>تأیید شد</strong>. منتظر دیدن شما هستیم. اگر لازم شد تغییری بدهید، کافی است به همین ایمیل پاسخ دهید یا تماس بگیرید.`
+        : `Your appointment is <strong>confirmed</strong>. We look forward to seeing you. If you need to change anything, just reply to this email or call us.`,
+    },
+    declined: {
+      subject: fa ? "درباره‌ی درخواست نوبت شما" : "About your appointment request",
+      badge: fa ? "در دسترس نیست" : "Not available",
+      bg: "#0d6e66", accent: "#b45309",
+      head: fa ? `${name} عزیز،` : `Dear ${name},`,
+      body: fa
+        ? `متأسفیم، این زمان دیگر در دسترس نیست. لطفاً برای انتخاب زمان دیگری به این ایمیل پاسخ دهید یا با ما تماس بگیرید؛ خوشحال می‌شویم کمک کنیم.`
+        : `We're sorry — this time is no longer available. Please reply to this email or call us to pick another time; we'd be happy to help.`,
+    },
+  }[kind] || t_received_fallback();
+  function t_received_fallback() { return { subject: "Appointment", badge: "", bg: "#0d6e66", accent: "#0d6e66", head: "", body: "" }; }
+
+  const whenLabel = fa ? "زمان درخواستی" : "Requested time";
+  const footer = fa
+    ? "این ایمیل برای هماهنگی نوبت ارسال شده و توصیه‌ی پزشکی نیست. در موارد اورژانسی با ۱۱۵ تماس بگیرید."
+    : "This email is about your appointment and is not medical advice. In an emergency, call your local emergency number.";
+  const office = fa ? "مطب دکتر فروغ هاشمی" : "Dr. Foroogh Hashemi's office";
+
+  const html = `<!doctype html><html lang="${fa ? "fa" : "en"}" dir="${dir}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">${fa ? '<link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;600;700&display=swap" rel="stylesheet">' : ""}</head>
+<body style="margin:0;padding:0;background:#f1f5f4;">
+  <div style="display:none;max-height:0;overflow:hidden;opacity:0;">${esc(t.subject)}</div>
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f1f5f4;padding:28px 12px;">
+    <tr><td align="center">
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:520px;background:#ffffff;border-radius:18px;overflow:hidden;font-family:${font};direction:${dir};box-shadow:0 10px 30px rgba(13,110,102,.12);">
+        <tr><td style="background:${t.bg};padding:22px 28px;">
+          <div style="color:#ffffff;font-size:18px;font-weight:700;">${office}</div>
+          <div style="color:rgba(255,255,255,.82);font-size:13px;margin-top:3px;">${fa ? "پزشک متخصص کودکان" : "Pediatrician"}</div>
+        </td></tr>
+        <tr><td style="padding:28px;">
+          ${t.badge ? `<span style="display:inline-block;background:${t.accent}1a;color:${t.accent};font-size:12.5px;font-weight:600;padding:5px 12px;border-radius:999px;">${esc(t.badge)}</span>` : ""}
+          <p style="font-size:16px;color:#14201d;margin:16px 0 6px;font-weight:600;">${esc(t.head)}</p>
+          <p style="font-size:15px;line-height:1.75;color:#3c4b47;margin:0 0 20px;">${t.body}</p>
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f3faf8;border:1px solid #d8ebe7;border-radius:12px;">
+            <tr><td style="padding:16px 18px;">
+              <div style="font-size:12px;color:#5a736e;text-transform:uppercase;letter-spacing:.04em;">${esc(whenLabel)}</div>
+              <div style="font-size:16px;color:#0d6e66;font-weight:700;margin-top:4px;">${when}</div>
+            </td></tr>
+          </table>
+        </td></tr>
+        <tr><td style="padding:0 28px 26px;">
+          <p style="font-size:12.5px;line-height:1.7;color:#8a9a96;margin:0;border-top:1px solid #eef2f1;padding-top:16px;">${footer}</p>
+        </td></tr>
+      </table>
+    </td></tr>
+  </table>
+</body></html>`;
+  return { subject: t.subject, html };
+}
+const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
 
 /* ---------- bot updates: Confirm/Decline + commands (Telegram + Bale) ---------- */
 async function handleCallback(ch, cq) {
@@ -363,10 +466,13 @@ async function handleBook(req, res) {
   let b;
   try { b = JSON.parse(await readBody(req)); } catch { return json(res, 400, { ok: false, error: "bad json" }); }
   const name = String(b.name || "").trim(), phone = String(b.phone || "").trim();
-  if (!name || phone.replace(/[^\d۰-۹]/g, "").length < 7) return json(res, 400, { ok: false, error: "name and phone required" });
+  const email = String(b.email || "").trim();
+  const emailOk = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+  if (!name || phone.replace(/[^\d۰-۹]/g, "").length < 7 || !emailOk)
+    return json(res, 400, { ok: false, error: "name, phone and a valid email are required" });
 
   const rec = {
-    id: newId(), name, phone,
+    id: newId(), name, phone, email,
     date: String(b.date || ""), time: String(b.time || ""),
     when: String(b.when || `${b.date} ${b.time}`).slice(0, 120),
     lang: b.lang === "fa" ? "fa" : "en",
@@ -418,7 +524,8 @@ createServer(async (req, res) => {
   console.log(MOCK
     ? "Staff channels: MOCK mode (no TELEGRAM_BOT_TOKEN / BALE_BOT_TOKEN). Messages print to the console."
     : `Staff channels: ${CHANNELS.map(c => `${c.name}${c.staff ? "" : " (chat id NOT set — message the bot /id)"}`).join(", ")}`);
-  console.log(SMS.from ? "Patient SMS: Twilio configured." : "Patient SMS: MOCK (set TWILIO_* to send real texts).");
+  console.log(MAIL_ON ? `Patient email: Resend configured (from ${MAIL.from}).` : "Patient email: MOCK (set RESEND_API_KEY + MAIL_FROM to send real emails).");
+  console.log(SMS.from ? "Patient SMS: Twilio configured." : "Patient SMS: off (set TWILIO_FROM_NUMBER to enable).");
   console.log(WA_FROM ? "Patient WhatsApp: Twilio configured." : "Patient WhatsApp: off (set TWILIO_WHATSAPP_FROM to enable).");
 });
 

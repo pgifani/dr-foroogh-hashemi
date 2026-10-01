@@ -477,12 +477,16 @@
             <input class="field" id="phone" name="phone" type="tel" inputmode="tel" placeholder="۰۹۱۲۰۰۰۰۰۰۰" required>
           </div>
         </div>
+        <div class="mt-4">
+          <label class="lbl" for="email">ایمیل <span class="req">*</span></label>
+          <input class="field" id="email" name="email" type="email" inputmode="email" autocomplete="email" dir="ltr" style="text-align:left" placeholder="you@example.com" required>
+        </div>
         <div id="formError" class="hidden mt-4 text-[.9rem] text-[#c0492f] bg-[#fbe7e2] border border-[#f2c2b7] rounded-xl px-4 py-3"></div>
         <button type="submit" class="btn btn-sun w-full justify-center mt-5 !py-3.5 text-[1.02rem]">
           <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
           تأیید نوبت
         </button>
-        <p class="text-[.8rem] text-ink-soft text-center mt-3">شماره‌ی شما فقط برای تأیید همین نوبت استفاده می‌شود. اکنون پرداختی انجام نمی‌شود.</p>
+        <p class="text-[.8rem] text-ink-soft text-center mt-3">برای تأیید نوبت ایمیل می‌فرستیم و در صورت نیاز تماس می‌گیریم. اکنون پرداختی انجام نمی‌شود.</p>
       </form>
 
       <div id="bookSuccess" class="hidden text-center py-6">
@@ -802,24 +806,25 @@ document.querySelectorAll('.acc-btn').forEach(btn => {
 
   form.addEventListener('submit', (e) => {
     e.preventDefault();
-    const name = document.getElementById('name'), phone = document.getElementById('phone');
+    const name = document.getElementById('name'), phone = document.getElementById('phone'), email = document.getElementById('email');
     let bad = false;
     if (!name.value.trim()){ setErr(name,true); bad=true; }
     if (phone.value.replace(/[^\d۰-۹]/g,'').length < 7){ setErr(phone,true); bad=true; }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.value.trim())){ setErr(email,true); bad=true; }
     if (bad || !selected){
-      errBox.textContent = !selected ? 'لطفاً ابتدا یک زمان را از بالا انتخاب کنید.' : 'لطفاً نام و یک شماره‌ی تماس معتبر وارد کنید.';
+      errBox.textContent = !selected ? 'لطفاً ابتدا یک زمان را از بالا انتخاب کنید.' : 'لطفاً نام، شماره‌ی تماس و یک ایمیل معتبر وارد کنید.';
       errBox.classList.remove('hidden');
       return;
     }
     errBox.classList.add('hidden');
-    const rec = { name:name.value.trim(), phone:phone.value.trim(), date:selected.iso, time:selected.time, submittedAt:new Date().toISOString() };
+    const rec = { name:name.value.trim(), phone:phone.value.trim(), email:email.value.trim(), date:selected.iso, time:selected.time, submittedAt:new Date().toISOString() };
     try { const all = JSON.parse(localStorage.getItem('appointmentRequests')||'[]'); all.push(rec); localStorage.setItem('appointmentRequests', JSON.stringify(all)); } catch(_){}
     const nice = selected.date.toLocaleDateString('fa-IR',{weekday:'long', month:'long', day:'numeric'});
     const when = `${nice} ساعت ${fmtTime(selected.time)}`;
-    // ارسال درخواست به سرور مطب (تلگرام + پیامک). بدون انتظار: پیام تأیید در صفحه در هر حال نمایش داده می‌شود.
+    // ارسال درخواست به سرور مطب (تلگرام/بله + ایمیل). بدون انتظار: پیام تأیید در صفحه در هر حال نمایش داده می‌شود.
     fetch('/api/book', { method:'POST', headers:{'content-type':'application/json'},
-      body: JSON.stringify({ name:rec.name, phone:rec.phone, date:rec.date, time:rec.time, when, lang:'fa' }) }).catch(()=>{});
-    successMsg.textContent = `با تشکر، ${rec.name.split(' ')[0]}! نوبت شما برای ${nice} ساعت ${fmtTime(selected.time)} ثبت شد. برای تأیید به شماره‌ی ${rec.phone} پیامک می‌زنیم.`;
+      body: JSON.stringify({ name:rec.name, phone:rec.phone, email:rec.email, date:rec.date, time:rec.time, when, lang:'fa' }) }).catch(()=>{});
+    successMsg.textContent = `با تشکر، ${rec.name.split(' ')[0]}! نوبت شما برای ${nice} ساعت ${fmtTime(selected.time)} ثبت شد. برای تأیید، ایمیل تأیید را به ${rec.email} می‌فرستیم.`;
     form.classList.add('hidden');
     success.classList.remove('hidden');
     success.scrollIntoView({behavior:'smooth', block:'center'});
