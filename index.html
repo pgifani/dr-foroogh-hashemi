@@ -496,17 +496,23 @@
         </div>
         <div class="grid sm:grid-cols-2 gap-4">
           <div>
-            <label class="lbl" for="name">Your name <span class="req">*</span></label>
+            <label class="lbl" for="name">Full name <span class="req">*</span></label>
             <input class="field" id="name" name="name" type="text" placeholder="e.g. Sara Ahmadi" required>
           </div>
           <div>
-            <label class="lbl" for="phone">Phone number <span class="req">*</span></label>
-            <input class="field" id="phone" name="phone" type="tel" inputmode="tel" placeholder="(555) 000-0000" required>
+            <label class="lbl" for="nid">National ID <span class="req">*</span></label>
+            <input class="field" id="nid" name="nationalId" type="text" inputmode="numeric" maxlength="10" placeholder="10 digits" required>
           </div>
         </div>
-        <div class="mt-4">
-          <label class="lbl" for="email">Email <span class="req">*</span></label>
-          <input class="field" id="email" name="email" type="email" inputmode="email" autocomplete="email" placeholder="you@example.com" required>
+        <div class="grid sm:grid-cols-2 gap-4 mt-4">
+          <div>
+            <label class="lbl" for="phone">Mobile number <span class="req">*</span></label>
+            <input class="field" id="phone" name="phone" type="tel" inputmode="tel" placeholder="(555) 000-0000" required>
+          </div>
+          <div>
+            <label class="lbl" for="email">Email <span class="req">*</span></label>
+            <input class="field" id="email" name="email" type="email" inputmode="email" autocomplete="email" placeholder="you@example.com" required>
+          </div>
         </div>
         <div id="formError" class="hidden mt-4 text-[.9rem] text-[#c0492f] bg-[#fbe7e2] border border-[#f2c2b7] rounded-xl px-4 py-3"></div>
         <button type="submit" class="btn btn-sun w-full justify-center mt-5 !py-3.5 text-[1.02rem]">
@@ -744,6 +750,12 @@ document.querySelectorAll('.acc-btn').forEach(btn => {
   const iso = d => { const x=new Date(d); x.setMinutes(x.getMinutes()-x.getTimezoneOffset()); return x.toISOString().split('T')[0]; };
   const fmtTime = t => { let [h,m]=t.split(':').map(Number); const ap=h<12?'AM':'PM'; const hh=((h+11)%12)+1; return `${hh}:${String(m).padStart(2,'0')} ${ap}`; };
   const setErr = (el,on) => el.classList.toggle('err', on);
+  function validCodeMelli(v){
+    if(!/^\d{10}$/.test(v) || /^(\d)\1{9}$/.test(v)) return false;
+    let s=0; for(let i=0;i<9;i++) s+=(+v[i])*(10-i);
+    const r=s%11, c=+v[9];
+    return r<2 ? c===r : c===11-r;
+  }
 
   function slotsFor(day){
     const wd = day.getDay();
@@ -834,25 +846,27 @@ document.querySelectorAll('.acc-btn').forEach(btn => {
 
   form.addEventListener('submit', (e) => {
     e.preventDefault();
-    const name = document.getElementById('name'), phone = document.getElementById('phone'), email = document.getElementById('email');
+    const name = document.getElementById('name'), phone = document.getElementById('phone'), email = document.getElementById('email'), nid = document.getElementById('nid');
+    const nidDigits = nid.value.replace(/\D/g, '');
     let bad = false;
     if (!name.value.trim()){ setErr(name,true); bad=true; }
+    if (!validCodeMelli(nidDigits)){ setErr(nid,true); bad=true; }
     if (phone.value.replace(/\D/g,'').length < 7){ setErr(phone,true); bad=true; }
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.value.trim())){ setErr(email,true); bad=true; }
     if (bad || !selected){
-      errBox.textContent = !selected ? 'Please pick a time above first.' : 'Please add your name, phone number, and a valid email.';
+      errBox.textContent = !selected ? 'Please pick a time above first.' : 'Please enter your name, a valid national ID, mobile number, and email.';
       errBox.classList.remove('hidden');
       return;
     }
     errBox.classList.add('hidden');
-    const rec = { name:name.value.trim(), phone:phone.value.trim(), email:email.value.trim(), date:selected.iso, time:selected.time, submittedAt:new Date().toISOString() };
+    const rec = { name:name.value.trim(), nationalId:nidDigits, phone:phone.value.trim(), email:email.value.trim(), date:selected.iso, time:selected.time, submittedAt:new Date().toISOString() };
     try { const all = JSON.parse(localStorage.getItem('appointmentRequests')||'[]'); all.push(rec); localStorage.setItem('appointmentRequests', JSON.stringify(all)); } catch(_){}
     const nice = selected.date.toLocaleDateString('en-US',{weekday:'long', month:'long', day:'numeric'});
     const when = `${nice} at ${fmtTime(selected.time)}`;
     // Send the request to the clinic backend (Telegram/Bale + email). Fire-and-forget: the on-page
     // confirmation shows regardless, so the picker still works if the backend isn't running.
     fetch('/api/book', { method:'POST', headers:{'content-type':'application/json'},
-      body: JSON.stringify({ name:rec.name, phone:rec.phone, email:rec.email, date:rec.date, time:rec.time, when, lang:'en' }) }).catch(()=>{});
+      body: JSON.stringify({ name:rec.name, nationalId:rec.nationalId, phone:rec.phone, email:rec.email, date:rec.date, time:rec.time, when, lang:'en' }) }).catch(()=>{});
     successMsg.textContent = `Thanks, ${rec.name.split(' ')[0]}! Your appointment is set for ${nice} at ${fmtTime(selected.time)}. We'll email ${rec.email} to confirm.`;
     form.classList.add('hidden');
     success.classList.remove('hidden');

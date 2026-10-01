@@ -469,17 +469,23 @@
         </div>
         <div class="grid sm:grid-cols-2 gap-4">
           <div>
-            <label class="lbl" for="name">نام شما <span class="req">*</span></label>
+            <label class="lbl" for="name">نام و نام خانوادگی <span class="req">*</span></label>
             <input class="field" id="name" name="name" type="text" placeholder="مثلاً سارا احمدی" required>
           </div>
           <div>
-            <label class="lbl" for="phone">شماره تماس <span class="req">*</span></label>
-            <input class="field" id="phone" name="phone" type="tel" inputmode="tel" placeholder="۰۹۱۲۰۰۰۰۰۰۰" required>
+            <label class="lbl" for="nid">کد ملی <span class="req">*</span></label>
+            <input class="field" id="nid" name="nationalId" type="text" inputmode="numeric" maxlength="10" dir="ltr" style="text-align:left" placeholder="۰۰۱۲۳۴۵۶۷۸" required>
           </div>
         </div>
-        <div class="mt-4">
-          <label class="lbl" for="email">ایمیل <span class="req">*</span></label>
-          <input class="field" id="email" name="email" type="email" inputmode="email" autocomplete="email" dir="ltr" style="text-align:left" placeholder="you@example.com" required>
+        <div class="grid sm:grid-cols-2 gap-4 mt-4">
+          <div>
+            <label class="lbl" for="phone">شماره موبایل <span class="req">*</span></label>
+            <input class="field" id="phone" name="phone" type="tel" inputmode="tel" dir="ltr" style="text-align:left" placeholder="۰۹۱۲۰۰۰۰۰۰۰" required>
+          </div>
+          <div>
+            <label class="lbl" for="email">ایمیل <span class="req">*</span></label>
+            <input class="field" id="email" name="email" type="email" inputmode="email" autocomplete="email" dir="ltr" style="text-align:left" placeholder="you@example.com" required>
+          </div>
         </div>
         <div id="formError" class="hidden mt-4 text-[.9rem] text-[#c0492f] bg-[#fbe7e2] border border-[#f2c2b7] rounded-xl px-4 py-3"></div>
         <button type="submit" class="btn btn-sun w-full justify-center mt-5 !py-3.5 text-[1.02rem]">
@@ -716,6 +722,12 @@ document.querySelectorAll('.acc-btn').forEach(btn => {
   const iso = d => { const x=new Date(d); x.setMinutes(x.getMinutes()-x.getTimezoneOffset()); return x.toISOString().split('T')[0]; };
   const fmtTime = t => faDigit(t);
   const setErr = (el,on) => el.classList.toggle('err', on);
+  function validCodeMelli(v){
+    if(!/^\d{10}$/.test(v) || /^(\d)\1{9}$/.test(v)) return false;
+    let s=0; for(let i=0;i<9;i++) s+=(+v[i])*(10-i);
+    const r=s%11, c=+v[9];
+    return r<2 ? c===r : c===11-r;
+  }
 
   function slotsFor(day){
     const wd = day.getDay();
@@ -806,24 +818,26 @@ document.querySelectorAll('.acc-btn').forEach(btn => {
 
   form.addEventListener('submit', (e) => {
     e.preventDefault();
-    const name = document.getElementById('name'), phone = document.getElementById('phone'), email = document.getElementById('email');
+    const name = document.getElementById('name'), phone = document.getElementById('phone'), email = document.getElementById('email'), nid = document.getElementById('nid');
+    const nidDigits = nid.value.replace(/[۰-۹]/g, d => '۰۱۲۳۴۵۶۷۸۹'.indexOf(d)).replace(/\D/g, '');
     let bad = false;
     if (!name.value.trim()){ setErr(name,true); bad=true; }
+    if (!validCodeMelli(nidDigits)){ setErr(nid,true); bad=true; }
     if (phone.value.replace(/[^\d۰-۹]/g,'').length < 7){ setErr(phone,true); bad=true; }
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.value.trim())){ setErr(email,true); bad=true; }
     if (bad || !selected){
-      errBox.textContent = !selected ? 'لطفاً ابتدا یک زمان را از بالا انتخاب کنید.' : 'لطفاً نام، شماره‌ی تماس و یک ایمیل معتبر وارد کنید.';
+      errBox.textContent = !selected ? 'لطفاً ابتدا یک زمان را از بالا انتخاب کنید.' : 'لطفاً نام، کد ملی معتبر، شماره موبایل و ایمیل را درست وارد کنید.';
       errBox.classList.remove('hidden');
       return;
     }
     errBox.classList.add('hidden');
-    const rec = { name:name.value.trim(), phone:phone.value.trim(), email:email.value.trim(), date:selected.iso, time:selected.time, submittedAt:new Date().toISOString() };
+    const rec = { name:name.value.trim(), nationalId:nidDigits, phone:phone.value.trim(), email:email.value.trim(), date:selected.iso, time:selected.time, submittedAt:new Date().toISOString() };
     try { const all = JSON.parse(localStorage.getItem('appointmentRequests')||'[]'); all.push(rec); localStorage.setItem('appointmentRequests', JSON.stringify(all)); } catch(_){}
     const nice = selected.date.toLocaleDateString('fa-IR',{weekday:'long', month:'long', day:'numeric'});
     const when = `${nice} ساعت ${fmtTime(selected.time)}`;
     // ارسال درخواست به سرور مطب (تلگرام/بله + ایمیل). بدون انتظار: پیام تأیید در صفحه در هر حال نمایش داده می‌شود.
     fetch('/api/book', { method:'POST', headers:{'content-type':'application/json'},
-      body: JSON.stringify({ name:rec.name, phone:rec.phone, email:rec.email, date:rec.date, time:rec.time, when, lang:'fa' }) }).catch(()=>{});
+      body: JSON.stringify({ name:rec.name, nationalId:rec.nationalId, phone:rec.phone, email:rec.email, date:rec.date, time:rec.time, when, lang:'fa' }) }).catch(()=>{});
     successMsg.textContent = `با تشکر، ${rec.name.split(' ')[0]}! نوبت شما برای ${nice} ساعت ${fmtTime(selected.time)} ثبت شد. برای تأیید، ایمیل تأیید را به ${rec.email} می‌فرستیم.`;
     form.classList.add('hidden');
     success.classList.remove('hidden');

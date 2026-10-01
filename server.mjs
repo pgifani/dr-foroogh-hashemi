@@ -63,6 +63,14 @@ try { if (existsSync(DB)) bookings = JSON.parse(readFileSync(DB, "utf8")); } cat
 const save = () => { try { writeFileSync(DB, JSON.stringify(bookings, null, 2)); } catch (e) { console.error("save failed:", e.message); } };
 const newId = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
 const newToken = () => randomUUID().replace(/-/g, "");
+// Iranian national ID (کد ملی): 10 digits with a checksum; Persian digits accepted.
+const toAsciiDigits = (s) => String(s).replace(/[۰-۹]/g, (d) => "۰۱۲۳۴۵۶۷۸۹".indexOf(d)).replace(/\D/g, "");
+function validCodeMelli(v) {
+  if (!/^\d{10}$/.test(v) || /^(\d)\1{9}$/.test(v)) return false;
+  let s = 0; for (let i = 0; i < 9; i++) s += (+v[i]) * (10 - i);
+  const r = s % 11, c = +v[9];
+  return r < 2 ? c === r : c === 11 - r;
+}
 const PUBLIC_BASE = (ENV.PUBLIC_BASE_URL || "").trim().replace(/\/$/, "");
 // Absolute link the patient taps to cancel. Falls back to the base captured at booking time.
 const cancelUrl = (b) => {
@@ -155,7 +163,7 @@ async function api(ch, method, payload) {
 
 function staffText(b) {   // plain text so it renders identically on Telegram and Bale
   const site = b.lang === "fa" ? "Persian site" : "English site";
-  return `🗓 New appointment request\n\n👤 ${b.name}\n📞 ${b.phone}${b.email ? `\n📧 ${b.email}` : ""}\n🕒 ${b.when}\n🌐 ${site}\n\nStatus: ⏳ pending`;
+  return `🗓 New appointment request\n\n👤 ${b.name}${b.nationalId ? `\n🆔 ${b.nationalId}` : ""}\n📞 ${b.phone}${b.email ? `\n📧 ${b.email}` : ""}\n🕒 ${b.when}\n🌐 ${site}\n\nStatus: ⏳ pending`;
 }
 const bookingMarkup = (b) => ({ inline_keyboard: [[
   { text: "✅ Confirm", callback_data: `confirm:${b.id}` },
@@ -498,16 +506,17 @@ async function handleBook(req, res) {
   try { b = JSON.parse(await readBody(req)); } catch { return json(res, 400, { ok: false, error: "bad json" }); }
   const name = String(b.name || "").trim(), phone = String(b.phone || "").trim();
   const email = String(b.email || "").trim();
+  const nationalId = toAsciiDigits(b.nationalId || "");
   const emailOk = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
-  if (!name || phone.replace(/[^\d۰-۹]/g, "").length < 7 || !emailOk)
-    return json(res, 400, { ok: false, error: "name, phone and a valid email are required" });
+  if (!name || phone.replace(/[^\d۰-۹]/g, "").length < 7 || !emailOk || !validCodeMelli(nationalId))
+    return json(res, 400, { ok: false, error: "name, valid national ID, mobile and email are required" });
 
   const proto = String(req.headers["x-forwarded-proto"] || "https").split(",")[0].trim();
   const host = String(req.headers["x-forwarded-host"] || req.headers.host || "").split(",")[0].trim();
   const reqBase = host ? `${proto}://${host}` : "";
 
   const rec = {
-    id: newId(), name, phone, email,
+    id: newId(), name, nationalId, phone, email,
     date: String(b.date || ""), time: String(b.time || ""),
     when: String(b.when || `${b.date} ${b.time}`).slice(0, 120),
     lang: b.lang === "fa" ? "fa" : "en",
