@@ -12,6 +12,7 @@
 //   RESEND_API_KEY=re_...                    (enables patient email — resend.com)
 //   MAIL_FROM=Dr. Hashemi <booking@ainoor.io> (verified Resend sender)
 //   MAIL_REPLY_TO=clinic@ainoor.io            (optional — where patient replies go)
+//   PUBLIC_BASE_URL=https://demo.ainoor.io    (used to build the patient's cancel link)
 //   TWILIO_ACCOUNT_SID=AC...                 (optional — enables patient SMS)
 //   TWILIO_AUTH_TOKEN=...
 //   TWILIO_FROM_NUMBER=+1555...
@@ -27,6 +28,7 @@ import { readFile, stat, readFile as rf } from "node:fs/promises";
 import { readFileSync, existsSync, writeFileSync } from "node:fs";
 import { extname, join, normalize, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
+import { randomUUID } from "node:crypto";
 
 const ROOT = fileURLToPath(new URL(".", import.meta.url));
 
@@ -60,6 +62,13 @@ let bookings = [];
 try { if (existsSync(DB)) bookings = JSON.parse(readFileSync(DB, "utf8")); } catch { bookings = []; }
 const save = () => { try { writeFileSync(DB, JSON.stringify(bookings, null, 2)); } catch (e) { console.error("save failed:", e.message); } };
 const newId = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+const newToken = () => randomUUID().replace(/-/g, "");
+const PUBLIC_BASE = (ENV.PUBLIC_BASE_URL || "").trim().replace(/\/$/, "");
+// Absolute link the patient taps to cancel. Falls back to the base captured at booking time.
+const cancelUrl = (b) => {
+  const base = (b.base || PUBLIC_BASE || "").replace(/\/$/, "");
+  return base && b.cancelToken ? `${base}/cancel?id=${encodeURIComponent(b.id)}&t=${encodeURIComponent(b.cancelToken)}` : "";
+};
 
 /* ---------- availability blocks (days off + blocked slots), set from the bot ---------- */
 const BLOCKS_DB = join(DATA_DIR, "blocks.json");
@@ -240,6 +249,9 @@ const patientMsg = (b, kind) => {
   if (kind === "confirmed") return fa
     ? `نوبت شما تأیید شد ✅ ${b.when}. منتظر دیدن‌تان هستیم! دکتر هاشمی`
     : `You're confirmed ✅ ${b.when}. See you then! — Dr. Hashemi's office`;
+  if (kind === "cancelled") return fa
+    ? `نوبت شما برای ${b.when} لغو شد. ممنون که اطلاع دادید — هر زمان خواستید دوباره نوبت بگیرید. دکتر هاشمی`
+    : `Your appointment for ${b.when} has been cancelled. Thanks for letting us know — you can book again anytime. — Dr. Hashemi's office`;
   return fa
     ? `متأسفیم، ${b.when} در دسترس نیست. لطفاً برای زمان دیگری تماس بگیرید. دکتر هاشمی`
     : `Sorry, ${b.when} isn't available. Please call us to pick another time. — Dr. Hashemi's office`;
@@ -282,10 +294,28 @@ function emailContent(b, kind) {
         ? `متأسفیم، این زمان دیگر در دسترس نیست. لطفاً برای انتخاب زمان دیگری به این ایمیل پاسخ دهید یا با ما تماس بگیرید؛ خوشحال می‌شویم کمک کنیم.`
         : `We're sorry — this time is no longer available. Please reply to this email or call us to pick another time; we'd be happy to help.`,
     },
+    cancelled: {
+      subject: fa ? "نوبت شما لغو شد" : "Your appointment has been cancelled",
+      badge: fa ? "لغو شد" : "Cancelled",
+      bg: "#0d6e66", accent: "#9ca3af",
+      head: fa ? `${name} عزیز،` : `Dear ${name},`,
+      body: fa
+        ? `نوبت شما طبق درخواست <strong>لغو شد</strong>. ممنون که اطلاع دادید — هر زمان خواستید می‌توانید دوباره از سایت نوبت بگیرید.`
+        : `Your appointment has been <strong>cancelled</strong> as requested. Thanks for letting us know — you're welcome to book again from the site anytime.`,
+    },
   }[kind] || t_received_fallback();
   function t_received_fallback() { return { subject: "Appointment", badge: "", bg: "#0d6e66", accent: "#0d6e66", head: "", body: "" }; }
 
   const whenLabel = fa ? "زمان درخواستی" : "Requested time";
+  const cancelHref = (kind === "received" || kind === "confirmed") ? cancelUrl(b) : "";
+  const cancelBlock = cancelHref
+    ? `<tr><td style="padding:18px 28px 0;">
+        <p style="font-size:13.5px;line-height:1.7;color:#5a736e;margin:0;">
+          ${fa ? "برنامه‌تان عوض شد؟ " : "Plans changed? "}
+          <a href="${esc(cancelHref)}" style="color:#b45309;font-weight:600;text-decoration:underline;">${fa ? "لغو این نوبت" : "Cancel this appointment"}</a>
+        </p>
+      </td></tr>`
+    : "";
   const footer = fa
     ? "این ایمیل برای هماهنگی نوبت ارسال شده و توصیه‌ی پزشکی نیست. در موارد اورژانسی با ۱۱۵ تماس بگیرید."
     : "This email is about your appointment and is not medical advice. In an emergency, call your local emergency number.";
@@ -312,7 +342,8 @@ function emailContent(b, kind) {
             </td></tr>
           </table>
         </td></tr>
-        <tr><td style="padding:0 28px 26px;">
+        ${cancelBlock}
+        <tr><td style="padding:18px 28px 26px;">
           <p style="font-size:12.5px;line-height:1.7;color:#8a9a96;margin:0;border-top:1px solid #eef2f1;padding-top:16px;">${footer}</p>
         </td></tr>
       </table>
@@ -428,7 +459,7 @@ async function handleMessage(ch, m) {
     if (!list.length)
       return void api(ch, "sendMessage", { chat_id: chat, text: `📋 ${title}: none yet.` });
 
-    const icon = s => (s === "confirmed" ? "✅" : s === "declined" ? "❌" : "⏳");
+    const icon = s => (s === "confirmed" ? "✅" : s === "declined" ? "❌" : s === "cancelled" ? "🚫" : "⏳");
     const MAX = 30;
     const lines = list.slice(0, MAX).map(b =>
       `${icon(b.status)} ${b.name}\n   📞 ${b.phone} · 🕒 ${b.when}${b.lang === "fa" ? " · 🌐 FA" : ""}`);
@@ -471,12 +502,17 @@ async function handleBook(req, res) {
   if (!name || phone.replace(/[^\d۰-۹]/g, "").length < 7 || !emailOk)
     return json(res, 400, { ok: false, error: "name, phone and a valid email are required" });
 
+  const proto = String(req.headers["x-forwarded-proto"] || "https").split(",")[0].trim();
+  const host = String(req.headers["x-forwarded-host"] || req.headers.host || "").split(",")[0].trim();
+  const reqBase = host ? `${proto}://${host}` : "";
+
   const rec = {
     id: newId(), name, phone, email,
     date: String(b.date || ""), time: String(b.time || ""),
     when: String(b.when || `${b.date} ${b.time}`).slice(0, 120),
     lang: b.lang === "fa" ? "fa" : "en",
     status: "pending", createdAt: new Date().toISOString(),
+    cancelToken: newToken(), base: PUBLIC_BASE || reqBase,
   };
   bookings.push(rec); save();
 
@@ -508,13 +544,116 @@ async function serveStatic(req, res) {
   } catch { res.writeHead(404, { "content-type": "text/plain; charset=utf-8" }); res.end("404 Not Found"); }
 }
 
+/* ---------- patient self-cancellation (secure link in their email) ---------- */
+// Branded page shown when the patient taps the Cancel link. `state` drives the copy.
+function cancelPage({ lang = "en", state, when = "", id = "", token = "" }) {
+  const fa = lang === "fa";
+  const dir = fa ? "rtl" : "ltr";
+  const font = fa ? "Vazirmatn, 'Segoe UI', Tahoma, sans-serif" : "'Segoe UI', Helvetica, Arial, sans-serif";
+  const T = {
+    confirm:  fa ? { h: "لغو نوبت", p: "آیا می‌خواهید این نوبت را لغو کنید؟", btn: "بله، لغو کن", keep: "نه، نگه‌دار" }
+                 : { h: "Cancel appointment", p: "Do you want to cancel this appointment?", btn: "Yes, cancel it", keep: "No, keep it" },
+    done:     fa ? { h: "نوبت لغو شد", p: "نوبت شما لغو شد. ایمیل تأیید برایتان ارسال شد. هر زمان خواستید دوباره نوبت بگیرید." }
+                 : { h: "Appointment cancelled", p: "Your appointment has been cancelled. We've emailed you a confirmation. You can book again anytime." },
+    already:  fa ? { h: "قبلاً لغو شده", p: "این نوبت پیش‌تر لغو شده است." }
+                 : { h: "Already cancelled", p: "This appointment has already been cancelled." },
+    inactive: fa ? { h: "نوبت فعال نیست", p: "این نوبت دیگر فعال نیست. برای هماهنگی لطفاً با مطب تماس بگیرید." }
+                 : { h: "Appointment not active", p: "This appointment is no longer active. Please contact the office if you need help." },
+    invalid:  fa ? { h: "لینک نامعتبر", p: "این لینک لغو معتبر نیست یا منقضی شده است." }
+                 : { h: "Invalid link", p: "This cancellation link is invalid or has expired." },
+  }[state];
+  const office = fa ? "مطب دکتر فروغ هاشمی" : "Dr. Foroogh Hashemi's office";
+  const whenRow = when ? `<div style="background:#f3faf8;border:1px solid #d8ebe7;border-radius:12px;padding:14px 16px;margin:18px 0;"><div style="font-size:16px;color:#0d6e66;font-weight:700;">${esc(when)}</div></div>` : "";
+  const actions = state === "confirm"
+    ? `<div id="act" style="margin-top:20px;">
+         <button id="go" style="width:100%;padding:13px;border:0;border-radius:12px;background:#b45309;color:#fff;font-size:15px;font-weight:700;cursor:pointer;font-family:inherit;">${T.btn}</button>
+         <a href="/" style="display:inline-block;margin-top:14px;color:#5a736e;font-size:14px;text-decoration:none;">${T.keep}</a>
+       </div>
+       <div id="err" style="display:none;margin-top:14px;color:#c0492f;font-size:14px;"></div>`
+    : `<a href="/" style="display:inline-block;margin-top:18px;color:#0d6e66;font-weight:600;text-decoration:none;font-size:14px;">${fa ? "بازگشت به سایت" : "Back to the site"}</a>`;
+  const script = state === "confirm" ? `<script>
+    document.getElementById('go').addEventListener('click', async function(){
+      this.disabled = true; this.textContent = ${JSON.stringify(fa ? "در حال لغو…" : "Cancelling…")};
+      try {
+        const r = await fetch('/api/cancel', { method:'POST', headers:{'content-type':'application/json'}, body: JSON.stringify({ id:${JSON.stringify(id)}, t:${JSON.stringify(token)} }) });
+        const j = await r.json();
+        if (j.ok) {
+          document.getElementById('title').textContent = ${JSON.stringify(T.done ? (fa ? "نوبت لغو شد" : "Appointment cancelled") : "")};
+          document.getElementById('msg').textContent = ${JSON.stringify(fa ? "نوبت شما لغو شد. ایمیل تأیید برایتان ارسال شد." : "Your appointment has been cancelled. We've emailed you a confirmation.")};
+          document.getElementById('act').style.display='none';
+          document.getElementById('badge').textContent = ${JSON.stringify(fa ? "لغو شد" : "Cancelled")};
+        } else { throw new Error(j.error||'failed'); }
+      } catch(e){
+        this.disabled=false; this.textContent=${JSON.stringify(T.btn)};
+        var el=document.getElementById('err'); el.style.display='block';
+        el.textContent=${JSON.stringify(fa ? "لغو انجام نشد. لطفاً دوباره تلاش کنید یا تماس بگیرید." : "Could not cancel. Please try again or call us.")};
+      }
+    });
+  </script>` : "";
+  const badge = state === "confirm" ? (fa ? "لغو نوبت" : "Cancel") : T.h;
+  return `<!doctype html><html lang="${fa ? "fa" : "en"}" dir="${dir}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${esc(T.h)}</title>${fa ? '<link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;600;700&display=swap" rel="stylesheet">' : ""}</head>
+<body style="margin:0;background:#f1f5f4;font-family:${font};direction:${dir};">
+  <div style="max-width:460px;margin:0 auto;padding:40px 16px;">
+    <div style="background:#fff;border-radius:18px;overflow:hidden;box-shadow:0 10px 30px rgba(13,110,102,.12);">
+      <div style="background:#0d6e66;padding:20px 26px;color:#fff;font-weight:700;font-size:17px;">${office}</div>
+      <div style="padding:28px 26px;text-align:center;">
+        <span id="badge" style="display:inline-block;background:#b453091a;color:#b45309;font-size:12.5px;font-weight:600;padding:5px 12px;border-radius:999px;">${esc(badge)}</span>
+        <h1 id="title" style="font-size:20px;color:#14201d;margin:16px 0 8px;">${esc(T.h)}</h1>
+        <p id="msg" style="font-size:15px;line-height:1.7;color:#3c4b47;margin:0;">${esc(T.p)}</p>
+        ${whenRow}
+        ${actions}
+      </div>
+    </div>
+  </div>
+  ${script}
+</body></html>`;
+}
+
+function sendHtml(res, code, html) { res.writeHead(code, { "content-type": "text/html; charset=utf-8", "cache-control": "no-store" }); res.end(html); }
+
+function handleCancelPage(req, res) {
+  const u = new URL(req.url, "http://x");
+  const id = u.searchParams.get("id") || "", token = u.searchParams.get("t") || "";
+  const b = bookings.find((x) => x.id === id);
+  if (!b || !b.cancelToken || b.cancelToken !== token) return sendHtml(res, 404, cancelPage({ state: "invalid" }));
+  if (b.status === "cancelled") return sendHtml(res, 200, cancelPage({ lang: b.lang, state: "already", when: b.when }));
+  if (b.status === "declined") return sendHtml(res, 200, cancelPage({ lang: b.lang, state: "inactive", when: b.when }));
+  return sendHtml(res, 200, cancelPage({ lang: b.lang, state: "confirm", when: b.when, id: b.id, token: b.cancelToken }));
+}
+
+async function handleCancel(req, res) {
+  let body;
+  try { body = JSON.parse(await readBody(req)); } catch { return json(res, 400, { ok: false, error: "bad json" }); }
+  const id = String(body.id || ""), token = String(body.t || "");
+  const b = bookings.find((x) => x.id === id);
+  if (!b || !b.cancelToken || b.cancelToken !== token) return json(res, 400, { ok: false, error: "invalid" });
+  if (b.status === "cancelled") return json(res, 200, { ok: true, already: true });
+  if (b.status === "declined") return json(res, 409, { ok: false, error: "inactive" });
+
+  b.status = "cancelled";
+  b.cancelledAt = new Date().toISOString();
+  save();
+
+  // Reflect on every staff channel: mark the original message and send a fresh alert.
+  const finalText = staffText(b).replace("Status: ⏳ pending", "Status: 🚫 CANCELLED by patient");
+  for (const c of CHANNELS) {
+    const rec = b.staffMsgs && b.staffMsgs[c.name];
+    if (rec) await api(c, "editMessageText", { chat_id: rec.chatId, message_id: rec.msgId, text: finalText });
+    if (c.staff) await api(c, "sendMessage", { chat_id: c.staff, text: `🚫 Patient cancelled\n\n👤 ${b.name}\n🕒 ${b.when}\n\nThe slot is now open again.` });
+  }
+  await notifyPatient(b, "cancelled");
+  json(res, 200, { ok: true });
+}
+
 createServer(async (req, res) => {
   const path = (req.url || "/").split("?")[0];
   if (req.method === "POST" && path === "/api/book") return handleBook(req, res);
+  if (req.method === "POST" && path === "/api/cancel") return handleCancel(req, res);
+  if (req.method === "GET" && path === "/cancel") return handleCancelPage(req, res);
   if (req.method === "GET" && path === "/api/bookings") return json(res, 200, bookings); // local convenience view
   if (req.method === "GET" && path === "/api/availability") {
     // The website reads this to grey out days off, blocked slots, and already-taken slots.
-    const bookedSlots = bookings.filter((b) => b.status !== "declined").map((b) => `${b.date} ${b.time}`);
+    const bookedSlots = bookings.filter((b) => b.status !== "declined" && b.status !== "cancelled").map((b) => `${b.date} ${b.time}`);
     return json(res, 200, { blockedDays: blocks.days, blockedSlots: blocks.slots, bookedSlots });
   }
   if (req.method === "GET") return serveStatic(req, res);
