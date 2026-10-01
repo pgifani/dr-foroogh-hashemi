@@ -1,11 +1,14 @@
 # Ainoor — Pediatric Clinic Website & Booking Backend
 
 A bilingual (English + Persian/RTL) website for a doctor, with an online **appointment
-booking system**, an **AI-style care-assistant chatbot**, and a small **Node backend**. New
+booking system**, an **AI-style care-assistant chatbot**, and a small **Node backend**. The
+booking panel shows the **week ahead**; the patient picks a day, picks a **15-minute slot** (the
+clinic's real per-day hours), and enters **name, national ID (کد ملی), mobile, and email**. New
 bookings are pushed to the clinic's messaging apps — **Telegram and Bale (بله)** — with
-Confirm/Decline buttons, and the doctor can **manage availability (days off, blocked slots)
-straight from the bot** using Persian (Jalali/شمسی) or Gregorian dates. Patient SMS/WhatsApp is
-optional (Twilio).
+Confirm/Decline buttons, and the patient gets a branded **confirmation email (via Resend)** with a
+**one-click cancel link**. The doctor can **cancel** a booking too, and **manage availability
+(days off, blocked slots) straight from the bot** using Persian (Jalali/شمسی) or Gregorian dates.
+Patient SMS/WhatsApp is optional (Twilio).
 
 This README is both the documentation for this project **and a step-by-step playbook** so you
 can build and deploy the next doctor's site from scratch.
@@ -37,10 +40,14 @@ A single, self-contained web project:
 
 - **Two pages:** `index.html` (English) and `fa.html` (Persian, right-to-left) with a language
   switcher. Same design, translated content.
-- **Appointment booking:** a weekly calendar showing **real availability** — a slot is open
-  unless it's in the past, already booked, or blocked by the doctor. The patient taps a free
-  slot, gives just their **name + phone**, and sees an instant on-page confirmation. The Persian
-  page shows Jalali (شمسی) dates.
+- **Appointment booking:** the patient sees the **week ahead**, **clicks a day to open its
+  15-minute slots** (per-day clinic hours; e.g. Sat–Wed 12:00–16:00, Thu & Fri closed) and picks a
+  free one — a slot is open unless it's in the past, already booked, or blocked by the doctor. They
+  enter **name, national ID (کد ملی, checksum-validated), mobile, and email**, and see an instant
+  on-page confirmation. The Persian page shows Jalali (شمسی) dates.
+- **Confirmation email + self-cancel:** the patient gets a branded bilingual email (via **Resend**)
+  on request / confirmed / declined / cancelled, each with a secure **"cancel this appointment"**
+  link that frees the slot and alerts staff. The doctor can also cancel from the bot.
 - **AI care assistant:** a floating chatbot answering logistics (hours, location, insurance,
   services, what to bring). It is rule-based and **deliberately never gives medical advice** —
   it routes symptoms to the doctor and emergencies to the local emergency number.
@@ -50,9 +57,10 @@ A single, self-contained web project:
 - **Availability managed from the bot:** the doctor closes a day or a single time from the chat
   (`/availability` buttons, `/off فردا`, `/block 1405/07/11 10:00`, …) and the website's calendar
   reflects it immediately. Persian (Jalali) **and** Gregorian dates both work.
-- **Backend (`server.mjs`):** serves the site and exposes `POST /api/book` + `GET /api/availability`.
-  **Zero npm dependencies.** Runs in a safe **mock mode** (prints messages to the console) until you
-  add credentials. Patient **SMS/WhatsApp via Twilio** is optional.
+- **Backend (`server.mjs`):** serves the site and exposes `POST /api/book`, `GET /api/availability`,
+  and `GET /cancel` + `POST /api/cancel`. **Zero npm dependencies.** Runs in a safe **mock mode**
+  (prints messages to the console) until you add credentials. Patient email is via **Resend**;
+  **SMS/WhatsApp via Twilio** is optional.
 
 **Design choices:** custom teal + marigold palette (not generic "medical blue"), Fraunces +
 Plus Jakarta Sans fonts (English), Vazirmatn (Persian). No frameworks, no build step.
@@ -65,14 +73,16 @@ Plus Jakarta Sans fonts (English), Vazirmatn (Persian). No frameworks, no build 
   Patient's browser
         │  loads index.html / fa.html  (+ 1.png … 4.png)
         │  GET  /api/availability   → greys out days off / blocked / already-booked slots
-        │  POST /api/book  { name, phone, date, time, lang }
+        │  POST /api/book  { name, nationalId, phone, email, date, time, lang }
+        │  GET  /cancel?id=&t=  → confirm page   ·   POST /api/cancel  → frees the slot
         ▼
   server.mjs  (Node 22, zero npm dependencies)
         ├─ serves the static site
         ├─ stores bookings → bookings.json  ·  availability blocks → blocks.json   (DATA_DIR)
-        ├─ pushes the booking to Telegram AND Bale staff chats (Confirm / Decline buttons)
+        ├─ emails the patient via Resend (request / confirmed / declined / cancelled + cancel link)
+        ├─ pushes the booking to Telegram AND Bale staff chats (Confirm / Decline / Cancel buttons)
         ├─ (optional) Twilio SMS / WhatsApp → patient
-        └─ long-polls each channel for: Confirm/Decline taps, and /bookings, /off, /block … commands
+        └─ long-polls each channel for: Confirm/Decline/Cancel taps, and /bookings, /off, /block … commands
 ```
 
 - **Channel-agnostic bot:** Telegram and Bale share the same bot API, so one code path serves
@@ -140,6 +150,10 @@ local runs) or in your host's environment-variable settings (Vercel / Coolify).
 |---|---|
 | `PORT` | Port to listen on (default `3000`). |
 | `DATA_DIR` | Folder for `bookings.json` + `blocks.json`. Set to a mounted volume in production (e.g. `/app/data`) so data survives redeploys. |
+| `RESEND_API_KEY` | From **resend.com**. Enables the patient **confirmation emails**. |
+| `MAIL_FROM` | Email sender, e.g. `Dr. Foroogh Hashemi <booking@ainoor.io>` (the domain must be verified in Resend). |
+| `MAIL_REPLY_TO` | Where patient replies go — an inbox you actually read. Optional. |
+| `PUBLIC_BASE_URL` | Public site URL, e.g. `https://demo.ainoor.io` — used to build the patient's **cancel link**. |
 | `TELEGRAM_BOT_TOKEN` | From **@BotFather** (in Telegram). Enables Telegram. |
 | `TELEGRAM_STAFF_CHAT_ID` | The Telegram chat that receives bookings. Message the bot `/id` to learn it. |
 | `BALE_BOT_TOKEN` | From **@BotFather** (in the **Bale** app). Enables Bale — the same features as Telegram. |
@@ -278,7 +292,21 @@ digits OK), or a **Gregorian** date `2026-10-08`. A year under 1700 is treated a
 converted automatically. The grid buttons and confirmations are shown in Persian.
 
 When a booking arrives, staff tap **✅ Confirm / ❌ Decline** — this updates the message on every
-channel and (if Twilio is configured) texts the patient.
+channel and **emails the patient** the result. A **confirmed** booking keeps a **🚫 Cancel
+appointment** button so staff can cancel it later (which reopens the slot and emails the patient).
+
+### Patient email (Resend) — the default patient notification
+Patient confirmations go by **email** (works today; SMS to Iran would need an Iranian gateway).
+1. Create a free account at **resend.com** and an API key.
+2. **Verify your sending domain** (e.g. `ainoor.io`): add the DKIM `TXT`, the two sending `CNAME`s,
+   and the `_dmarc` `TXT` records it gives you to your DNS. The DKIM value must start with `p=`.
+   (Free tier = 1 verified domain.)
+3. Set `RESEND_API_KEY`, `MAIL_FROM` (`Name <booking@yourdomain>`), `MAIL_REPLY_TO`, and
+   `PUBLIC_BASE_URL` in Coolify → **Redeploy**.
+
+The patient gets a branded bilingual email on request / confirm / decline / cancel; the request and
+confirm emails carry a secure **cancel link** (`/cancel?id=&t=`). Moving a client to their own domain
+later = verify it + change `MAIL_FROM` (no code change).
 
 ### Patient SMS / WhatsApp (optional — Twilio)
 - **SMS:** create a Twilio account + number, set `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`,
@@ -300,14 +328,18 @@ The repeatable process for each new doctor:
 1. **Copy the `website/` folder** to a new folder (or start a new repo from it).
 2. **Edit the content** in `index.html` (and `fa.html` if bilingual):
    - Name, tagline, services, hours, address, phone, email.
+   - **Set the weekly schedule** in the booking script of each file: `OPEN_DAYS` (JS weekdays,
+     Sun=0 … Sat=6), `START_H`, `END_H`, and `STEP` (minutes per slot). Update the displayed hours
+     text too (hero badge, sidebar, contact, chatbot `CLINIC.hours`).
    - Replace the photos (`1.png … 4.png`) and the doctor's portrait.
    - Update the colors in the `tailwind.config` block if you want a different palette.
 3. **Push to a new GitHub repo** (one repo per client).
 4. **In Coolify → + New Resource → Public Git Repository** → Dockerfile build → port 3000 → Deploy.
 5. **Add a subdomain** for the client (`clinic-name.ainoor.io` or the client's own domain) and
    redeploy for HTTPS.
-6. **Add that client's own** channel env vars (`TELEGRAM_*` and/or `BALE_*`, plus `TWILIO_*` if
-   using SMS), and a persistent-storage mount at `/app/data`.
+6. **Add that client's own** env vars — email (`RESEND_API_KEY`, `MAIL_FROM`, `MAIL_REPLY_TO`,
+   `PUBLIC_BASE_URL`), messaging (`TELEGRAM_*` and/or `BALE_*`), optional `TWILIO_*` — and a
+   persistent-storage mount at `/app/data`.
 
 > Tip: register a client's **own domain in the client's name** so they own their brand. Keep the
 > bare `ainoor.io` for your agency. One VPS can host many client sites — scale the server up
@@ -328,7 +360,8 @@ The repeatable process for each new doctor:
 | Domain shows **404** / SSL cert invalid after adding it in Coolify | The proxy/cert only apply on the next deploy. Fix: **Redeploy** the app. |
 | Bookings disappear after a redeploy | `bookings.json` was inside the container. Fix: add **Persistent Storage** at `/app/data` + env `DATA_DIR=/app/data`. |
 | Telegram/Bale not sending | Running in mock mode (messages print to the container logs). Add `TELEGRAM_BOT_TOKEN`/`BALE_BOT_TOKEN` + the matching `*_STAFF_CHAT_ID` and redeploy. |
-| Booking says "we'll text you" but no SMS arrives | Twilio isn't configured, so patient SMS is mock (logged only). Add `TWILIO_*` env vars, or change the confirmation copy so it doesn't promise a text. |
+| Confirmation **email** not arriving | Resend domain not verified, or `RESEND_API_KEY`/`MAIL_FROM` missing. Verify the domain's DNS in Resend (DKIM value starts with `p=`, the two sending CNAMEs, DMARC), set the env vars, redeploy, and check **spam** on the first send. |
+| Booking says "we'll text you" but no SMS arrives | Twilio isn't configured, so patient SMS is mock (logged only). Patient notifications default to **email** now; add `TWILIO_*` only if you also want SMS. |
 | Bot doesn't reply to `/id` | Token not active yet — check you added it in Coolify and **redeployed**; look for `telegram: polling started` / `bale: polling started` in the logs. |
 | Website calendar / Persian page not updating after a change | Browser cache. Do a **hard refresh** (Ctrl/Cmd+Shift+R) or open in a private window. The server sends `no-store`, but tabs can hold a stale copy. |
 | DNS not resolving | Wait a few minutes after adding the A record; verify with `nslookup <subdomain>`. |
@@ -342,8 +375,10 @@ The repeatable process for each new doctor:
 - **Staff-only bot commands.** `/bookings` and all availability commands only respond to the
   configured staff chat id — so if someone else finds the bot, they can't see patient data or
   change availability.
-- **Patient data = privacy law** (GDPR/etc.). Collect the minimum (name + phone), add a privacy
-  policy + consent before going fully live, and keep the chatbot to **non-medical** logistics.
+- **Patient data = privacy law** (GDPR/etc.). This collects **name, national ID, mobile, email** —
+  national ID is sensitive, so add a privacy policy + consent before going fully live, keep
+  `bookings.json` on the private data volume (gitignored), and keep the chatbot to **non-medical**
+  logistics.
 - **Coolify admin:** register it immediately (first visitor becomes admin) and use a strong
   password.
 - **VPS hardening (recommended):** SSH keys instead of passwords, a firewall (allow 22/80/443),
