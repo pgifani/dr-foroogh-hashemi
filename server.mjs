@@ -381,6 +381,25 @@ async function handleCallback(ch, cq) {
     return void api(ch, "answerCallbackQuery", { callback_query_id: cq.id, text: `${faDate(id, false)} ${wasOff ? "باز شد ✅" : "بسته شد ⛔"}` });
   }
 
+  // Staff cancels a booking (works on pending or confirmed). Frees the slot + notifies the patient.
+  if (action === "scancel") {
+    if (ch.staff && String(cq.from && cq.from.id) !== String(ch.staff) && String(cq.message && cq.message.chat && cq.message.chat.id) !== String(ch.staff))
+      return void api(ch, "answerCallbackQuery", { callback_query_id: cq.id, text: "Staff only." });
+    const bk = bookings.find((x) => x.id === id);
+    if (!bk) return void api(ch, "answerCallbackQuery", { callback_query_id: cq.id, text: "Not found." });
+    if (bk.status === "cancelled") return void api(ch, "answerCallbackQuery", { callback_query_id: cq.id, text: "Already cancelled." });
+    bk.status = "cancelled"; bk.cancelledAt = new Date().toISOString(); bk.cancelledBy = "clinic"; save();
+    const who2 = (cq.from && (cq.from.first_name || cq.from.username)) || "staff";
+    const text2 = staffText(bk).replace("Status: ⏳ pending", `Status: 🚫 CANCELLED by ${who2}`);
+    for (const c of CHANNELS) {
+      const rec = bk.staffMsgs && bk.staffMsgs[c.name];
+      if (rec) await api(c, "editMessageText", { chat_id: rec.chatId, message_id: rec.msgId, text: text2 });
+    }
+    await api(ch, "answerCallbackQuery", { callback_query_id: cq.id, text: "Cancelled — patient notified." });
+    await notifyPatient(bk, "declined"); // "sorry, please contact us to reschedule"
+    return;
+  }
+
   const b = bookings.find((x) => x.id === id);
   if (!b) { await api(ch, "answerCallbackQuery", { callback_query_id: cq.id, text: "This booking is no longer available." }); return; }
   if (b.status !== "pending") { await api(ch, "answerCallbackQuery", { callback_query_id: cq.id, text: `Already ${b.status}.` }); return; }
@@ -392,10 +411,11 @@ async function handleCallback(ch, cq) {
   const mark = b.status === "confirmed" ? "✅ CONFIRMED" : "❌ DECLINED";
   const who = (cq.from && (cq.from.first_name || cq.from.username)) || "staff";
   const finalText = staffText(b).replace("Status: ⏳ pending", `Status: ${mark} by ${who}`);
-  // Reflect the decision on every channel that received this booking (and remove the buttons).
+  // Confirmed bookings keep a Cancel button so staff can cancel later; declined ones lose all buttons.
+  const keep = b.status === "confirmed" ? { inline_keyboard: [[{ text: "🚫 Cancel appointment", callback_data: "scancel:" + b.id }]] } : undefined;
   for (const c of CHANNELS) {
     const rec = b.staffMsgs && b.staffMsgs[c.name];
-    if (rec) await api(c, "editMessageText", { chat_id: rec.chatId, message_id: rec.msgId, text: finalText });
+    if (rec) await api(c, "editMessageText", { chat_id: rec.chatId, message_id: rec.msgId, text: finalText, ...(keep ? { reply_markup: keep } : {}) });
   }
   await api(ch, "answerCallbackQuery", { callback_query_id: cq.id, text: b.status === "confirmed" ? "Confirmed — patient notified." : "Declined — patient notified." });
   await notifyPatient(b, b.status);
