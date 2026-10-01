@@ -298,7 +298,7 @@
   <div class="card px-5 sm:px-8 py-5 grid sm:grid-cols-2 lg:grid-cols-4 gap-5">
     <div class="flex items-center gap-3">
       <span class="grid place-items-center w-11 h-11 rounded-xl bg-teal-soft text-teal-deep flex-none"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></span>
-      <div><div class="font-semibold text-[.95rem]">Open 6 days</div><div class="text-[.82rem] text-ink-soft">Mon–Fri 8:30–5:30, Sat 9–1</div></div>
+      <div><div class="font-semibold text-[.95rem]">Open 5 days</div><div class="text-[.82rem] text-ink-soft">Sat–Wed 12–4 pm</div></div>
     </div>
     <div class="flex items-center gap-3">
       <span class="grid place-items-center w-11 h-11 rounded-xl bg-teal-soft text-teal-deep flex-none"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 6-9 12-9 12s-9-6-9-12a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg></span>
@@ -464,14 +464,14 @@
   <div class="grid lg:grid-cols-[.85fr_1.15fr] gap-8 items-start">
     <!-- reassurance -->
     <div class="reveal">
-      <span class="eyebrow"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="3"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>Book an appointment</span>
+      <span class="eyebrow"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="3"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>Online booking</span>
       <h2 class="mt-4 text-[2.1rem] md:text-[2.5rem] font-semibold leading-[1.1]">Pick a time that works for you.</h2>
-      <p class="mt-4 text-ink-soft leading-relaxed max-w-[46ch]">Choose an open slot from the calendar, then leave your name and number. We'll text or call to confirm — that's it.</p>
+      <p class="mt-4 text-ink-soft leading-relaxed max-w-[46ch]">First choose a day to open its available times — appointments run every 15 minutes. Then just enter your name, national ID, and mobile number. We'll email you to confirm.</p>
 
       <div class="mt-7 space-y-4">
         <div class="flex items-start gap-3">
           <span class="grid place-items-center w-10 h-10 rounded-xl bg-teal-soft text-teal-deep flex-none"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1.9.4 1.8.7 2.7a2 2 0 0 1-.5 2.1L8.1 9.9a16 16 0 0 0 6 6l1.4-1.2a2 2 0 0 1 2.1-.5c.9.3 1.8.6 2.7.7a2 2 0 0 1 1.7 2z"/></svg></span>
-          <div><div class="font-semibold">Prefer to call?</div><a href="tel:+15552134600" class="link-soft">(555) 213-4600</a><span class="text-ink-soft text-[.9rem]"> — Mon–Fri 8:30–5:30</span></div>
+          <div><div class="font-semibold">Prefer to call?</div><a href="tel:+15552134600" class="link-soft">(555) 213-4600</a><span class="text-ink-soft text-[.9rem]"> — Sat–Wed 12–4 pm</span></div>
         </div>
         <div class="flex items-start gap-3">
           <span class="grid place-items-center w-10 h-10 rounded-xl bg-marigold-soft text-marigold flex-none"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2z"/><path d="M12 8v4M12 16h.01"/></svg></span>
@@ -483,23 +483,16 @@
     <!-- scheduler -->
     <div class="reveal card p-5 sm:p-7">
       <div id="scheduler">
-        <div class="flex items-center justify-between gap-3 mb-4">
-          <button type="button" id="prevWeek" class="grid place-items-center w-10 h-10 rounded-full bg-teal-soft text-teal-deep hover:bg-teal hover:text-white transition disabled:opacity-40 disabled:pointer-events-none" aria-label="Previous week">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
-          </button>
-          <div class="text-center">
-            <div id="weekRange" class="font-display text-[1.1rem] font-semibold text-ink"></div>
-            <div class="text-[.78rem] text-ink-soft">Tap an available time</div>
-          </div>
-          <button type="button" id="nextWeek" class="grid place-items-center w-10 h-10 rounded-full bg-teal-soft text-teal-deep hover:bg-teal hover:text-white transition disabled:opacity-40 disabled:pointer-events-none" aria-label="Next week">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg>
-          </button>
+        <div class="mb-3">
+          <div class="font-display text-[1.05rem] font-semibold text-ink">Choose a day</div>
+          <div class="text-[.78rem] text-ink-soft">The week ahead · every 15 minutes</div>
         </div>
-        <div id="weekGrid" class="flex gap-2 overflow-x-auto pb-1 -mx-1 px-1"></div>
+        <div id="dayRow" class="grid grid-cols-4 sm:grid-cols-7 gap-2"></div>
+        <div id="slotPanel" class="mt-5"></div>
       </div>
 
       <div id="pickHint" class="mt-5 pt-5 border-t border-black/5 text-center text-ink-soft text-[.92rem]">
-        Select an open time above — we'll only ask for your name and number.
+        Pick a day, then an open time — we'll only ask for your name, national ID, and mobile.
       </div>
 
       <form id="bookForm" class="hidden mt-5 pt-5 border-t border-black/5" novalidate>
@@ -630,7 +623,7 @@
           <div class="flex items-start gap-3"><span class="text-teal-deep mt-0.5"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 6-9 12-9 12s-9-6-9-12a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg></span><div><div class="font-semibold">Address</div><div class="text-ink-soft">128 Maple Grove Ave, Suite 200<br>Your City, ST 00000</div></div></div>
           <div class="flex items-start gap-3"><span class="text-teal-deep mt-0.5"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1.9.4 1.8.7 2.7a2 2 0 0 1-.5 2.1L8.1 9.9a16 16 0 0 0 6 6l1.4-1.2a2 2 0 0 1 2.1-.5c.9.3 1.8.6 2.7.7a2 2 0 0 1 1.7 2z"/></svg></span><div><div class="font-semibold">Phone</div><a href="tel:+15552134600" class="link-soft">(555) 213-4600</a></div></div>
           <div class="flex items-start gap-3"><span class="text-teal-deep mt-0.5"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="3"/><path d="M3 6l9 7 9-7"/></svg></span><div><div class="font-semibold">Email</div><a href="mailto:hello@drhashemipeds.com" class="link-soft">hello@drhashemipeds.com</a></div></div>
-          <div class="flex items-start gap-3"><span class="text-teal-deep mt-0.5"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></span><div><div class="font-semibold">Hours</div><div class="text-ink-soft">Mon–Fri 8:30 am – 5:30 pm<br>Sat 9:00 am – 1:00 pm · Sun closed</div></div></div>
+          <div class="flex items-start gap-3"><span class="text-teal-deep mt-0.5"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></span><div><div class="font-semibold">Hours</div><div class="text-ink-soft">Sat–Wed 12:00 – 4:00 pm<br>Thu &amp; Fri closed</div></div></div>
         </div>
         <a href="#book" class="btn btn-primary mt-7">Book an appointment</a>
       </div>
@@ -736,16 +729,14 @@ document.querySelectorAll('.acc-btn').forEach(btn => {
 
 /* ---------- booking: weekly slot picker ---------- */
 (function(){
-  const CLOSED_DAY = 0;   // Sunday closed
-  const HALF_DAY   = 6;   // Saturday half day
-  const FULL_SLOTS = ['09:00','10:00','11:00','12:00','14:00','15:00','16:00','17:00'];
-  const HALF_SLOTS = ['09:00','10:00','11:00','12:00'];
-  const MAX_WEEKS  = 4;
+  // Hours: Sat–Wed 12–4 pm, every 15 min. Thursday & Friday closed.
+  const OPEN_DAYS = new Set([6,0,1,2,3]); // getDay: Sat=6, Sun=0 … Wed=3
+  const START_H = 12, END_H = 16, STEP = 15;
+  const SLOTS = (() => { const a=[]; for (let m=START_H*60; m<END_H*60; m+=STEP) a.push(String(Math.floor(m/60)).padStart(2,'0')+':'+String(m%60).padStart(2,'0')); return a; })();
+  const DAYS_AHEAD = 7; // at most one week ahead
 
-  const grid = document.getElementById('weekGrid');
-  const weekRange = document.getElementById('weekRange');
-  const prevBtn = document.getElementById('prevWeek');
-  const nextBtn = document.getElementById('nextWeek');
+  const dayRow = document.getElementById('dayRow');
+  const slotPanel = document.getElementById('slotPanel');
   const hint = document.getElementById('pickHint');
   const form = document.getElementById('bookForm');
   const summary = document.getElementById('pickSummary');
@@ -753,8 +744,8 @@ document.querySelectorAll('.acc-btn').forEach(btn => {
   const success = document.getElementById('bookSuccess');
   const successMsg = document.getElementById('successMsg');
 
-  let weekOffset = 0;
   let selected = null;
+  let selectedDayISO = null;
   let blockedDays = new Set(), blockedSlots = new Set(), bookedSlots = new Set();
   async function loadAvailability(){
     try {
@@ -776,10 +767,8 @@ document.querySelectorAll('.acc-btn').forEach(btn => {
     return r<2 ? c===r : c===11-r;
   }
 
-  function slotsFor(day){
-    const wd = day.getDay();
-    if (wd === CLOSED_DAY) return [];
-    return wd === HALF_DAY ? HALF_SLOTS : FULL_SLOTS;
+  function isClosedDay(day, dISO){
+    return !OPEN_DAYS.has(day.getDay()) || blockedDays.has(dISO);
   }
   function isOpen(dISO, time){
     if (new Date(dISO+'T'+time+':00') < new Date()) return false;   // no past times
@@ -787,66 +776,94 @@ document.querySelectorAll('.acc-btn').forEach(btn => {
     if (bookedSlots.has(dISO + ' ' + time)) return false;           // already taken
     return true;
   }
+  function openSlots(day, dISO){
+    return isClosedDay(day, dISO) ? [] : SLOTS.filter(t => isOpen(dISO, t));
+  }
 
-  function render(){
-    grid.innerHTML = '';
+  // One row of day chips (one week ahead). Clicking a day opens its available times.
+  function renderDays(){
+    dayRow.innerHTML = '';
     const base = startOfToday();
-    base.setDate(base.getDate() + weekOffset*7);
-    const first = new Date(base), last = new Date(base); last.setDate(last.getDate()+6);
-    weekRange.textContent = first.toLocaleDateString('en-US',{month:'short',day:'numeric'}) + ' – ' + last.toLocaleDateString('en-US',{month:'short',day:'numeric'});
-    prevBtn.disabled = weekOffset <= 0;
-    nextBtn.disabled = weekOffset >= MAX_WEEKS;
-
-    const todayISO = iso(startOfToday());
-    for (let i=0;i<7;i++){
+    const todayISO = iso(base);
+    for (let i=0;i<DAYS_AHEAD;i++){
       const day = new Date(base); day.setDate(day.getDate()+i);
       const dISO = iso(day);
+      const closed = isClosedDay(day, dISO);
+      const avail = closed ? [] : openSlots(day, dISO);
+      const disabled = closed || avail.length === 0;
+      const isSel = dISO === selectedDayISO;
       const isToday = dISO === todayISO;
-      const col = document.createElement('div');
-      col.className = 'flex-none w-[116px] lg:flex-1 lg:w-auto';
-      const head = document.createElement('div');
-      head.className = 'text-center mb-2';
-      head.innerHTML = `<div class="text-[.72rem] ${isToday?'text-teal-deep font-semibold':'text-ink-soft'}">${isToday?'Today':day.toLocaleDateString('en-US',{weekday:'short'})}</div>
-                        <div class="text-[.95rem] font-semibold text-ink">${day.toLocaleDateString('en-US',{month:'short',day:'numeric'})}</div>`;
-      col.appendChild(head);
-
-      const dayOff = blockedDays.has(dISO);
-      const slots = dayOff ? [] : slotsFor(day);
-      if (!slots.length){
-        const closed = document.createElement('div');
-        closed.className = 'text-center text-[.74rem] text-ink-soft/70 py-3 rounded-xl bg-black/[.02]';
-        closed.textContent = dayOff ? 'Day off' : 'Closed';
-        col.appendChild(closed);
-      } else {
-        const stack = document.createElement('div');
-        stack.className = 'flex flex-col gap-1.5';
-        let any = false;
-        slots.forEach(t => {
-          const open = isOpen(dISO, t);
-          const isSel = selected && selected.iso===dISO && selected.time===t;
-          const b = document.createElement('button');
-          b.type = 'button'; b.textContent = fmtTime(t); b.disabled = !open;
-          b.className = 'text-[.82rem] font-medium rounded-xl py-2 transition ' +
-            (isSel ? 'bg-teal text-white shadow-[var(--shadow-soft)]'
-             : open ? 'bg-teal-soft text-teal-deep hover:bg-teal hover:text-white'
-             : 'bg-black/[.03] text-ink-soft/50 line-through cursor-not-allowed');
-          if (open){ any = true; b.addEventListener('click', () => pick(day, dISO, t)); }
-          stack.appendChild(b);
-        });
-        col.appendChild(stack);
-        if (!any){
-          const none = document.createElement('div');
-          none.className = 'text-center text-[.7rem] text-ink-soft/60 mt-1'; none.textContent = 'Full';
-          col.appendChild(none);
-        }
-      }
-      grid.appendChild(col);
+      const b = document.createElement('button');
+      b.type = 'button'; b.disabled = disabled;
+      b.className = 'rounded-2xl py-2.5 px-1 text-center transition ' +
+        (isSel ? 'bg-teal text-white shadow-[var(--shadow-soft)]'
+         : disabled ? 'bg-black/[.03] text-ink-soft/45 cursor-not-allowed'
+         : 'bg-teal-soft text-teal-deep hover:bg-teal hover:text-white');
+      const wd = isToday ? 'Today' : day.toLocaleDateString('en-US',{weekday:'short'});
+      const dlabel = day.toLocaleDateString('en-US',{month:'short',day:'numeric'});
+      const sub = closed ? 'Closed' : (avail.length===0 ? 'Full' : '');
+      b.innerHTML = `<div class="text-[.7rem] ${isSel?'text-white/85':''}">${wd}</div>
+                     <div class="text-[.95rem] font-semibold leading-tight mt-0.5">${dlabel}</div>
+                     ${sub?`<div class="text-[.64rem] mt-0.5 ${isSel?'text-white/80':'text-ink-soft/60'}">${sub}</div>`:''}`;
+      if (!disabled) b.addEventListener('click', () => selectDay(day, dISO));
+      dayRow.appendChild(b);
     }
+  }
+
+  function renderSlots(){
+    slotPanel.innerHTML = '';
+    if (!selectedDayISO){
+      slotPanel.innerHTML = '<div class="text-center text-[.85rem] text-ink-soft/70 py-4">Choose a day to see available times.</div>';
+      return;
+    }
+    const day = new Date(selectedDayISO+'T00:00:00');
+    const avail = openSlots(day, selectedDayISO);
+    const head = document.createElement('div');
+    head.className = 'text-[.82rem] text-ink-soft mb-2.5';
+    head.textContent = 'Available times — ' + day.toLocaleDateString('en-US',{weekday:'long', month:'long', day:'numeric'});
+    slotPanel.appendChild(head);
+    if (!avail.length){
+      const none = document.createElement('div');
+      none.className = 'text-center text-[.85rem] text-ink-soft/70 py-3 rounded-xl bg-black/[.02]';
+      none.textContent = 'No open times on this day.';
+      slotPanel.appendChild(none);
+      return;
+    }
+    const wrap = document.createElement('div');
+    wrap.className = 'grid grid-cols-2 sm:grid-cols-3 gap-2';
+    avail.forEach(t => {
+      const isSel = selected && selected.iso===selectedDayISO && selected.time===t;
+      const b = document.createElement('button');
+      b.type='button'; b.textContent = fmtTime(t);
+      b.className = 'text-[.82rem] font-medium rounded-xl py-2.5 transition ' +
+        (isSel ? 'bg-teal text-white shadow-[var(--shadow-soft)]' : 'bg-teal-soft text-teal-deep hover:bg-teal hover:text-white');
+      b.addEventListener('click', () => pick(day, selectedDayISO, t));
+      wrap.appendChild(b);
+    });
+    slotPanel.appendChild(wrap);
+  }
+
+  function selectDay(day, dISO){
+    selectedDayISO = dISO;
+    renderDays(); renderSlots();
+    slotPanel.scrollIntoView({behavior:'smooth', block:'nearest'});
+  }
+
+  function init(){
+    if (!selectedDayISO){
+      const base = startOfToday();
+      for (let i=0;i<DAYS_AHEAD;i++){
+        const day = new Date(base); day.setDate(day.getDate()+i);
+        const dISO = iso(day);
+        if (openSlots(day, dISO).length){ selectedDayISO = dISO; break; }
+      }
+    }
+    renderDays(); renderSlots();
   }
 
   function pick(day, dISO, time){
     selected = { iso:dISO, time, date:new Date(dISO+'T'+time+':00') };
-    render();
+    renderSlots();
     hint.classList.add('hidden');
     success.classList.add('hidden');
     form.classList.remove('hidden');
@@ -859,8 +876,6 @@ document.querySelectorAll('.acc-btn').forEach(btn => {
     form.classList.add('hidden'); hint.classList.remove('hidden');
     document.getElementById('scheduler').scrollIntoView({behavior:'smooth', block:'center'});
   });
-  prevBtn.addEventListener('click', () => { if (weekOffset>0){ weekOffset--; render(); } });
-  nextBtn.addEventListener('click', () => { if (weekOffset<MAX_WEEKS){ weekOffset++; render(); } });
   form.querySelectorAll('.field').forEach(el => el.addEventListener('input', () => setErr(el,false)));
 
   form.addEventListener('submit', (e) => {
@@ -893,13 +908,13 @@ document.querySelectorAll('.acc-btn').forEach(btn => {
   });
 
   document.getElementById('bookAgain').addEventListener('click', () => {
-    form.reset(); selected = null;
+    form.reset(); selected = null; selectedDayISO = null;
     success.classList.add('hidden'); hint.classList.remove('hidden');
-    loadAvailability().then(render);
+    loadAvailability().then(init);
     document.getElementById('scheduler').scrollIntoView({behavior:'smooth', block:'center'});
   });
 
-  loadAvailability().then(render);
+  loadAvailability().then(init);
 })();
 
 /* =====================================================
@@ -919,7 +934,7 @@ const CLINIC = {
   afterHours: '(555) 213-4699',
   email: 'hello@drhashemipeds.com',
   address: '128 Maple Grove Ave, Suite 200',
-  hours: 'Mon–Fri 8:30 am–5:30 pm, Sat 9 am–1 pm, closed Sunday',
+  hours: 'Sat–Wed 12–4 pm, closed Thursday & Friday',
 };
 
 const DEFAULT_CHIPS = ['Book a visit', 'Opening hours', 'Where are you?', 'Insurance', 'What ages?'];
