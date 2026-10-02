@@ -748,6 +748,7 @@ createServer(async (req, res) => {
   if (req.method === "POST" && path === "/api/cancel") return handleCancel(req, res);
   if (req.method === "GET" && path === "/cancel") return handleCancelPage(req, res);
   if (req.method === "GET" && path === "/api/bookings") return json(res, 200, bookings); // local convenience view
+  if (req.method === "GET" && path === "/") { res.writeHead(302, { Location: "/fa.html" }); return res.end(); } // Persian is the default landing page
   if (req.method === "GET" && path === "/api/availability") {
     // The website reads this to grey out days off, blocked slots, and already-taken slots.
     const bookedSlots = bookings.filter((b) => b.status !== "declined" && b.status !== "cancelled").map((b) => `${b.date} ${b.time}`);

@@ -3,6 +3,9 @@
   "framework": null,
   "buildCommand": null,
   "outputDirectory": ".",
+  "redirects": [
+    { "source": "/", "destination": "/fa.html", "permanent": false }
+  ],
   "headers": [
     {
       "source": "/(.*)",
