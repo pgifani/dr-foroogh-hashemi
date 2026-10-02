@@ -1089,21 +1089,38 @@ function reply(text){
   return {m:`مطمئن نیستم درست متوجه شدم، اما می‌توانم درباره‌ی <strong>نوبت، ساعات کاری، نشانی، بیمه، خدمات و مدارک لازم</strong> کمک کنم. برای پرسش‌های پزشکی لطفاً با <a class="link-soft ltr" href="tel:${CLINIC.phoneTel}">${CLINIC.phone}</a> تماس بگیرید.`, chips:DEFAULT_CHIPS};
 }
 
-function handle(text){
+/* دستیار هوش مصنوعی (Claude از طریق /api/chat) با بازگشت به دستیار قاعده‌مند بالا */
+const PAGE_LANG = 'fa';
+let chatHistory = [];
+const fmtBot = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])).replace(/\n/g,'<br>');
+async function aiReply(){
+  try {
+    const r = await fetch('/api/chat', { method:'POST', headers:{'content-type':'application/json'},
+      body: JSON.stringify({ messages: chatHistory.slice(-12), lang: PAGE_LANG }) });
+    const j = await r.json();
+    return (j && j.ok && j.reply) ? j.reply : null;
+  } catch(_) { return null; }
+}
+async function handle(text){
   userSay(text);
   quickWrap.innerHTML = '';
+  chatHistory.push({ role:'user', content:text });
+  const wantsBook = /رزرو|نوبت|برو به فرم|ثبت نوبت|گرفتن وقت/i.test(text);
   const tp = typing();
-  setTimeout(() => {
-    tp.remove();
-    const r = reply(text);
+  const ai = await aiReply();
+  tp.remove();
+  if (ai){
+    botSay(fmtBot(ai));
+    chatHistory.push({ role:'assistant', content:ai });
+    renderChips(DEFAULT_CHIPS);
+  } else {
+    const r = reply(text);           // بازگشت به دستیار قاعده‌مند
     botSay(r.m);
-    if (r.action === 'book'){
-      setTimeout(() => {
-        document.getElementById('book').scrollIntoView({behavior:'smooth'});
-      }, 400);
-    }
+    chatHistory.push({ role:'assistant', content: r.m.replace(/<[^>]*>/g,'') });
     renderChips(r.chips || DEFAULT_CHIPS);
-  }, 550 + Math.random()*350);
+    if (r.action === 'book') return void setTimeout(() => document.getElementById('book').scrollIntoView({behavior:'smooth'}), 400);
+  }
+  if (wantsBook) setTimeout(() => document.getElementById('book').scrollIntoView({behavior:'smooth'}), 400);
 }
 
 chatForm.addEventListener('submit', e => {
