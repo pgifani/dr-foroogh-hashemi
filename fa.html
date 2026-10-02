@@ -508,6 +508,21 @@
             <input class="field" id="email" name="email" type="email" inputmode="email" autocomplete="email" dir="ltr" style="text-align:left" placeholder="you@example.com" required>
           </div>
         </div>
+        <div id="payPanel" class="hidden mt-4 rounded-2xl border border-marigold/40 bg-marigold-soft/40 p-4">
+          <div class="font-semibold text-ink text-[.95rem]">پیش‌پرداخت ویزیت آنلاین</div>
+          <p class="mt-1 text-[.84rem] text-ink-soft leading-relaxed">مبلغ <span id="payFee" class="font-semibold text-ink"></span> را کارت‌به‌کارت کنید، سپس کد پیگیری تراکنش را وارد کنید. نوبت پس از بررسی پرداخت تأیید می‌شود.</p>
+          <div class="mt-3 flex items-center justify-between gap-2 bg-white rounded-xl px-3 py-2.5">
+            <div class="leading-tight min-w-0">
+              <div id="payCard" class="font-semibold text-ink ltr" style="direction:ltr;letter-spacing:.06em;"></div>
+              <div id="payCardName" class="text-[.76rem] text-ink-soft"></div>
+            </div>
+            <button type="button" id="copyCard" class="flex-none text-[.8rem] text-teal-deep font-medium bg-teal-soft rounded-lg px-3 py-1.5 hover:bg-teal hover:text-white transition">کپی</button>
+          </div>
+          <div class="mt-3">
+            <label class="lbl" for="payRef">کد پیگیری پرداخت <span class="req">*</span></label>
+            <input class="field" id="payRef" name="payRef" type="text" inputmode="numeric" dir="ltr" style="text-align:left" placeholder="کد رهگیری تراکنش" required>
+          </div>
+        </div>
         <div id="formError" class="hidden mt-4 text-[.9rem] text-[#c0492f] bg-[#fbe7e2] border border-[#f2c2b7] rounded-xl px-4 py-3"></div>
         <button type="submit" class="btn btn-sun w-full justify-center mt-5 !py-3.5 text-[1.02rem]">
           <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
@@ -734,15 +749,31 @@ document.querySelectorAll('.acc-btn').forEach(btn => {
 
   const vtButtons = [...document.querySelectorAll('#visitType .vt-btn')];
   const onlineNote = document.getElementById('onlineNote');
+  const payPanel = document.getElementById('payPanel');
+  const payRefEl = document.getElementById('payRef');
+  let payConfig = { fee:'', card:'', cardName:'' };
+  function fillPay(){
+    document.getElementById('payFee').textContent = payConfig.fee || '—';
+    document.getElementById('payCard').textContent = payConfig.card || '—';
+    document.getElementById('payCardName').textContent = payConfig.cardName ? ('به نام ' + payConfig.cardName) : '';
+  }
+  fetch('/api/config').then(r=>r.json()).then(c=>{ if (c && c.online) payConfig = c.online; fillPay(); }).catch(()=>{});
   function renderVisitType(){
     vtButtons.forEach(b => {
       const on = b.dataset.type === visitType;
       b.className = 'vt-btn flex flex-col items-center justify-center gap-1 rounded-2xl py-3 px-1 text-[.8rem] font-medium transition ' +
         (on ? 'bg-teal text-white shadow-[var(--shadow-soft)]' : 'bg-teal-soft text-teal-deep hover:bg-teal/15');
     });
-    onlineNote.classList.toggle('hidden', visitType === 'in-person');
+    const online = visitType !== 'in-person';
+    onlineNote.classList.toggle('hidden', !online);
+    payPanel.classList.toggle('hidden', !online);
   }
   vtButtons.forEach(b => b.addEventListener('click', () => { visitType = b.dataset.type; renderVisitType(); }));
+  document.getElementById('copyCard').addEventListener('click', () => {
+    const card = (payConfig.card || '').replace(/[\s-]/g,'');
+    const done = () => { const el=document.getElementById('copyCard'), t=el.textContent; el.textContent='کپی شد ✓'; setTimeout(()=>el.textContent=t,1500); };
+    if (navigator.clipboard && card) navigator.clipboard.writeText(card).then(done).catch(done); else done();
+  });
   renderVisitType();
   async function loadAvailability(){
     try {
@@ -887,8 +918,11 @@ document.querySelectorAll('.acc-btn').forEach(btn => {
     if (!validCodeMelli(nidDigits)){ setErr(nid,true); bad=true; }
     if (phone.value.replace(/[^\d۰-۹]/g,'').length < 7){ setErr(phone,true); bad=true; }
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.value.trim())){ setErr(email,true); bad=true; }
+    const onlineSel = visitType !== 'in-person';
+    if (onlineSel && payRefEl.value.replace(/[^\dA-Za-z]/g,'').length < 4){ setErr(payRefEl,true); bad=true; }
     if (bad || !selected){
-      errBox.textContent = !selected ? 'لطفاً ابتدا یک زمان را از بالا انتخاب کنید.' : 'لطفاً نام، کد ملی معتبر، شماره موبایل و ایمیل را درست وارد کنید.';
+      errBox.textContent = !selected ? 'لطفاً ابتدا یک زمان را از بالا انتخاب کنید.'
+        : (onlineSel ? 'لطفاً مشخصات و کد پیگیری پرداخت را درست وارد کنید.' : 'لطفاً نام، کد ملی معتبر، شماره موبایل و ایمیل را درست وارد کنید.');
       errBox.classList.remove('hidden');
       return;
     }
@@ -899,7 +933,7 @@ document.querySelectorAll('.acc-btn').forEach(btn => {
     const when = `${nice} ساعت ${fmtTime(selected.time)}`;
     // ارسال درخواست به سرور مطب (تلگرام/بله + ایمیل). بدون انتظار: پیام تأیید در صفحه در هر حال نمایش داده می‌شود.
     fetch('/api/book', { method:'POST', headers:{'content-type':'application/json'},
-      body: JSON.stringify({ name:rec.name, nationalId:rec.nationalId, phone:rec.phone, email:rec.email, type:visitType, date:rec.date, time:rec.time, when, lang:'fa' }) }).catch(()=>{});
+      body: JSON.stringify({ name:rec.name, nationalId:rec.nationalId, phone:rec.phone, email:rec.email, type:visitType, payRef:payRefEl.value.trim(), date:rec.date, time:rec.time, when, lang:'fa' }) }).catch(()=>{});
     const first = rec.name.split(' ')[0];
     successMsg.textContent = (visitType === 'in-person')
       ? `با تشکر، ${first}! نوبت شما برای ${nice} ساعت ${fmtTime(selected.time)} ثبت شد. برای تأیید، ایمیل تأیید را به ${rec.email} می‌فرستیم.`

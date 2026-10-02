@@ -14,6 +14,9 @@
 //   MAIL_REPLY_TO=clinic@ainoor.io            (optional — where patient replies go)
 //   PUBLIC_BASE_URL=https://demo.ainoor.io    (used to build the patient's cancel link)
 //   CLINIC_WHATSAPP=+989120000000             (doctor's WhatsApp — sent to patients for online visits)
+//   CLINIC_CARD=6037-9900-0000-0000           (card-to-card number shown for online prepayment)
+//   CLINIC_CARD_NAME=فروغ هاشمی                (card holder name shown with the card)
+//   ONLINE_FEE=۳۰۰٬۰۰۰ تومان                   (online-visit fee, shown to the patient)
 //   TWILIO_ACCOUNT_SID=AC...                 (optional — enables patient SMS)
 //   TWILIO_AUTH_TOKEN=...
 //   TWILIO_FROM_NUMBER=+1555...
@@ -85,6 +88,10 @@ const isOnline = (t) => t === "video" || t === "text";
 const CLINIC_WHATSAPP = (ENV.CLINIC_WHATSAPP || "").trim();           // e.g. +98912…
 const waDigits = CLINIC_WHATSAPP.replace(/[^\d]/g, "");
 const waLink = waDigits ? `https://wa.me/${waDigits}` : "";
+// Online visits are prepaid by card-to-card. These are shown to the patient (display only).
+const CLINIC_CARD = (ENV.CLINIC_CARD || "").trim();                   // e.g. 6037-9900-0000-0000
+const CLINIC_CARD_NAME = (ENV.CLINIC_CARD_NAME || "").trim();         // card holder, e.g. فروغ هاشمی
+const ONLINE_FEE = (ENV.ONLINE_FEE || "").trim();                     // display string, e.g. ۳۰۰٬۰۰۰ تومان
 function visitLabel(type, lang) {
   const fa = lang === "fa";
   if (type === "video") return fa ? "ویزیت آنلاین تصویری (واتس‌اپ)" : "Online video visit (WhatsApp)";
@@ -177,7 +184,8 @@ async function api(ch, method, payload) {
 
 function staffText(b) {   // plain text so it renders identically on Telegram and Bale
   const site = b.lang === "fa" ? "Persian site" : "English site";
-  return `🗓 New appointment request\n\n👤 ${b.name}${b.nationalId ? `\n🆔 ${b.nationalId}` : ""}\n📞 ${b.phone}${b.email ? `\n📧 ${b.email}` : ""}\n🩺 ${visitLabel(b.type || "in-person", "en")}\n🕒 ${b.when}\n🌐 ${site}\n\nStatus: ⏳ pending`;
+  const pay = isOnline(b.type) ? `\n💳 Prepaid${ONLINE_FEE ? ` ${ONLINE_FEE}` : ""}${b.payRef ? ` · ref ${b.payRef}` : ""} (verify before confirming)` : "";
+  return `🗓 New appointment request\n\n👤 ${b.name}${b.nationalId ? `\n🆔 ${b.nationalId}` : ""}\n📞 ${b.phone}${b.email ? `\n📧 ${b.email}` : ""}\n🩺 ${visitLabel(b.type || "in-person", "en")}${pay}\n🕒 ${b.when}\n🌐 ${site}\n\nStatus: ⏳ pending`;
 }
 const bookingMarkup = (b) => ({ inline_keyboard: [[
   { text: "✅ Confirm", callback_data: `confirm:${b.id}` },
@@ -339,8 +347,8 @@ function emailContent(b, kind) {
   const online = isOnline(b.type);
   const typeText = visitLabel(b.type || "in-person", b.lang);
   if (online && kind === "received") t.body += fa
-    ? " این ویزیت به‌صورت آنلاین و از طریق واتس‌اپ انجام می‌شود؛ پس از تأیید، شماره‌ی واتس‌اپ و زمان دقیق برایتان ارسال می‌شود."
-    : " This is an online visit over WhatsApp; once we confirm it, we'll send you the WhatsApp number and the exact time.";
+    ? " این ویزیت آنلاین و از طریق واتس‌اپ است. پس از بررسی و تأیید پرداخت، شماره‌ی واتس‌اپ و زمان دقیق برایتان ارسال می‌شود."
+    : " This is an online visit over WhatsApp. Once we verify your payment and confirm, we'll send you the WhatsApp number and the exact time.";
   if (online && kind === "confirmed") t.body = fa
     ? `ویزیت آنلاین شما <strong>تأیید شد</strong>. در زمان نوبت، از طریق واتس‌اپ با شما در ارتباط خواهیم بود.`
     : `Your online visit is <strong>confirmed</strong>. We'll connect with you over WhatsApp at your appointment time.`;
@@ -580,8 +588,11 @@ async function handleBook(req, res) {
   const nationalId = toAsciiDigits(b.nationalId || "");
   const emailOk = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
   const type = VISIT_TYPES.has(b.type) ? b.type : "in-person";
+  const payRef = toAsciiDigits(b.payRef || "") || String(b.payRef || "").trim().slice(0, 60);
   if (!name || phone.replace(/[^\d۰-۹]/g, "").length < 7 || !emailOk || !validCodeMelli(nationalId))
     return json(res, 400, { ok: false, error: "name, valid national ID, mobile and email are required" });
+  if (isOnline(type) && payRef.replace(/\s/g, "").length < 4)
+    return json(res, 400, { ok: false, error: "payment reference required for online visits" });
 
   const proto = String(req.headers["x-forwarded-proto"] || "https").split(",")[0].trim();
   const host = String(req.headers["x-forwarded-host"] || req.headers.host || "").split(",")[0].trim();
@@ -589,6 +600,7 @@ async function handleBook(req, res) {
 
   const rec = {
     id: newId(), name, nationalId, phone, email, type,
+    payRef: isOnline(type) ? payRef : "",
     date: String(b.date || ""), time: String(b.time || ""),
     when: String(b.when || `${b.date} ${b.time}`).slice(0, 120),
     lang: b.lang === "fa" ? "fa" : "en",
@@ -729,6 +741,10 @@ async function handleCancel(req, res) {
 createServer(async (req, res) => {
   const path = (req.url || "/").split("?")[0];
   if (req.method === "POST" && path === "/api/book") return handleBook(req, res);
+  if (req.method === "GET" && path === "/api/config") {
+    // Public display values for the booking UI (online-visit prepayment).
+    return json(res, 200, { online: { fee: ONLINE_FEE, card: CLINIC_CARD, cardName: CLINIC_CARD_NAME } });
+  }
   if (req.method === "POST" && path === "/api/cancel") return handleCancel(req, res);
   if (req.method === "GET" && path === "/cancel") return handleCancelPage(req, res);
   if (req.method === "GET" && path === "/api/bookings") return json(res, 200, bookings); // local convenience view
