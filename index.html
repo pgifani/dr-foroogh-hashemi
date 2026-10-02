@@ -16,13 +16,13 @@
     theme: {
       extend: {
         colors: {
-          ink: '#12302A',
-          'ink-soft': '#4A6058',
-          teal: { DEFAULT: '#157F76', deep: '#0E5F57', soft: '#E2F0EC' },
-          marigold: { DEFAULT: '#F4A72C', soft: '#FCEBCF' },
-          coral: '#FF8A6B',
-          sage: '#F1F6F2',
-          paper: '#FBFDFB',
+          ink: '#2B2A40',
+          'ink-soft': '#6B6885',
+          teal: { DEFAULT: '#6C5CE7', deep: '#5244B8', soft: '#EBE9FB' },
+          marigold: { DEFAULT: '#F6A08C', soft: '#FCE6DD' },
+          coral: '#F07A8E',
+          sage: '#F0EFF9',
+          paper: '#FDFDFF',
         },
         fontFamily: {
           display: ['Fraunces', 'ui-serif', 'Georgia', 'serif'],
@@ -35,12 +35,12 @@
 
 <style>
   :root{
-    --teal:#157F76; --teal-deep:#0E5F57; --teal-soft:#E2F0EC;
-    --marigold:#F4A72C; --marigold-soft:#FCEBCF; --coral:#FF8A6B;
-    --ink:#12302A; --ink-soft:#4A6058; --sage:#F1F6F2; --paper:#FBFDFB;
-    --shadow-soft:0 14px 30px -16px rgba(14,95,87,.32), inset 0 2px 2px rgba(255,255,255,.85), inset 0 -9px 18px -10px rgba(14,95,87,.16);
-    --shadow-lift:0 30px 58px -26px rgba(14,95,87,.42), inset 0 3px 3px rgba(255,255,255,.9), inset 0 -14px 26px -14px rgba(14,95,87,.18);
-    --shadow-marigold:0 16px 30px -14px rgba(244,167,44,.5), inset 0 2px 1px rgba(255,255,255,.55), inset 0 -8px 16px -8px rgba(199,120,10,.4);
+    --teal:#6C5CE7; --teal-deep:#5244B8; --teal-soft:#EBE9FB;
+    --marigold:#F6A08C; --marigold-soft:#FCE6DD; --coral:#F07A8E;
+    --ink:#2B2A40; --ink-soft:#6B6885; --sage:#F0EFF9; --paper:#FDFDFF;
+    --shadow-soft:0 14px 30px -16px rgba(84,72,160,.32), inset 0 2px 2px rgba(255,255,255,.85), inset 0 -9px 18px -10px rgba(84,72,160,.16);
+    --shadow-lift:0 30px 58px -26px rgba(84,72,160,.42), inset 0 3px 3px rgba(255,255,255,.9), inset 0 -14px 26px -14px rgba(84,72,160,.18);
+    --shadow-marigold:0 16px 30px -14px rgba(246,160,140,.5), inset 0 2px 1px rgba(255,255,255,.55), inset 0 -8px 16px -8px rgba(190,95,70,.4);
     --r-card:30px; --r-lg:36px;
   }
   *{ -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility; }
@@ -55,9 +55,9 @@
   /* soft ambient background glows + grain */
   .bg-canvas{ position:fixed; inset:0; z-index:-2; pointer-events:none;
     background:
-      radial-gradient(60% 45% at 82% 8%, rgba(244,167,44,.16), transparent 60%),
-      radial-gradient(55% 40% at 8% 22%, rgba(21,127,118,.12), transparent 60%),
-      radial-gradient(70% 55% at 50% 100%, rgba(21,127,118,.10), transparent 65%),
+      radial-gradient(60% 45% at 82% 8%, rgba(246,160,140,.16), transparent 60%),
+      radial-gradient(55% 40% at 8% 22%, rgba(108,92,231,.12), transparent 60%),
+      radial-gradient(70% 55% at 50% 100%, rgba(108,92,231,.10), transparent 65%),
       var(--sage);
   }
   .bg-grain{ position:fixed; inset:0; z-index:-1; pointer-events:none; opacity:.5;
@@ -72,7 +72,7 @@
   .btn-primary:hover{ background:var(--teal-deep); transform:translateY(-2px); box-shadow:var(--shadow-lift); }
   .btn-sun{ background:var(--marigold); color:var(--ink); box-shadow:var(--shadow-marigold); }
   .btn-sun:hover{ transform:translateY(-2px); filter:brightness(1.03); }
-  .btn-ghost{ background:rgba(255,255,255,.7); color:var(--teal-deep); border:1.5px solid rgba(21,127,118,.25); backdrop-filter:blur(6px); }
+  .btn-ghost{ background:rgba(255,255,255,.7); color:var(--teal-deep); border:1.5px solid rgba(108,92,231,.25); backdrop-filter:blur(6px); }
   .btn-ghost:hover{ border-color:var(--teal); background:#fff; transform:translateY(-2px); }
 
   .eyebrow{ display:inline-flex; align-items:center; gap:.5rem; color:var(--teal-deep); font-weight:600; font-size:.95rem; }
@@ -97,27 +97,27 @@
   /* form fields */
   .field{ width:100%; background:#eef5f2; border:1.5px solid transparent; border-radius:16px;
     padding:.85rem 1rem; font-size:.98rem; color:var(--ink); transition:border-color .18s, box-shadow .18s, background .18s;
-    box-shadow:inset 0 3px 6px -2px rgba(14,95,87,.16), inset 0 -2px 3px rgba(255,255,255,.7); }
+    box-shadow:inset 0 3px 6px -2px rgba(84,72,160,.16), inset 0 -2px 3px rgba(255,255,255,.7); }
   .field::placeholder{ color:#9aada6; }
-  .field:focus{ background:#fff; border-color:var(--teal); outline:none; box-shadow:inset 0 2px 4px rgba(14,95,87,.08), 0 0 0 4px rgba(21,127,118,.14); }
+  .field:focus{ background:#fff; border-color:var(--teal); outline:none; box-shadow:inset 0 2px 4px rgba(84,72,160,.08), 0 0 0 4px rgba(108,92,231,.14); }
   .field.err{ border-color:#e26d5c; box-shadow:inset 0 2px 4px rgba(226,109,92,.12), 0 0 0 4px rgba(226,109,92,.14); }
 
   /* claymorphism: puffy booking chips, slots, visit-type buttons & icon badges */
-  #dayRow button, #slotPanel button, #visitType .vt-btn{ box-shadow:0 9px 18px -9px rgba(14,95,87,.32), inset 0 2px 2px rgba(255,255,255,.7), inset 0 -5px 11px -5px rgba(14,95,87,.18); }
+  #dayRow button, #slotPanel button, #visitType .vt-btn{ box-shadow:0 9px 18px -9px rgba(84,72,160,.32), inset 0 2px 2px rgba(255,255,255,.7), inset 0 -5px 11px -5px rgba(84,72,160,.18); }
   #visitType .vt-btn{ border-radius:20px; }
-  [class~="place-items-center"]{ box-shadow:inset 0 2px 2px rgba(255,255,255,.45), inset 0 -4px 7px -3px rgba(8,50,45,.2); }
+  [class~="place-items-center"]{ box-shadow:inset 0 2px 2px rgba(255,255,255,.45), inset 0 -4px 7px -3px rgba(40,34,70,.2); }
   .lbl{ font-weight:600; font-size:.9rem; color:var(--ink); margin-bottom:.35rem; display:block; }
   .req{ color:var(--coral); }
 
   .pill-select{ display:flex; flex-wrap:wrap; gap:.5rem; }
   .pill-select input{ position:absolute; opacity:0; width:0; height:0; }
-  .pill-select label{ cursor:pointer; padding:.5rem .9rem; border-radius:999px; border:1.5px solid rgba(18,48,42,.14);
+  .pill-select label{ cursor:pointer; padding:.5rem .9rem; border-radius:999px; border:1.5px solid rgba(43,42,64,.14);
     background:#fff; font-size:.9rem; font-weight:500; transition:all .18s; }
   .pill-select input:checked + label{ background:var(--teal-soft); border-color:var(--teal); color:var(--teal-deep); font-weight:600; }
   .pill-select input:focus-visible + label{ outline:3px solid var(--marigold); outline-offset:2px; }
 
   /* accordion */
-  .acc-item{ border-bottom:1px solid rgba(18,48,42,.10); }
+  .acc-item{ border-bottom:1px solid rgba(43,42,64,.10); }
   .acc-btn{ width:100%; text-align:left; display:flex; justify-content:space-between; align-items:center; gap:1rem;
     padding:1.25rem 0; font-weight:600; font-size:1.08rem; color:var(--ink); cursor:pointer; }
   .acc-icon{ flex:none; width:30px; height:30px; border-radius:999px; background:var(--teal-soft); color:var(--teal-deep);
@@ -149,20 +149,20 @@
   @keyframes ping{ 0%{ transform:scale(1); opacity:.5;} 80%,100%{ transform:scale(1.9); opacity:0;} }
   #chatWin{ position:fixed; right:22px; bottom:92px; z-index:60; width:min(380px,calc(100vw - 32px)); height:min(560px,calc(100vh - 130px));
     background:var(--paper); border-radius:22px; box-shadow:var(--shadow-lift); display:flex; flex-direction:column; overflow:hidden;
-    border:1px solid rgba(18,48,42,.08); transform:translateY(16px) scale(.96); opacity:0; pointer-events:none; transform-origin:bottom right;
+    border:1px solid rgba(43,42,64,.08); transform:translateY(16px) scale(.96); opacity:0; pointer-events:none; transform-origin:bottom right;
     transition:transform .28s cubic-bezier(.34,1.56,.64,1), opacity .2s; }
   #chatWin.open{ transform:none; opacity:1; pointer-events:auto; }
   .msg{ max-width:82%; padding:.7rem .9rem; border-radius:16px; font-size:.92rem; line-height:1.5; animation:rise .3s both; }
   .msg.bot{ background:var(--teal-soft); color:var(--ink); border-bottom-left-radius:5px; align-self:flex-start; }
   .msg.user{ background:var(--teal); color:#fff; border-bottom-right-radius:5px; align-self:flex-end; }
-  .qchip{ font-size:.82rem; font-weight:600; color:var(--teal-deep); background:#fff; border:1.5px solid rgba(21,127,118,.28);
+  .qchip{ font-size:.82rem; font-weight:600; color:var(--teal-deep); background:#fff; border:1.5px solid rgba(108,92,231,.28);
     padding:.4rem .7rem; border-radius:999px; cursor:pointer; transition:all .15s; }
   .qchip:hover{ background:var(--teal-soft); transform:translateY(-1px); }
   .typing span{ display:inline-block; width:7px; height:7px; margin:0 1px; background:var(--teal); border-radius:50%; opacity:.4; animation:blink 1.2s infinite; }
   .typing span:nth-child(2){ animation-delay:.2s; } .typing span:nth-child(3){ animation-delay:.4s; }
   @keyframes blink{ 0%,100%{ opacity:.3; transform:translateY(0);} 50%{ opacity:1; transform:translateY(-3px);} }
 
-  .link-soft{ color:var(--teal-deep); font-weight:600; text-decoration:underline; text-decoration-color:rgba(21,127,118,.35); text-underline-offset:3px; }
+  .link-soft{ color:var(--teal-deep); font-weight:600; text-decoration:underline; text-decoration-color:rgba(108,92,231,.35); text-underline-offset:3px; }
   .link-soft:hover{ text-decoration-color:var(--marigold); }
 
   @media (prefers-reduced-motion: reduce){
@@ -203,7 +203,7 @@
         </div>
 
         <button id="menuBtn" class="md:hidden grid place-items-center w-11 h-11 rounded-xl bg-white/70 border border-black/5" aria-label="Open menu" aria-expanded="false">
-          <svg id="menuIcon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#12302A" stroke-width="2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+          <svg id="menuIcon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#2B2A40" stroke-width="2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
         </button>
       </nav>
     </div>
@@ -266,9 +266,9 @@
     <!-- hero visual -->
     <div class="relative">
       <div class="blob w-full aspect-square max-w-[460px] mx-auto relative overflow-hidden shadow-[var(--shadow-lift)]"
-           style="background:linear-gradient(150deg,#1c8f85,#0E5F57);">
+           style="background:linear-gradient(150deg,#1c8f85,#5244B8);">
         <img src="1.png" alt="A smiling baby at a checkup with a pediatrician" class="absolute inset-0 w-full h-full object-cover" />
-        <div class="absolute inset-0" style="background:linear-gradient(to top, rgba(14,95,87,.28), transparent 42%);"></div>
+        <div class="absolute inset-0" style="background:linear-gradient(to top, rgba(84,72,160,.28), transparent 42%);"></div>
       </div>
 
       <!-- floating chips -->
@@ -358,7 +358,7 @@
     <!-- Newborn — big photo tile (2x2) -->
     <article class="reveal card col-span-2 md:row-span-2 relative overflow-hidden">
       <img src="3.png" alt="A newborn during a gentle checkup" class="absolute inset-0 w-full h-full object-cover">
-      <div class="absolute inset-0 bg-gradient-to-t from-[#0b2a27]/90 via-[#0b2a27]/25 to-transparent"></div>
+      <div class="absolute inset-0 bg-gradient-to-t from-[#221D3A]/90 via-[#221D3A]/25 to-transparent"></div>
       <div class="relative flex flex-col justify-end p-6 text-white min-h-[260px] md:h-full">
         <span class="grid place-items-center w-11 h-11 rounded-2xl bg-white/15 mb-auto"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M9 12a3 3 0 1 0 6 0 3 3 0 0 0-6 0z"/><path d="M12 3c-1.5 2-4 2.5-4 5 0 1 .5 1.8 1 2.4M12 3c1.5 2 4 2.5 4 5 0 1-.5 1.8-1 2.4"/><path d="M7 20c0-2.8 2.2-5 5-5s5 2.2 5 5"/></svg></span>
         <h3 class="font-display text-[1.3rem] font-semibold">Newborn &amp; first days</h3>
@@ -416,7 +416,7 @@
     </article>
 
     <!-- Ear piercing — wide, gold -->
-    <article class="reveal card col-span-2 p-5 flex flex-col overflow-hidden relative" style="background:linear-gradient(140deg,#FCEFD6,#FFFDF8);">
+    <article class="reveal card col-span-2 p-5 flex flex-col overflow-hidden relative" style="background:linear-gradient(140deg,#FBE6DD,#FFFCFB);">
       <span class="absolute top-4 right-4 text-[.72rem] font-semibold text-marigold bg-white/70 rounded-full px-2.5 py-1">From 2 months</span>
       <span class="grid place-items-center w-11 h-11 rounded-2xl bg-marigold text-white mb-auto shadow-[var(--shadow-soft)]"><svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h12l4 6-10 12L2 9z"/><path d="M2 9h20"/></svg></span>
       <h3 class="font-display text-[1.15rem] font-semibold mt-3">Ear piercing</h3>
@@ -427,10 +427,10 @@
 
 <!-- ===================== HOW IT WORKS (genuine sequence) ===================== -->
 <section id="visit" class="max-w-6xl mx-auto px-5 md:px-8 py-16 md:py-20">
-  <div class="rounded-[var(--r-lg)] px-6 sm:px-10 py-12 relative overflow-hidden" style="background:linear-gradient(155deg,#0E5F57,#157F76);">
+  <div class="rounded-[var(--r-lg)] px-6 sm:px-10 py-12 relative overflow-hidden" style="background:linear-gradient(155deg,#5244B8,#6C5CE7);">
     <div class="relative z-10">
       <div class="reveal max-w-xl">
-        <span class="eyebrow text-marigold-soft"><svg width="18" height="18" viewBox="0 0 24 24" fill="#F4A72C"><circle cx="12" cy="12" r="10"/></svg><span class="text-white/80">Your visit, step by step</span></span>
+        <span class="eyebrow text-marigold-soft"><svg width="18" height="18" viewBox="0 0 24 24" fill="#F6A08C"><circle cx="12" cy="12" r="10"/></svg><span class="text-white/80">Your visit, step by step</span></span>
         <h2 class="mt-4 text-[2rem] md:text-[2.4rem] font-semibold text-white leading-[1.12]">Online booking is simple.</h2>
       </div>
       <div class="mt-9 grid md:grid-cols-3 gap-6">
@@ -460,7 +460,7 @@
         </div>
       </div>
     </div>
-    <div class="absolute -right-16 -top-16 w-64 h-64 blob opacity-20" style="background:#F4A72C;"></div>
+    <div class="absolute -right-16 -top-16 w-64 h-64 blob opacity-20" style="background:#F6A08C;"></div>
   </div>
 </section>
 
@@ -605,7 +605,7 @@
       <blockquote class="mt-3 text-ink-soft leading-relaxed">“Dr. Hashemi never rushes us. She explains everything so my son isn't scared, and she remembers the little details from our last visit.”</blockquote>
       <figcaption class="mt-4 font-semibold text-[.95rem]">Sara A. <span class="text-ink-soft font-normal">— mom of two</span></figcaption>
     </figure>
-    <figure class="reveal card p-6" style="background:linear-gradient(160deg,#FCEBCF,#FBFDFB);">
+    <figure class="reveal card p-6" style="background:linear-gradient(160deg,#FCE6DD,#FDFDFF);">
       <div class="text-marigold text-[1.1rem]">★★★★★</div>
       <blockquote class="mt-3 text-ink-soft leading-relaxed">“We got a same-day appointment when our daughter spiked a fever. Calm, kind, and we left with a clear plan. Exactly what you want.”</blockquote>
       <figcaption class="mt-4 font-semibold text-[.95rem]">Daniel R. <span class="text-ink-soft font-normal">— dad</span></figcaption>
@@ -669,7 +669,7 @@
       </div>
       <!-- map placeholder -->
       <div class="relative min-h-[320px] bg-teal-soft">
-        <div class="absolute inset-0 opacity-60" style="background-image:radial-gradient(circle at 30% 40%, rgba(21,127,118,.18) 0 2px, transparent 2px),radial-gradient(circle at 70% 60%, rgba(244,167,44,.2) 0 2px, transparent 2px); background-size:34px 34px;"></div>
+        <div class="absolute inset-0 opacity-60" style="background-image:radial-gradient(circle at 30% 40%, rgba(108,92,231,.18) 0 2px, transparent 2px),radial-gradient(circle at 70% 60%, rgba(246,160,140,.2) 0 2px, transparent 2px); background-size:34px 34px;"></div>
         <div class="absolute inset-0 grid place-items-center">
           <div class="text-center">
             <span class="grid place-items-center w-14 h-14 rounded-full bg-teal text-white mx-auto shadow-[var(--shadow-lift)] float"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 6-9 12-9 12s-9-6-9-12a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg></span>
@@ -700,7 +700,7 @@
 </button>
 
 <div id="chatWin" role="dialog" aria-label="Care assistant" aria-modal="false">
-  <div class="px-4 py-3.5 flex items-center gap-3 text-white" style="background:linear-gradient(135deg,#157F76,#0E5F57);">
+  <div class="px-4 py-3.5 flex items-center gap-3 text-white" style="background:linear-gradient(135deg,#6C5CE7,#5244B8);">
     <span class="grid place-items-center w-10 h-10 rounded-full bg-white/15 flex-none"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a5 5 0 0 0-5 5v1a5 5 0 0 0 10 0V7a5 5 0 0 0-5-5z"/><path d="M5 22a7 7 0 0 1 14 0"/></svg></span>
     <div class="leading-tight flex-1">
       <div class="font-semibold">Care Assistant</div>
@@ -709,7 +709,7 @@
     <button id="chatClose" class="text-white/80 hover:text-white p-1" aria-label="Close">✕</button>
   </div>
 
-  <div id="chatBody" class="flex-1 overflow-y-auto p-4 flex flex-col gap-3" style="background:linear-gradient(180deg,#FBFDFB,#F1F6F2);"></div>
+  <div id="chatBody" class="flex-1 overflow-y-auto p-4 flex flex-col gap-3" style="background:linear-gradient(180deg,#FDFDFF,#F0EFF9);"></div>
 
   <div id="quickReplies" class="px-3 pt-2 flex flex-wrap gap-2 border-t border-black/5"></div>
 
@@ -736,8 +736,8 @@ document.getElementById('year').textContent = new Date().getFullYear();
 /* ---------- navbar shadow on scroll ---------- */
 const navbar = document.getElementById('navbar');
 addEventListener('scroll', () => {
-  if (scrollY > 12) navbar.classList.add('bg-paper/80','backdrop-blur-md','shadow-[0_6px_24px_-16px_rgba(14,95,87,.4)]','border-b','border-black/5');
-  else navbar.classList.remove('bg-paper/80','backdrop-blur-md','shadow-[0_6px_24px_-16px_rgba(14,95,87,.4)]','border-b','border-black/5');
+  if (scrollY > 12) navbar.classList.add('bg-paper/80','backdrop-blur-md','shadow-[0_6px_24px_-16px_rgba(84,72,160,.4)]','border-b','border-black/5');
+  else navbar.classList.remove('bg-paper/80','backdrop-blur-md','shadow-[0_6px_24px_-16px_rgba(84,72,160,.4)]','border-b','border-black/5');
 }, {passive:true});
 
 /* ---------- mobile menu ---------- */
