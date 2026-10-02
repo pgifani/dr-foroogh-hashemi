@@ -35,10 +35,10 @@
     --teal:#157F76; --teal-deep:#0E5F57; --teal-soft:#E2F0EC;
     --marigold:#F4A72C; --marigold-soft:#FCEBCF; --coral:#FF8A6B;
     --ink:#12302A; --ink-soft:#4A6058; --sage:#F1F6F2; --paper:#FBFDFB;
-    --shadow-soft:0 10px 30px -14px rgba(14,95,87,.28);
-    --shadow-lift:0 28px 60px -26px rgba(14,95,87,.36);
-    --shadow-marigold:0 16px 34px -14px rgba(244,167,44,.45);
-    --r-card:24px; --r-lg:32px;
+    --shadow-soft:0 14px 30px -16px rgba(14,95,87,.32), inset 0 2px 2px rgba(255,255,255,.85), inset 0 -9px 18px -10px rgba(14,95,87,.16);
+    --shadow-lift:0 30px 58px -26px rgba(14,95,87,.42), inset 0 3px 3px rgba(255,255,255,.9), inset 0 -14px 26px -14px rgba(14,95,87,.18);
+    --shadow-marigold:0 16px 30px -14px rgba(244,167,44,.5), inset 0 2px 1px rgba(255,255,255,.55), inset 0 -8px 16px -8px rgba(199,120,10,.4);
+    --r-card:30px; --r-lg:36px;
   }
   *{ -webkit-font-smoothing:antialiased; }
   html{ scroll-behavior:smooth; }
@@ -70,7 +70,7 @@
   .eyebrow{ display:inline-flex; align-items:center; gap:.5rem; color:var(--teal-deep); font-weight:600; font-size:.95rem; }
   .eyebrow svg{ color:var(--marigold); }
 
-  .card{ background:var(--paper); border:1px solid rgba(18,48,42,.06); border-radius:var(--r-card); box-shadow:var(--shadow-soft); }
+  .card{ background:var(--paper); border-radius:var(--r-card); box-shadow:var(--shadow-soft); }
   .blob{ border-radius:42% 58% 56% 44% / 48% 42% 58% 52%; }
 
   a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{
@@ -82,11 +82,16 @@
   .nav-link::after{ content:''; position:absolute; right:0; bottom:-6px; height:2px; width:0; background:var(--marigold); transition:width .25s; border-radius:2px; }
   .nav-link:hover::after{ width:100%; }
 
-  .field{ width:100%; background:#fff; border:1.5px solid rgba(18,48,42,.14); border-radius:14px;
-    padding:.8rem .95rem; font-size:.98rem; color:var(--ink); font-family:'Vazirmatn',sans-serif; transition:border-color .18s, box-shadow .18s; }
+  .field{ width:100%; background:#eef5f2; border:1.5px solid transparent; border-radius:16px;
+    padding:.85rem 1rem; font-size:.98rem; color:var(--ink); font-family:'Vazirmatn',sans-serif; transition:border-color .18s, box-shadow .18s, background .18s;
+    box-shadow:inset 0 3px 6px -2px rgba(14,95,87,.16), inset 0 -2px 3px rgba(255,255,255,.7); }
   .field::placeholder{ color:#9aada6; }
-  .field:focus{ border-color:var(--teal); box-shadow:0 0 0 4px rgba(21,127,118,.12); outline:none; }
-  .field.err{ border-color:#e26d5c; box-shadow:0 0 0 4px rgba(226,109,92,.12); }
+  .field:focus{ background:#fff; border-color:var(--teal); outline:none; box-shadow:inset 0 2px 4px rgba(14,95,87,.08), 0 0 0 4px rgba(21,127,118,.14); }
+  .field.err{ border-color:#e26d5c; box-shadow:inset 0 2px 4px rgba(226,109,92,.12), 0 0 0 4px rgba(226,109,92,.14); }
+
+  /* claymorphism: puffy booking chips, slots & visit-type buttons */
+  #dayRow button, #slotPanel button, #visitType .vt-btn{ box-shadow:0 7px 14px -8px rgba(14,95,87,.28), inset 0 2px 2px rgba(255,255,255,.65), inset 0 -4px 9px -4px rgba(14,95,87,.14); }
+  #visitType .vt-btn{ border-radius:20px; }
   .lbl{ font-weight:600; font-size:.9rem; color:var(--ink); margin-bottom:.35rem; display:block; }
   .req{ color:var(--coral); }
 
