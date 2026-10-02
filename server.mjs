@@ -101,7 +101,7 @@ const CHAT_MODEL = (ENV.CHAT_MODEL || "claude-haiku-4-5").trim();     // FAQ bot
 const CHAT_ON = !!ANTHROPIC_API_KEY;
 const CLINIC_INFO = `Dr. Foroogh Hashemi is a pediatrician caring for newborns through age 18.
 Working hours: Saturday, Monday and Wednesday 12:00–16:00; Sunday 12:00–15:00; Tuesday, Thursday and Friday closed.
-Appointments are booked on this website using the booking form on the page. There are two kinds: in-person, or online over WhatsApp (video call or text chat). Online visits are prepaid by card-to-card before they are confirmed. After booking, the patient receives a confirmation email; for online visits the WhatsApp number and time are emailed once confirmed. Appointments can also be cancelled from the link in that email.
+Appointments are booked on this website using the booking form on the page. There are two kinds: in-person, or online over WhatsApp (voice call or text chat). Online visits are prepaid by card-to-card before they are confirmed. After booking, the patient receives a confirmation email; for online visits the WhatsApp number and time are emailed once confirmed. Appointments can also be cancelled from the link in that email.
 Services: newborn care and jaundice; breastfeeding and nutrition counseling; growth and development monitoring to age 18; infectious and digestive issues (acute/chronic diarrhea and constipation, abdominal pain, colic, reflux); kidney and urinary (infections, stones, bedwetting); asthma and allergies (skin, eczema, respiratory, digestive); respiratory and ear infections (croup, bronchiolitis); periodic exams; puberty and adolescence, height-growth and obesity care; ear piercing in sterile conditions with the American Studex system and 24k-gold hypoallergenic earrings from 2 months of age.`;
 const chatSystem = () => `You are the friendly assistant on the website of Dr. Foroogh Hashemi, a pediatrician.
 
@@ -150,7 +150,7 @@ async function handleChat(req, res) {
 }
 function visitLabel(type, lang) {
   const fa = lang === "fa";
-  if (type === "video") return fa ? "ویزیت آنلاین تصویری (واتس‌اپ)" : "Online video visit (WhatsApp)";
+  if (type === "video") return fa ? "ویزیت آنلاین صوتی (واتس‌اپ)" : "Online voice visit (WhatsApp)";
   if (type === "text")  return fa ? "ویزیت آنلاین متنی (واتس‌اپ)"   : "Online text visit (WhatsApp)";
   return fa ? "ویزیت حضوری" : "In-person visit";
 }
@@ -334,7 +334,7 @@ const patientMsg = (b, kind) => {
     : `Hi ${name}, your appointment request with Dr. Hashemi for ${b.when} was received. We'll confirm shortly.`;
   if (kind === "confirmed") {
     if (isOnline(b.type)) {
-      const act = b.type === "video" ? (fa ? "تماس تصویری بگیرید" : "video-call us") : (fa ? "پیام دهید" : "message us");
+      const act = b.type === "video" ? (fa ? "تماس صوتی بگیرید" : "voice-call us") : (fa ? "پیام دهید" : "message us");
       return fa
         ? `ویزیت آنلاین شما تأیید شد ✅ ${b.when}. در زمان نوبت، در واتس‌اپ ${act}: ${CLINIC_WHATSAPP}`
         : `Your online visit is confirmed ✅ ${b.when}. At your appointment time, ${act} on WhatsApp: ${CLINIC_WHATSAPP}`;
@@ -427,7 +427,7 @@ function emailContent(b, kind) {
             <a href="${esc(waLink)}" style="display:inline-block;font-size:17px;color:#157a3a;font-weight:700;text-decoration:none;margin-top:4px;direction:ltr;">${esc(CLINIC_WHATSAPP)}</a>
             <p style="font-size:13.5px;line-height:1.7;color:#3c4b47;margin:8px 0 0;">${
               b.type === "video"
-                ? (fa ? "در زمان نوبت، روی شماره بزنید و در واتس‌اپ <strong>تماس تصویری</strong> بگیرید." : "At your appointment time, tap the number and start a <strong>WhatsApp video call</strong>.")
+                ? (fa ? "در زمان نوبت، روی شماره بزنید و در واتس‌اپ <strong>تماس صوتی</strong> بگیرید." : "At your appointment time, tap the number and start a <strong>WhatsApp voice call</strong>.")
                 : (fa ? "در زمان نوبت، روی شماره بزنید و در واتس‌اپ <strong>پیام</strong> دهید." : "At your appointment time, tap the number and <strong>message us</strong> on WhatsApp.")
             }</p>
           </td></tr>

@@ -1,14 +1,15 @@
 # Ainoor — Pediatric Clinic Website & Booking Backend
 
 A bilingual (English + Persian/RTL) website for a doctor, with an online **appointment
-booking system**, an **AI-style care-assistant chatbot**, and a small **Node backend**. The
-booking panel shows the **week ahead**; the patient picks a day, picks a **15-minute slot** (the
-clinic's real per-day hours), and enters **name, national ID (کد ملی), mobile, and email**. New
-bookings are pushed to the clinic's messaging apps — **Telegram and Bale (بله)** — with
-Confirm/Decline buttons, and the patient gets a branded **confirmation email (via Resend)** with a
-**one-click cancel link**. The doctor can **cancel** a booking too, and **manage availability
-(days off, blocked slots) straight from the bot** using Persian (Jalali/شمسی) or Gregorian dates.
-Patient SMS/WhatsApp is optional (Twilio).
+booking system**, **in-person & online (video/text) visits**, a **Claude-powered AI assistant**,
+and a small **Node backend**. The site **opens in Persian by default**. The booking panel shows
+the **week ahead**; the patient picks a visit type, picks a day, picks a **15-minute slot** (the
+clinic's real per-weekday hours), and enters **name, national ID (کد ملی), mobile, and email**.
+**Online visits are prepaid** by card-to-card and run over WhatsApp. New bookings are pushed to the
+clinic's messaging apps — **Telegram and Bale (بله)** — with Confirm/Decline buttons, and the
+patient gets a branded **confirmation email (via Resend)** with a **one-click cancel link**. The
+doctor can **cancel** a booking too, and **manage availability (days off, blocked slots) straight
+from the bot** using Persian (Jalali/شمسی) or Gregorian dates.
 
 This README is both the documentation for this project **and a step-by-step playbook** so you
 can build and deploy the next doctor's site from scratch.
@@ -39,18 +40,27 @@ can build and deploy the next doctor's site from scratch.
 A single, self-contained web project:
 
 - **Two pages:** `index.html` (English) and `fa.html` (Persian, right-to-left) with a language
-  switcher. Same design, translated content.
-- **Appointment booking:** the patient sees the **week ahead**, **clicks a day to open its
-  15-minute slots** (per-day clinic hours; e.g. Sat–Wed 12:00–16:00, Thu & Fri closed) and picks a
-  free one — a slot is open unless it's in the past, already booked, or blocked by the doctor. They
-  enter **name, national ID (کد ملی, checksum-validated), mobile, and email**, and see an instant
-  on-page confirmation. The Persian page shows Jalali (شمسی) dates.
+  switcher. Same design, translated content. **`/` redirects to the Persian page** (`/fa.html`).
+- **Appointment booking:** the patient chooses a **visit type** (in-person / online video / online
+  text), sees the **week ahead**, **clicks a day to open its 15-minute slots** (per-weekday clinic
+  hours — e.g. Sat/Mon/Wed 12:00–16:00, Sun 12:00–15:00, Tue/Thu/Fri closed) and picks a free one —
+  a slot is open unless it's in the past, already booked, or blocked by the doctor. They enter
+  **name, national ID (کد ملی, checksum-validated), mobile, and email**, and see an instant on-page
+  confirmation. The Persian page shows Jalali (شمسی) dates.
+- **Online visits (video/text) + prepayment:** online visits run over **WhatsApp** and are
+  **prepaid by card-to-card**. The form shows the clinic's **card number (+ copy button) and fee**
+  and requires a **payment tracking code** (کد پیگیری). On confirm, the patient's email includes the
+  clinic's **WhatsApp number** and whether to video-call or message. (In-person visits need no
+  prepayment.) Staff see the prepaid reference in the bot and verify the transfer before confirming.
 - **Confirmation email + self-cancel:** the patient gets a branded bilingual email (via **Resend**)
   on request / confirmed / declined / cancelled, each with a secure **"cancel this appointment"**
   link that frees the slot and alerts staff. The doctor can also cancel from the bot.
-- **AI care assistant:** a floating chatbot answering logistics (hours, location, insurance,
-  services, what to bring). It is rule-based and **deliberately never gives medical advice** —
-  it routes symptoms to the doctor and emergencies to the local emergency number.
+- **Claude-powered AI assistant:** a floating chatbot (`POST /api/chat`) answering logistics (hours,
+  location, services, booking, online visits, what to bring) in **Persian or English**. It's backed
+  by the **Anthropic Claude API** with clinic-grounded context, and **falls back to a built-in
+  rule-based bot** when no key is set or the API errors — so it always works. It **deliberately
+  never gives medical advice**: it routes symptoms to the doctor and emergencies to the local
+  emergency number (۱۱۵). Rate-limited per IP.
 - **Booking → Telegram + Bale:** every booking is pushed to the clinic's **Telegram and Bale**
   chats with **✅ Confirm / ❌ Decline** buttons; confirming on one updates both. The bot also
   lists appointments (`/bookings`, `/pending`, `/today`).
@@ -58,12 +68,14 @@ A single, self-contained web project:
   (`/availability` buttons, `/off فردا`, `/block 1405/07/11 10:00`, …) and the website's calendar
   reflects it immediately. Persian (Jalali) **and** Gregorian dates both work.
 - **Backend (`server.mjs`):** serves the site and exposes `POST /api/book`, `GET /api/availability`,
-  and `GET /cancel` + `POST /api/cancel`. **Zero npm dependencies.** Runs in a safe **mock mode**
-  (prints messages to the console) until you add credentials. Patient email is via **Resend**;
-  **SMS/WhatsApp via Twilio** is optional.
+  `GET /api/config` (online fee/card), `POST /api/chat` (AI assistant), and `GET /cancel` +
+  `POST /api/cancel`. **Zero npm dependencies.** Runs in a safe **mock mode** (prints messages to
+  the console) until you add credentials. Patient email is via **Resend**.
 
-**Design choices:** custom teal + marigold palette (not generic "medical blue"), Fraunces +
-Plus Jakarta Sans fonts (English), Vazirmatn (Persian). No frameworks, no build step.
+**Design choices:** a soft **pastel palette** (periwinkle/lavender + coral accent) in a
+**claymorphism** style (puffy, borderless cards and controls), with the **services shown as a bento
+grid**. Fraunces + Plus Jakarta Sans fonts (English), Vazirmatn (Persian). No frameworks, no build
+step (Tailwind via CDN).
 
 ---
 
@@ -71,17 +83,21 @@ Plus Jakarta Sans fonts (English), Vazirmatn (Persian). No frameworks, no build 
 
 ```
   Patient's browser
-        │  loads index.html / fa.html  (+ 1.png … 4.png)
+        │  loads fa.html (default) / index.html  (+ 1.png … 4.png)
+        │  GET  /api/config         → online fee, clinic card number + holder name
         │  GET  /api/availability   → greys out days off / blocked / already-booked slots
-        │  POST /api/book  { name, nationalId, phone, email, date, time, lang }
+        │  POST /api/book  { name, nationalId, phone, email, date, time, type, payRef, lang }
+        │  POST /api/chat  { messages, lang }   → Claude reply (or rule-based fallback)
         │  GET  /cancel?id=&t=  → confirm page   ·   POST /api/cancel  → frees the slot
         ▼
   server.mjs  (Node 22, zero npm dependencies)
-        ├─ serves the static site
+        ├─ serves the static site  ·  "/" → 302 /fa.html
         ├─ stores bookings → bookings.json  ·  availability blocks → blocks.json   (DATA_DIR)
-        ├─ emails the patient via Resend (request / confirmed / declined / cancelled + cancel link)
-        ├─ pushes the booking to Telegram AND Bale staff chats (Confirm / Decline / Cancel buttons)
-        ├─ (optional) Twilio SMS / WhatsApp → patient
+        ├─ emails the patient via Resend (request / confirmed / declined / cancelled + cancel link;
+        │                                 confirmed online visit also carries the WhatsApp number)
+        ├─ asks the Anthropic Claude API for chatbot replies (falls back to rule-based on no key/error)
+        ├─ pushes the booking to Telegram AND Bale staff chats (Confirm / Decline / Cancel buttons;
+        │                                 online bookings show the prepaid tracking code)
         └─ long-polls each channel for: Confirm/Decline/Cancel taps, and /bookings, /off, /block … commands
 ```
 
@@ -158,11 +174,13 @@ local runs) or in your host's environment-variable settings (Vercel / Coolify).
 | `TELEGRAM_STAFF_CHAT_ID` | The Telegram chat that receives bookings. Message the bot `/id` to learn it. |
 | `BALE_BOT_TOKEN` | From **@BotFather** (in the **Bale** app). Enables Bale — the same features as Telegram. |
 | `BALE_STAFF_CHAT_ID` | The Bale chat that receives bookings. Message the Bale bot `/id` to learn it. |
-| `TWILIO_ACCOUNT_SID` | Twilio account SID (enables real SMS/WhatsApp). |
-| `TWILIO_AUTH_TOKEN` | Twilio auth token. |
-| `TWILIO_FROM_NUMBER` | Your Twilio SMS number (`+1555…`). Enables **SMS**. |
-| `TWILIO_WHATSAPP_FROM` | e.g. `whatsapp:+14155238886`. Enables **WhatsApp**. |
-| `TWILIO_DEFAULT_COUNTRY` | Prefix for local numbers, e.g. `+44`. |
+| `ANTHROPIC_API_KEY` | From **console.anthropic.com**. Enables the **real Claude chatbot** (without it, the bot uses the built-in rule-based fallback). |
+| `CHAT_MODEL` | Chatbot model. Default `claude-haiku-4-5` (fast + cheap for FAQ). Override to `claude-opus-5-5` / `claude-sonnet-5-5` for more capability. |
+| `CLINIC_WHATSAPP` | Clinic WhatsApp number for **online visits**, e.g. `+98912…`. Sent to the patient on confirmation. |
+| `CLINIC_CARD` | Card number shown for **online-visit prepayment** (card-to-card). |
+| `CLINIC_CARD_NAME` | Card-holder name shown with the card. |
+| `ONLINE_FEE` | Online-visit fee, a display string, e.g. `۳۰۰٬۰۰۰ تومان`. |
+| `TWILIO_*` | **Legacy / optional.** The old SMS/WhatsApp-to-patient path (`TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_FROM_NUMBER`, `TWILIO_WHATSAPP_FROM`, `TWILIO_DEFAULT_COUNTRY`). Superseded by email; leave unset unless you specifically want patient SMS. |
 
 > **Never** put secrets in the HTML or commit `.env`. See `TELEGRAM-SETUP.md` for the full walkthrough.
 
@@ -325,21 +343,34 @@ Redeploy after changing any env var.
 
 The repeatable process for each new doctor:
 
-1. **Copy the `website/` folder** to a new folder (or start a new repo from it).
-2. **Edit the content** in `index.html` (and `fa.html` if bilingual):
-   - Name, tagline, services, hours, address, phone, email.
-   - **Set the weekly schedule** in the booking script of each file: `OPEN_DAYS` (JS weekdays,
-     Sun=0 … Sat=6), `START_H`, `END_H`, and `STEP` (minutes per slot). Update the displayed hours
-     text too (hero badge, sidebar, contact, chatbot `CLINIC.hours`).
+> **Shortcut:** two Claude skills automate this — **`clinic-site-launch`** (the full end-to-end
+> launch) and **`clinic-bot-onboarding`** (just connecting staff to the bots). The manual steps
+> below are what those skills encode.
+
+1. **Copy the `website/` folder** to a new folder / new repo. Don't carry over the previous
+   client's `bookings.json` / `blocks.json` (PII) or `.env`.
+2. **Edit the content** in `index.html` **and** `fa.html` (keep the two in sync):
+   - Name, tagline, services, hours text, address, phone, email (the doctor's name appears in a few
+     spots in each file; also in `CLINIC_INFO` in `server.mjs`).
+   - **Set the weekly schedule** — the `HOURS` map in the booking script of each file (near the top
+     of the picker IIFE): `const HOURS = { 6:[12,16], 1:[12,16], 3:[12,16], 0:[12,15] };` where the
+     key is the JS weekday (**Sun=0 … Sat=6**) and the value is `[startHour, endHour]`; a weekday
+     that's **absent = closed**. `DAYS_AHEAD` controls how far ahead booking opens. Update the
+     displayed hours text too (hero badge, sidebar, contact).
+   - **Update the chatbot's knowledge** — the `CLINIC_INFO` string in `server.mjs` (hours, services,
+     address, phone, policies). The guardrails in `chatSystem()` normally stay as-is.
    - Replace the photos (`1.png … 4.png`) and the doctor's portrait.
-   - Update the colors in the `tailwind.config` block if you want a different palette.
+   - Update the palette (CSS tokens / `tailwind.config` block) for a different look. For real design
+     work, invoke the **frontend-design** skill (see `CLAUDE.md`).
 3. **Push to a new GitHub repo** (one repo per client).
-4. **In Coolify → + New Resource → Public Git Repository** → Dockerfile build → port 3000 → Deploy.
+4. **In Coolify → + New Resource → Public Git Repository** → Dockerfile build → port 3000 → Deploy,
+   with a **Persistent Storage** mount at `/app/data`.
 5. **Add a subdomain** for the client (`clinic-name.ainoor.io` or the client's own domain) and
    redeploy for HTTPS.
-6. **Add that client's own** env vars — email (`RESEND_API_KEY`, `MAIL_FROM`, `MAIL_REPLY_TO`,
-   `PUBLIC_BASE_URL`), messaging (`TELEGRAM_*` and/or `BALE_*`), optional `TWILIO_*` — and a
-   persistent-storage mount at `/app/data`.
+6. **Add that client's own** env vars (see section 5): email (`RESEND_API_KEY`, `MAIL_FROM`,
+   `MAIL_REPLY_TO`, `PUBLIC_BASE_URL`), messaging (`TELEGRAM_*` and/or `BALE_*`), the AI chatbot
+   (`ANTHROPIC_API_KEY`), and — if offering online visits — `CLINIC_WHATSAPP`, `CLINIC_CARD`,
+   `CLINIC_CARD_NAME`, `ONLINE_FEE`.
 
 > Tip: register a client's **own domain in the client's name** so they own their brand. Keep the
 > bare `ainoor.io` for your agency. One VPS can host many client sites — scale the server up
@@ -388,11 +419,14 @@ The repeatable process for each new doctor:
 
 ## 12. Roadmap
 
-- **Real LLM chatbot:** replace the rule-based assistant with a Claude-powered agent behind
-  `/api/chat` (grounded in the clinic's info, with a "book an appointment" tool and the
-  no-medical-advice guardrail).
-- **Config-driven template:** move all client-specific text into one config file so a new site is
-  "fill in the blanks."
+- ✅ **Done — Claude-powered chatbot:** the rule-based assistant is now backed by the Anthropic
+  Claude API behind `POST /api/chat` (clinic-grounded, no-medical-advice guardrail, rule-based
+  fallback). Next: add a "book an appointment" tool so the bot can start a booking directly.
+- ✅ **Done — online visits + card-to-card prepayment.** Next: a real payment gateway
+  (Zarinpal/IDPay) for auto-verified payment instead of manual card-to-card.
+- **Config-driven template:** move all client-specific text (name, schedule, services, clinic
+  facts) into one config file so a new site is "fill in the blanks" rather than editing both HTML
+  files + `server.mjs`.
 - **Client dashboard:** let each doctor see bookings and edit their hours.
 - **Move to a database** (SQLite → Postgres) once you have several clients.
 - **Object storage + CDN** when you add heavy media (e.g. the future UGC video product).
