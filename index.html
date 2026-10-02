@@ -347,64 +347,74 @@
     <p class="mt-4 text-ink-soft leading-relaxed">Comprehensive pediatric care under one roof, so your family sees a doctor who already knows your story.</p>
   </div>
 
-  <div class="mt-10 grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
-    <!-- large feature card spans 2 on lg -->
-    <article class="reveal card overflow-hidden sm:col-span-2 lg:row-span-1 flex flex-col sm:flex-row items-stretch" style="background:linear-gradient(160deg,#E2F0EC,#FBFDFB);">
-      <div class="p-6 sm:flex-1 order-2 sm:order-1">
-        <span class="grid place-items-center w-14 h-14 rounded-2xl bg-teal text-white flex-none shadow-[var(--shadow-soft)] mb-4"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 12a3 3 0 1 0 6 0 3 3 0 0 0-6 0z"/><path d="M12 3c-1.5 2-4 2.5-4 5 0 1 .5 1.8 1 2.4M12 3c1.5 2 4 2.5 4 5 0 1-.5 1.8-1 2.4"/><path d="M7 20c0-2.8 2.2-5 5-5s5 2.2 5 5"/></svg></span>
-        <h3 class="font-display text-[1.35rem] font-semibold">Newborn &amp; first days</h3>
-        <p class="mt-2 text-ink-soft leading-relaxed max-w-[42ch]">A complete newborn exam in the first days of life, including jaundice assessment and treatment, with reassurance for every new-parent concern.</p>
+  <div class="mt-10 grid grid-cols-2 md:grid-cols-4 gap-4 md:auto-rows-[210px]">
+
+    <!-- Newborn — big photo tile (2x2) -->
+    <article class="reveal card col-span-2 md:row-span-2 relative overflow-hidden">
+      <img src="3.png" alt="A newborn during a gentle checkup" class="absolute inset-0 w-full h-full object-cover">
+      <div class="absolute inset-0 bg-gradient-to-t from-[#0b2a27]/90 via-[#0b2a27]/25 to-transparent"></div>
+      <div class="relative flex flex-col justify-end p-6 text-white min-h-[260px] md:h-full">
+        <span class="grid place-items-center w-11 h-11 rounded-2xl bg-white/15 mb-auto"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M9 12a3 3 0 1 0 6 0 3 3 0 0 0-6 0z"/><path d="M12 3c-1.5 2-4 2.5-4 5 0 1 .5 1.8 1 2.4M12 3c1.5 2 4 2.5 4 5 0 1-.5 1.8-1 2.4"/><path d="M7 20c0-2.8 2.2-5 5-5s5 2.2 5 5"/></svg></span>
+        <h3 class="font-display text-[1.3rem] font-semibold">Newborn &amp; first days</h3>
+        <p class="mt-1.5 text-white/85 text-[.9rem] leading-relaxed">A complete newborn exam in the first days — jaundice assessment, treatment, and reassurance for new parents.</p>
       </div>
-      <img src="3.png" alt="A newborn during a gentle checkup" class="order-1 sm:order-2 w-full sm:w-[42%] h-44 sm:h-auto object-cover" />
     </article>
 
-    <article class="reveal card p-6">
-      <span class="grid place-items-center w-12 h-12 rounded-2xl bg-marigold-soft text-marigold flex-none mb-4"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.6l-1-1a5.5 5.5 0 0 0-7.8 7.8l1 1L12 21l7.8-7.6 1-1a5.5 5.5 0 0 0 0-7.8z"/></svg></span>
-      <h3 class="font-display text-[1.2rem] font-semibold">Breastfeeding &amp; nutrition</h3>
-      <p class="mt-2 text-ink-soft leading-relaxed">Breastfeeding guidance from pregnancy through birth, nutrition counseling for nursing mothers, and newborn-care coaching.</p>
+    <!-- Breastfeeding — wide -->
+    <article class="reveal card col-span-2 p-5 flex flex-col overflow-hidden">
+      <span class="grid place-items-center w-11 h-11 rounded-2xl bg-marigold-soft text-marigold mb-auto"><svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.6l-1-1a5.5 5.5 0 0 0-7.8 7.8l1 1L12 21l7.8-7.6 1-1a5.5 5.5 0 0 0 0-7.8z"/></svg></span>
+      <h3 class="font-display text-[1.15rem] font-semibold mt-3">Breastfeeding &amp; nutrition</h3>
+      <p class="mt-1 text-ink-soft text-[.86rem] leading-relaxed">Breastfeeding guidance from pregnancy through birth, plus nutrition counseling for nursing mothers.</p>
     </article>
 
-    <article class="reveal card p-6">
-      <span class="grid place-items-center w-12 h-12 rounded-2xl bg-teal-soft text-teal-deep flex-none mb-4"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 14l3-3 3 3 5-6"/></svg></span>
-      <h3 class="font-display text-[1.2rem] font-semibold">Growth &amp; development</h3>
-      <p class="mt-2 text-ink-soft leading-relaxed">Regular health and development monitoring from birth through the end of puberty (age 18).</p>
+    <!-- Growth — 1x1 -->
+    <article class="reveal card p-5 flex flex-col overflow-hidden">
+      <span class="grid place-items-center w-11 h-11 rounded-2xl bg-teal-soft text-teal-deep mb-auto"><svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 14l3-3 3 3 5-6"/></svg></span>
+      <h3 class="font-display text-[1.1rem] font-semibold mt-3">Growth &amp; development</h3>
+      <p class="mt-1 text-ink-soft text-[.82rem] leading-relaxed">Health &amp; development, birth to age 18.</p>
     </article>
 
-    <article class="reveal card p-6">
-      <span class="grid place-items-center w-12 h-12 rounded-2xl bg-marigold-soft text-marigold flex-none mb-4"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></span>
-      <h3 class="font-display text-[1.2rem] font-semibold">Infections &amp; digestion</h3>
-      <p class="mt-2 text-ink-soft leading-relaxed">Infectious diseases and GI issues: acute and chronic diarrhea and constipation, abdominal pain, colic, and reflux.</p>
+    <!-- Infections — 1x1 -->
+    <article class="reveal card p-5 flex flex-col overflow-hidden">
+      <span class="grid place-items-center w-11 h-11 rounded-2xl bg-marigold-soft text-marigold mb-auto"><svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></span>
+      <h3 class="font-display text-[1.1rem] font-semibold mt-3">Infections &amp; digestion</h3>
+      <p class="mt-1 text-ink-soft text-[.82rem] leading-relaxed">Infections, diarrhea, constipation, colic &amp; reflux.</p>
     </article>
 
-    <article class="reveal card p-6">
-      <span class="grid place-items-center w-12 h-12 rounded-2xl bg-teal-soft text-teal-deep flex-none mb-4"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2.6S6 9 6 14a6 6 0 0 0 12 0c0-5-6-11.4-6-11.4z"/></svg></span>
-      <h3 class="font-display text-[1.2rem] font-semibold">Kidney &amp; urinary</h3>
-      <p class="mt-2 text-ink-soft leading-relaxed">Urinary tract infections, stones, and bedwetting.</p>
+    <!-- Kidney — 1x1 -->
+    <article class="reveal card p-5 flex flex-col overflow-hidden">
+      <span class="grid place-items-center w-11 h-11 rounded-2xl bg-teal-soft text-teal-deep mb-auto"><svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2.6S6 9 6 14a6 6 0 0 0 12 0c0-5-6-11.4-6-11.4z"/></svg></span>
+      <h3 class="font-display text-[1.1rem] font-semibold mt-3">Kidney &amp; urinary</h3>
+      <p class="mt-1 text-ink-soft text-[.82rem] leading-relaxed">Urinary infections, stones, bedwetting.</p>
     </article>
 
-    <article class="reveal card p-6">
-      <span class="grid place-items-center w-12 h-12 rounded-2xl bg-marigold-soft text-marigold flex-none mb-4"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8h10.5a2.5 2.5 0 1 0-2.5-2.5"/><path d="M3 12h15.5a2.5 2.5 0 1 1-2.5 2.5"/><path d="M3 16h8"/></svg></span>
-      <h3 class="font-display text-[1.2rem] font-semibold">Asthma &amp; allergies</h3>
-      <p class="mt-2 text-ink-soft leading-relaxed">Asthma and skin, eczema, respiratory, and digestive allergies.</p>
+    <!-- Asthma — 1x1 -->
+    <article class="reveal card p-5 flex flex-col overflow-hidden">
+      <span class="grid place-items-center w-11 h-11 rounded-2xl bg-marigold-soft text-marigold mb-auto"><svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8h10.5a2.5 2.5 0 1 0-2.5-2.5"/><path d="M3 12h15.5a2.5 2.5 0 1 1-2.5 2.5"/><path d="M3 16h8"/></svg></span>
+      <h3 class="font-display text-[1.1rem] font-semibold mt-3">Asthma &amp; allergies</h3>
+      <p class="mt-1 text-ink-soft text-[.82rem] leading-relaxed">Asthma, eczema, respiratory &amp; skin allergies.</p>
     </article>
 
-    <article class="reveal card p-6">
-      <span class="grid place-items-center w-12 h-12 rounded-2xl bg-teal-soft text-teal-deep flex-none mb-4"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg></span>
-      <h3 class="font-display text-[1.2rem] font-semibold">Respiratory &amp; ear</h3>
-      <p class="mt-2 text-ink-soft leading-relaxed">Lung and airway infections (croup and bronchiolitis) and ear infections.</p>
+    <!-- Respiratory — wide -->
+    <article class="reveal card col-span-2 p-5 flex flex-col overflow-hidden">
+      <span class="grid place-items-center w-11 h-11 rounded-2xl bg-teal-soft text-teal-deep mb-auto"><svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg></span>
+      <h3 class="font-display text-[1.15rem] font-semibold mt-3">Respiratory &amp; ear</h3>
+      <p class="mt-1 text-ink-soft text-[.86rem] leading-relaxed">Lung and airway infections (croup and bronchiolitis) and ear infections.</p>
     </article>
 
-    <article class="reveal card p-6">
-      <span class="grid place-items-center w-12 h-12 rounded-2xl bg-marigold-soft text-marigold flex-none mb-4"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a3 3 0 0 0-3 3v1a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z"/><path d="M6 21v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2"/></svg></span>
-      <h3 class="font-display text-[1.2rem] font-semibold">Puberty &amp; adolescence</h3>
-      <p class="mt-2 text-ink-soft leading-relaxed">Periodic exams, assessment of normal or early puberty, nutrition and hygiene counseling, height-growth strategies, and obesity care.</p>
+    <!-- Puberty — wide -->
+    <article class="reveal card col-span-2 p-5 flex flex-col overflow-hidden">
+      <span class="grid place-items-center w-11 h-11 rounded-2xl bg-marigold-soft text-marigold mb-auto"><svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a3 3 0 0 0-3 3v1a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z"/><path d="M6 21v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2"/></svg></span>
+      <h3 class="font-display text-[1.15rem] font-semibold mt-3">Puberty &amp; adolescence</h3>
+      <p class="mt-1 text-ink-soft text-[.86rem] leading-relaxed">Periodic exams, puberty assessment, nutrition &amp; hygiene, height-growth and obesity care.</p>
     </article>
 
-    <article class="reveal card p-6 sm:col-span-2 lg:col-span-1 relative overflow-hidden" style="background:linear-gradient(160deg,#FCEFD6,#FFFDF8);">
+    <!-- Ear piercing — wide, gold -->
+    <article class="reveal card col-span-2 p-5 flex flex-col overflow-hidden relative" style="background:linear-gradient(140deg,#FCEFD6,#FFFDF8);">
       <span class="absolute top-4 right-4 text-[.72rem] font-semibold text-marigold bg-white/70 rounded-full px-2.5 py-1">From 2 months</span>
-      <span class="grid place-items-center w-12 h-12 rounded-2xl bg-marigold text-white flex-none mb-4 shadow-[var(--shadow-soft)]"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h12l4 6-10 12L2 9z"/><path d="M2 9h20"/></svg></span>
-      <h3 class="font-display text-[1.2rem] font-semibold">Ear piercing</h3>
-      <p class="mt-2 text-ink-soft leading-relaxed">In fully sterile conditions with the American Studex system and hypoallergenic 24k-gold-plated earrings — from 2 months of age.</p>
+      <span class="grid place-items-center w-11 h-11 rounded-2xl bg-marigold text-white mb-auto shadow-[var(--shadow-soft)]"><svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h12l4 6-10 12L2 9z"/><path d="M2 9h20"/></svg></span>
+      <h3 class="font-display text-[1.15rem] font-semibold mt-3">Ear piercing</h3>
+      <p class="mt-1 text-ink-soft text-[.86rem] leading-relaxed">Fully sterile, American Studex system, hypoallergenic 24k-gold-plated earrings.</p>
     </article>
   </div>
 </section>

@@ -323,63 +323,74 @@
     <p class="mt-4 text-ink-soft leading-loose">همه‌ی مراقبت‌های کودک شما در یک‌جا؛ پزشکی که سابقه و شرایط فرزندتان را از قبل می‌شناسد.</p>
   </div>
 
-  <div class="mt-10 grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
-    <article class="reveal card overflow-hidden sm:col-span-2 flex flex-col sm:flex-row items-stretch" style="background:linear-gradient(160deg,#E2F0EC,#FBFDFB);">
-      <div class="p-6 sm:flex-1 order-2 sm:order-1">
-        <span class="grid place-items-center w-14 h-14 rounded-2xl bg-teal text-white flex-none shadow-[var(--shadow-soft)] mb-4"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 12a3 3 0 1 0 6 0 3 3 0 0 0-6 0z"/><path d="M12 3c-1.5 2-4 2.5-4 5 0 1 .5 1.8 1 2.4M12 3c1.5 2 4 2.5 4 5 0 1-.5 1.8-1 2.4"/><path d="M7 20c0-2.8 2.2-5 5-5s5 2.2 5 5"/></svg></span>
-        <h3 class="font-display text-[1.35rem] font-bold">نوزاد و روزهای نخست</h3>
-        <p class="mt-2 text-ink-soft leading-loose max-w-[46ch]">ویزیت و معاینه‌ی کامل نوزاد در روزهای اول تولد، همراه با بررسی و درمان زردی و پاسخ به تمام نگرانی‌های والدین تازه‌کار.</p>
+  <div class="mt-10 grid grid-cols-2 md:grid-cols-4 gap-4 md:auto-rows-[210px]">
+
+    <!-- نوزاد — کاشی بزرگ با عکس (۲×۲) -->
+    <article class="reveal card col-span-2 md:row-span-2 relative overflow-hidden">
+      <img src="3.png" alt="معاینه‌ی ملایم یک نوزاد" class="absolute inset-0 w-full h-full object-cover">
+      <div class="absolute inset-0 bg-gradient-to-t from-[#0b2a27]/90 via-[#0b2a27]/25 to-transparent"></div>
+      <div class="relative flex flex-col justify-end p-6 text-white min-h-[260px] md:h-full">
+        <span class="grid place-items-center w-11 h-11 rounded-2xl bg-white/15 mb-auto"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M9 12a3 3 0 1 0 6 0 3 3 0 0 0-6 0z"/><path d="M12 3c-1.5 2-4 2.5-4 5 0 1 .5 1.8 1 2.4M12 3c1.5 2 4 2.5 4 5 0 1-.5 1.8-1 2.4"/><path d="M7 20c0-2.8 2.2-5 5-5s5 2.2 5 5"/></svg></span>
+        <h3 class="font-display text-[1.3rem] font-bold">نوزاد و روزهای نخست</h3>
+        <p class="mt-1.5 text-white/85 text-[.9rem] leading-relaxed">ویزیت و معاینه‌ی کامل نوزاد در روزهای اول تولد، بررسی و درمان زردی و پاسخ به نگرانی‌های والدین.</p>
       </div>
-      <img src="3.png" alt="معاینه‌ی ملایم یک نوزاد" class="order-1 sm:order-2 w-full sm:w-[42%] h-44 sm:h-auto object-cover" />
     </article>
 
-    <article class="reveal card p-6">
-      <span class="grid place-items-center w-12 h-12 rounded-2xl bg-marigold-soft text-marigold flex-none mb-4"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.6l-1-1a5.5 5.5 0 0 0-7.8 7.8l1 1L12 21l7.8-7.6 1-1a5.5 5.5 0 0 0 0-7.8z"/></svg></span>
-      <h3 class="font-display text-[1.2rem] font-bold">شیردهی و تغذیه</h3>
-      <p class="mt-2 text-ink-soft leading-loose">آموزش و مشاوره‌ی شیردهی از دوران بارداری تا پس از تولد، مشاوره‌ی تغذیه‌ی مادر شیرده و آموزش مراقبت از نوزاد.</p>
+    <!-- شیردهی — پهن -->
+    <article class="reveal card col-span-2 p-5 flex flex-col overflow-hidden">
+      <span class="grid place-items-center w-11 h-11 rounded-2xl bg-marigold-soft text-marigold mb-auto"><svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.6l-1-1a5.5 5.5 0 0 0-7.8 7.8l1 1L12 21l7.8-7.6 1-1a5.5 5.5 0 0 0 0-7.8z"/></svg></span>
+      <h3 class="font-display text-[1.15rem] font-bold mt-3">شیردهی و تغذیه</h3>
+      <p class="mt-1 text-ink-soft text-[.86rem] leading-relaxed">آموزش و مشاوره‌ی شیردهی از بارداری تا پس از تولد و مشاوره‌ی تغذیه‌ی مادر شیرده.</p>
     </article>
 
-    <article class="reveal card p-6">
-      <span class="grid place-items-center w-12 h-12 rounded-2xl bg-teal-soft text-teal-deep flex-none mb-4"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 14l3-3 3 3 5-6"/></svg></span>
-      <h3 class="font-display text-[1.2rem] font-bold">پایش رشد و تکامل</h3>
-      <p class="mt-2 text-ink-soft leading-loose">بررسی منظم سلامت، رشد و نموّ از بدو تولد تا پایان بلوغ (۱۸ سالگی).</p>
+    <!-- پایش — ۱×۱ -->
+    <article class="reveal card p-5 flex flex-col overflow-hidden">
+      <span class="grid place-items-center w-11 h-11 rounded-2xl bg-teal-soft text-teal-deep mb-auto"><svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 14l3-3 3 3 5-6"/></svg></span>
+      <h3 class="font-display text-[1.1rem] font-bold mt-3">پایش رشد و تکامل</h3>
+      <p class="mt-1 text-ink-soft text-[.82rem] leading-relaxed">پایش سلامت و رشد از تولد تا ۱۸ سالگی.</p>
     </article>
 
-    <article class="reveal card p-6">
-      <span class="grid place-items-center w-12 h-12 rounded-2xl bg-marigold-soft text-marigold flex-none mb-4"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></span>
-      <h3 class="font-display text-[1.2rem] font-bold">بیماری‌های عفونی و گوارش</h3>
-      <p class="mt-2 text-ink-soft leading-loose">تشخیص و درمان عفونت‌ها و مشکلات گوارشی: اسهال و یبوست حاد و مزمن، دردهای شکمی، کولیک و ریفلاکس.</p>
+    <!-- عفونی و گوارش — ۱×۱ -->
+    <article class="reveal card p-5 flex flex-col overflow-hidden">
+      <span class="grid place-items-center w-11 h-11 rounded-2xl bg-marigold-soft text-marigold mb-auto"><svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></span>
+      <h3 class="font-display text-[1.1rem] font-bold mt-3">عفونی و گوارش</h3>
+      <p class="mt-1 text-ink-soft text-[.82rem] leading-relaxed">عفونت‌ها، اسهال، یبوست، کولیک و ریفلاکس.</p>
     </article>
 
-    <article class="reveal card p-6">
-      <span class="grid place-items-center w-12 h-12 rounded-2xl bg-teal-soft text-teal-deep flex-none mb-4"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2.6S6 9 6 14a6 6 0 0 0 12 0c0-5-6-11.4-6-11.4z"/></svg></span>
-      <h3 class="font-display text-[1.2rem] font-bold">کلیه و مجاری ادراری</h3>
-      <p class="mt-2 text-ink-soft leading-loose">تشخیص و درمان عفونت‌های ادراری، سنگ و شب‌ادراری.</p>
+    <!-- کلیه — ۱×۱ -->
+    <article class="reveal card p-5 flex flex-col overflow-hidden">
+      <span class="grid place-items-center w-11 h-11 rounded-2xl bg-teal-soft text-teal-deep mb-auto"><svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2.6S6 9 6 14a6 6 0 0 0 12 0c0-5-6-11.4-6-11.4z"/></svg></span>
+      <h3 class="font-display text-[1.1rem] font-bold mt-3">کلیه و ادراری</h3>
+      <p class="mt-1 text-ink-soft text-[.82rem] leading-relaxed">عفونت ادراری، سنگ و شب‌ادراری.</p>
     </article>
 
-    <article class="reveal card p-6">
-      <span class="grid place-items-center w-12 h-12 rounded-2xl bg-marigold-soft text-marigold flex-none mb-4"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8h10.5a2.5 2.5 0 1 0-2.5-2.5"/><path d="M3 12h15.5a2.5 2.5 0 1 1-2.5 2.5"/><path d="M3 16h8"/></svg></span>
-      <h3 class="font-display text-[1.2rem] font-bold">آسم و آلرژی</h3>
-      <p class="mt-2 text-ink-soft leading-loose">آسم و آلرژی‌های پوستی، اگزما و آلرژی‌های تنفسی و گوارشی.</p>
+    <!-- آسم — ۱×۱ -->
+    <article class="reveal card p-5 flex flex-col overflow-hidden">
+      <span class="grid place-items-center w-11 h-11 rounded-2xl bg-marigold-soft text-marigold mb-auto"><svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8h10.5a2.5 2.5 0 1 0-2.5-2.5"/><path d="M3 12h15.5a2.5 2.5 0 1 1-2.5 2.5"/><path d="M3 16h8"/></svg></span>
+      <h3 class="font-display text-[1.1rem] font-bold mt-3">آسم و آلرژی</h3>
+      <p class="mt-1 text-ink-soft text-[.82rem] leading-relaxed">آسم، اگزما و آلرژی‌های تنفسی و پوستی.</p>
     </article>
 
-    <article class="reveal card p-6">
-      <span class="grid place-items-center w-12 h-12 rounded-2xl bg-teal-soft text-teal-deep flex-none mb-4"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg></span>
-      <h3 class="font-display text-[1.2rem] font-bold">تنفسی و گوش</h3>
-      <p class="mt-2 text-ink-soft leading-loose">تشخیص و درمان عفونت‌های ریه و مجاری تنفسی (کروپ و برونشیولیت) و عفونت گوش.</p>
+    <!-- تنفسی و گوش — پهن -->
+    <article class="reveal card col-span-2 p-5 flex flex-col overflow-hidden">
+      <span class="grid place-items-center w-11 h-11 rounded-2xl bg-teal-soft text-teal-deep mb-auto"><svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg></span>
+      <h3 class="font-display text-[1.15rem] font-bold mt-3">تنفسی و گوش</h3>
+      <p class="mt-1 text-ink-soft text-[.86rem] leading-relaxed">عفونت‌های ریه و مجاری تنفسی (کروپ و برونشیولیت) و عفونت گوش.</p>
     </article>
 
-    <article class="reveal card p-6">
-      <span class="grid place-items-center w-12 h-12 rounded-2xl bg-marigold-soft text-marigold flex-none mb-4"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a3 3 0 0 0-3 3v1a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z"/><path d="M6 21v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2"/></svg></span>
-      <h3 class="font-display text-[1.2rem] font-bold">بلوغ و نوجوانی</h3>
-      <p class="mt-2 text-ink-soft leading-loose">معاینات دوره‌ای، بررسی بلوغ طبیعی یا زودرس، مشاوره‌ی تغذیه و بهداشت بلوغ، راهکارهای افزایش قد و پیشگیری و درمان چاقی.</p>
+    <!-- بلوغ — پهن -->
+    <article class="reveal card col-span-2 p-5 flex flex-col overflow-hidden">
+      <span class="grid place-items-center w-11 h-11 rounded-2xl bg-marigold-soft text-marigold mb-auto"><svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a3 3 0 0 0-3 3v1a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z"/><path d="M6 21v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2"/></svg></span>
+      <h3 class="font-display text-[1.15rem] font-bold mt-3">بلوغ و نوجوانی</h3>
+      <p class="mt-1 text-ink-soft text-[.86rem] leading-relaxed">معاینات دوره‌ای، بررسی بلوغ، مشاوره‌ی تغذیه و بهداشت، افزایش قد و کنترل چاقی.</p>
     </article>
 
-    <article class="reveal card p-6 sm:col-span-2 lg:col-span-1 relative overflow-hidden" style="background:linear-gradient(160deg,#FCEFD6,#FFFDF8);">
+    <!-- پیرسینگ — پهن، طلایی -->
+    <article class="reveal card col-span-2 p-5 flex flex-col overflow-hidden relative" style="background:linear-gradient(140deg,#FCEFD6,#FFFDF8);">
       <span class="absolute top-4 left-4 text-[.72rem] font-semibold text-marigold bg-white/70 rounded-full px-2.5 py-1">از ۲ ماهگی</span>
-      <span class="grid place-items-center w-12 h-12 rounded-2xl bg-marigold text-white flex-none mb-4 shadow-[var(--shadow-soft)]"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h12l4 6-10 12L2 9z"/><path d="M2 9h20"/></svg></span>
-      <h3 class="font-display text-[1.2rem] font-bold">پیرسینگ گوش</h3>
-      <p class="mt-2 text-ink-soft leading-loose">در شرایط کاملاً استریل با دستگاه استادکس آمریکایی و گوشواره‌های ضد حساسیت با روکش طلای ۲۴ عیار؛ از دو ماهگی به بعد.</p>
+      <span class="grid place-items-center w-11 h-11 rounded-2xl bg-marigold text-white mb-auto shadow-[var(--shadow-soft)]"><svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h12l4 6-10 12L2 9z"/><path d="M2 9h20"/></svg></span>
+      <h3 class="font-display text-[1.15rem] font-bold mt-3">پیرسینگ گوش</h3>
+      <p class="mt-1 text-ink-soft text-[.86rem] leading-relaxed">در شرایط کاملاً استریل با دستگاه استادکس و گوشواره‌های ضد حساسیت با روکش طلای ۲۴ عیار.</p>
     </article>
   </div>
 </section>
