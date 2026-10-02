@@ -471,6 +471,26 @@
 
     <!-- scheduler -->
     <div class="reveal card p-5 sm:p-7">
+      <div class="mb-5">
+        <div class="text-[.78rem] text-ink-soft mb-2">Visit type</div>
+        <div id="visitType" class="grid grid-cols-3 gap-2">
+          <button type="button" class="vt-btn" data-type="in-person">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18"/><path d="M5 21V8l7-5 7 5v13"/><path d="M10 21v-6h4v6"/></svg>
+            <span>In-person</span>
+          </button>
+          <button type="button" class="vt-btn" data-type="video">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M23 7l-7 5 7 5V7z"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg>
+            <span>Online video</span>
+          </button>
+          <button type="button" class="vt-btn" data-type="text">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+            <span>Online text</span>
+          </button>
+        </div>
+        <div id="onlineNote" class="hidden mt-2 text-[.8rem] text-ink-soft leading-relaxed bg-teal-soft/60 rounded-xl px-3 py-2">
+          Online visits happen over WhatsApp. Once we confirm, we'll email you the WhatsApp number and your appointment time.
+        </div>
+      </div>
       <div id="scheduler">
         <div class="mb-3">
           <div class="font-display text-[1.05rem] font-semibold text-ink">Choose a day</div>
@@ -738,7 +758,21 @@ document.querySelectorAll('.acc-btn').forEach(btn => {
 
   let selected = null;
   let selectedDayISO = null;
+  let visitType = 'in-person';
   let blockedDays = new Set(), blockedSlots = new Set(), bookedSlots = new Set();
+
+  const vtButtons = [...document.querySelectorAll('#visitType .vt-btn')];
+  const onlineNote = document.getElementById('onlineNote');
+  function renderVisitType(){
+    vtButtons.forEach(b => {
+      const on = b.dataset.type === visitType;
+      b.className = 'vt-btn flex flex-col items-center justify-center gap-1 rounded-2xl py-3 px-1 text-[.8rem] font-medium transition ' +
+        (on ? 'bg-teal text-white shadow-[var(--shadow-soft)]' : 'bg-teal-soft text-teal-deep hover:bg-teal/15');
+    });
+    onlineNote.classList.toggle('hidden', visitType === 'in-person');
+  }
+  vtButtons.forEach(b => b.addEventListener('click', () => { visitType = b.dataset.type; renderVisitType(); }));
+  renderVisitType();
   async function loadAvailability(){
     try {
       const a = await (await fetch('/api/availability', {cache:'no-store'})).json();
@@ -894,15 +928,18 @@ document.querySelectorAll('.acc-btn').forEach(btn => {
     // Send the request to the clinic backend (Telegram/Bale + email). Fire-and-forget: the on-page
     // confirmation shows regardless, so the picker still works if the backend isn't running.
     fetch('/api/book', { method:'POST', headers:{'content-type':'application/json'},
-      body: JSON.stringify({ name:rec.name, nationalId:rec.nationalId, phone:rec.phone, email:rec.email, date:rec.date, time:rec.time, when, lang:'en' }) }).catch(()=>{});
-    successMsg.textContent = `Thanks, ${rec.name.split(' ')[0]}! Your appointment is set for ${nice} at ${fmtTime(selected.time)}. We'll email ${rec.email} to confirm.`;
+      body: JSON.stringify({ name:rec.name, nationalId:rec.nationalId, phone:rec.phone, email:rec.email, type:visitType, date:rec.date, time:rec.time, when, lang:'en' }) }).catch(()=>{});
+    const first = rec.name.split(' ')[0];
+    successMsg.textContent = (visitType === 'in-person')
+      ? `Thanks, ${first}! Your appointment is set for ${nice} at ${fmtTime(selected.time)}. We'll email ${rec.email} to confirm.`
+      : `Thanks, ${first}! Your online visit request for ${nice} at ${fmtTime(selected.time)} is in. Once confirmed, we'll email ${rec.email} the WhatsApp number and time.`;
     form.classList.add('hidden');
     success.classList.remove('hidden');
     success.scrollIntoView({behavior:'smooth', block:'center'});
   });
 
   document.getElementById('bookAgain').addEventListener('click', () => {
-    form.reset(); selected = null; selectedDayISO = null;
+    form.reset(); selected = null; selectedDayISO = null; visitType = 'in-person'; renderVisitType();
     success.classList.add('hidden'); hint.classList.remove('hidden');
     loadAvailability().then(init);
     document.getElementById('scheduler').scrollIntoView({behavior:'smooth', block:'center'});

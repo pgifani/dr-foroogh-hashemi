@@ -13,6 +13,7 @@
 //   MAIL_FROM=Dr. Hashemi <booking@ainoor.io> (verified Resend sender)
 //   MAIL_REPLY_TO=clinic@ainoor.io            (optional — where patient replies go)
 //   PUBLIC_BASE_URL=https://demo.ainoor.io    (used to build the patient's cancel link)
+//   CLINIC_WHATSAPP=+989120000000             (doctor's WhatsApp — sent to patients for online visits)
 //   TWILIO_ACCOUNT_SID=AC...                 (optional — enables patient SMS)
 //   TWILIO_AUTH_TOKEN=...
 //   TWILIO_FROM_NUMBER=+1555...
@@ -77,6 +78,19 @@ const cancelUrl = (b) => {
   const base = (b.base || PUBLIC_BASE || "").replace(/\/$/, "");
   return base && b.cancelToken ? `${base}/cancel?id=${encodeURIComponent(b.id)}&t=${encodeURIComponent(b.cancelToken)}` : "";
 };
+
+// Visit types: in-person, or online over WhatsApp (video / text).
+const VISIT_TYPES = new Set(["in-person", "video", "text"]);
+const isOnline = (t) => t === "video" || t === "text";
+const CLINIC_WHATSAPP = (ENV.CLINIC_WHATSAPP || "").trim();           // e.g. +98912…
+const waDigits = CLINIC_WHATSAPP.replace(/[^\d]/g, "");
+const waLink = waDigits ? `https://wa.me/${waDigits}` : "";
+function visitLabel(type, lang) {
+  const fa = lang === "fa";
+  if (type === "video") return fa ? "ویزیت آنلاین تصویری (واتس‌اپ)" : "Online video visit (WhatsApp)";
+  if (type === "text")  return fa ? "ویزیت آنلاین متنی (واتس‌اپ)"   : "Online text visit (WhatsApp)";
+  return fa ? "ویزیت حضوری" : "In-person visit";
+}
 
 /* ---------- availability blocks (days off + blocked slots), set from the bot ---------- */
 const BLOCKS_DB = join(DATA_DIR, "blocks.json");
@@ -163,7 +177,7 @@ async function api(ch, method, payload) {
 
 function staffText(b) {   // plain text so it renders identically on Telegram and Bale
   const site = b.lang === "fa" ? "Persian site" : "English site";
-  return `🗓 New appointment request\n\n👤 ${b.name}${b.nationalId ? `\n🆔 ${b.nationalId}` : ""}\n📞 ${b.phone}${b.email ? `\n📧 ${b.email}` : ""}\n🕒 ${b.when}\n🌐 ${site}\n\nStatus: ⏳ pending`;
+  return `🗓 New appointment request\n\n👤 ${b.name}${b.nationalId ? `\n🆔 ${b.nationalId}` : ""}\n📞 ${b.phone}${b.email ? `\n📧 ${b.email}` : ""}\n🩺 ${visitLabel(b.type || "in-person", "en")}\n🕒 ${b.when}\n🌐 ${site}\n\nStatus: ⏳ pending`;
 }
 const bookingMarkup = (b) => ({ inline_keyboard: [[
   { text: "✅ Confirm", callback_data: `confirm:${b.id}` },
@@ -254,9 +268,17 @@ const patientMsg = (b, kind) => {
   if (kind === "received") return fa
     ? `سلام ${name}، درخواست نوبت شما با دکتر هاشمی برای ${b.when} دریافت شد. به‌زودی تأیید می‌کنیم.`
     : `Hi ${name}, your appointment request with Dr. Hashemi for ${b.when} was received. We'll confirm shortly.`;
-  if (kind === "confirmed") return fa
-    ? `نوبت شما تأیید شد ✅ ${b.when}. منتظر دیدن‌تان هستیم! دکتر هاشمی`
-    : `You're confirmed ✅ ${b.when}. See you then! — Dr. Hashemi's office`;
+  if (kind === "confirmed") {
+    if (isOnline(b.type)) {
+      const act = b.type === "video" ? (fa ? "تماس تصویری بگیرید" : "video-call us") : (fa ? "پیام دهید" : "message us");
+      return fa
+        ? `ویزیت آنلاین شما تأیید شد ✅ ${b.when}. در زمان نوبت، در واتس‌اپ ${act}: ${CLINIC_WHATSAPP}`
+        : `Your online visit is confirmed ✅ ${b.when}. At your appointment time, ${act} on WhatsApp: ${CLINIC_WHATSAPP}`;
+    }
+    return fa
+      ? `نوبت شما تأیید شد ✅ ${b.when}. منتظر دیدن‌تان هستیم! دکتر هاشمی`
+      : `You're confirmed ✅ ${b.when}. See you then! — Dr. Hashemi's office`;
+  }
   if (kind === "cancelled") return fa
     ? `نوبت شما برای ${b.when} لغو شد. ممنون که اطلاع دادید — هر زمان خواستید دوباره نوبت بگیرید. دکتر هاشمی`
     : `Your appointment for ${b.when} has been cancelled. Thanks for letting us know — you can book again anytime. — Dr. Hashemi's office`;
@@ -314,7 +336,16 @@ function emailContent(b, kind) {
   }[kind] || t_received_fallback();
   function t_received_fallback() { return { subject: "Appointment", badge: "", bg: "#0d6e66", accent: "#0d6e66", head: "", body: "" }; }
 
-  const whenLabel = fa ? "زمان درخواستی" : "Requested time";
+  const online = isOnline(b.type);
+  const typeText = visitLabel(b.type || "in-person", b.lang);
+  if (online && kind === "received") t.body += fa
+    ? " این ویزیت به‌صورت آنلاین و از طریق واتس‌اپ انجام می‌شود؛ پس از تأیید، شماره‌ی واتس‌اپ و زمان دقیق برایتان ارسال می‌شود."
+    : " This is an online visit over WhatsApp; once we confirm it, we'll send you the WhatsApp number and the exact time.";
+  if (online && kind === "confirmed") t.body = fa
+    ? `ویزیت آنلاین شما <strong>تأیید شد</strong>. در زمان نوبت، از طریق واتس‌اپ با شما در ارتباط خواهیم بود.`
+    : `Your online visit is <strong>confirmed</strong>. We'll connect with you over WhatsApp at your appointment time.`;
+
+  const whenLabel = fa ? "زمان" : "Time";
   const cancelHref = (kind === "received" || kind === "confirmed") ? cancelUrl(b) : "";
   const cancelBlock = cancelHref
     ? `<tr><td style="padding:18px 28px 0;">
@@ -322,6 +353,21 @@ function emailContent(b, kind) {
           ${fa ? "برنامه‌تان عوض شد؟ " : "Plans changed? "}
           <a href="${esc(cancelHref)}" style="color:#b45309;font-weight:600;text-decoration:underline;">${fa ? "لغو این نوبت" : "Cancel this appointment"}</a>
         </p>
+      </td></tr>`
+    : "";
+  const onlineBlock = (kind === "confirmed" && online && waLink)
+    ? `<tr><td style="padding:18px 28px 0;">
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#e9f8ef;border:1px solid #bfe6cd;border-radius:12px;">
+          <tr><td style="padding:16px 18px;">
+            <div style="font-size:12px;color:#157a3a;text-transform:uppercase;letter-spacing:.04em;">${fa ? "واتس‌اپ" : "WhatsApp"}</div>
+            <a href="${esc(waLink)}" style="display:inline-block;font-size:17px;color:#157a3a;font-weight:700;text-decoration:none;margin-top:4px;direction:ltr;">${esc(CLINIC_WHATSAPP)}</a>
+            <p style="font-size:13.5px;line-height:1.7;color:#3c4b47;margin:8px 0 0;">${
+              b.type === "video"
+                ? (fa ? "در زمان نوبت، روی شماره بزنید و در واتس‌اپ <strong>تماس تصویری</strong> بگیرید." : "At your appointment time, tap the number and start a <strong>WhatsApp video call</strong>.")
+                : (fa ? "در زمان نوبت، روی شماره بزنید و در واتس‌اپ <strong>پیام</strong> دهید." : "At your appointment time, tap the number and <strong>message us</strong> on WhatsApp.")
+            }</p>
+          </td></tr>
+        </table>
       </td></tr>`
     : "";
   const footer = fa
@@ -344,12 +390,17 @@ function emailContent(b, kind) {
           <p style="font-size:16px;color:#14201d;margin:16px 0 6px;font-weight:600;">${esc(t.head)}</p>
           <p style="font-size:15px;line-height:1.75;color:#3c4b47;margin:0 0 20px;">${t.body}</p>
           <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f3faf8;border:1px solid #d8ebe7;border-radius:12px;">
-            <tr><td style="padding:16px 18px;">
+            <tr><td style="padding:14px 18px;">
+              <div style="font-size:12px;color:#5a736e;text-transform:uppercase;letter-spacing:.04em;">${fa ? "نوع ویزیت" : "Visit type"}</div>
+              <div style="font-size:15px;color:#14201d;font-weight:600;margin-top:3px;">${esc(typeText)}</div>
+            </td></tr>
+            <tr><td style="padding:14px 18px;border-top:1px solid #e2efec;">
               <div style="font-size:12px;color:#5a736e;text-transform:uppercase;letter-spacing:.04em;">${esc(whenLabel)}</div>
-              <div style="font-size:16px;color:#0d6e66;font-weight:700;margin-top:4px;">${when}</div>
+              <div style="font-size:16px;color:#0d6e66;font-weight:700;margin-top:3px;">${when}</div>
             </td></tr>
           </table>
         </td></tr>
+        ${onlineBlock}
         ${cancelBlock}
         <tr><td style="padding:18px 28px 26px;">
           <p style="font-size:12.5px;line-height:1.7;color:#8a9a96;margin:0;border-top:1px solid #eef2f1;padding-top:16px;">${footer}</p>
@@ -528,6 +579,7 @@ async function handleBook(req, res) {
   const email = String(b.email || "").trim();
   const nationalId = toAsciiDigits(b.nationalId || "");
   const emailOk = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+  const type = VISIT_TYPES.has(b.type) ? b.type : "in-person";
   if (!name || phone.replace(/[^\d۰-۹]/g, "").length < 7 || !emailOk || !validCodeMelli(nationalId))
     return json(res, 400, { ok: false, error: "name, valid national ID, mobile and email are required" });
 
@@ -536,7 +588,7 @@ async function handleBook(req, res) {
   const reqBase = host ? `${proto}://${host}` : "";
 
   const rec = {
-    id: newId(), name, nationalId, phone, email,
+    id: newId(), name, nationalId, phone, email, type,
     date: String(b.date || ""), time: String(b.time || ""),
     when: String(b.when || `${b.date} ${b.time}`).slice(0, 120),
     lang: b.lang === "fa" ? "fa" : "en",
@@ -693,6 +745,7 @@ createServer(async (req, res) => {
     ? "Staff channels: MOCK mode (no TELEGRAM_BOT_TOKEN / BALE_BOT_TOKEN). Messages print to the console."
     : `Staff channels: ${CHANNELS.map(c => `${c.name}${c.staff ? "" : " (chat id NOT set — message the bot /id)"}`).join(", ")}`);
   console.log(MAIL_ON ? `Patient email: Resend configured (from ${MAIL.from}).` : "Patient email: MOCK (set RESEND_API_KEY + MAIL_FROM to send real emails).");
+  console.log(CLINIC_WHATSAPP ? `Online visits: WhatsApp ${CLINIC_WHATSAPP}.` : "Online visits: set CLINIC_WHATSAPP so confirmation emails include the number.");
   console.log(SMS.from ? "Patient SMS: Twilio configured." : "Patient SMS: off (set TWILIO_FROM_NUMBER to enable).");
   console.log(WA_FROM ? "Patient WhatsApp: Twilio configured." : "Patient WhatsApp: off (set TWILIO_WHATSAPP_FROM to enable).");
 });
