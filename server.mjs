@@ -19,8 +19,8 @@
 //   ONLINE_FEE=۳۰۰٬۰۰۰ تومان                   (online-visit fee, shown to the patient)
 //   ANTHROPIC_API_KEY=sk-ant-...               (enables the Claude AI chatbot — falls back to rule-based without it)
 //   CHAT_MODEL=claude-haiku-4-5                 (chatbot model; override to claude-opus-5-5 for more capability)
-//   KAVENEGAR_API_KEY=...                     (patient SMS — the primary channel; kavenegar.com)
-//   KAVENEGAR_SENDER=10008663                 (your Kavenegar line number; a dedicated line is
+//   SMSIR_API_KEY=...                         (patient SMS — the primary channel; sms.ir)
+//   SMSIR_LINE=30007XXXXXXXX                   (your SMS.ir line number; a dedicated line is
 //                                              recommended so SMS containing the cancel link isn't blocked)
 //   PORT=3000
 //
@@ -259,16 +259,16 @@ async function notifyStaff(b) {
   save();
 }
 
-/* ---------- patient SMS (Kavenegar via REST, optional) ---------- */
+/* ---------- patient SMS (SMS.ir via REST, optional) ---------- */
 // Iranian SMS gateway. Patients mostly use SMS, not email, so this is the primary channel.
-// Needs KAVENEGAR_API_KEY + KAVENEGAR_SENDER (your line number). A DEDICATED line is
-// recommended — shared/public lines often block messages that contain links.
-const KAVENEGAR = {
-  key: (ENV.KAVENEGAR_API_KEY || "").trim(),
-  sender: (ENV.KAVENEGAR_SENDER || "").trim(), // the line number the SMS is sent from
+// Needs SMSIR_API_KEY + SMSIR_LINE (your line number). A DEDICATED line is recommended —
+// shared/public lines often block messages that contain links.
+const SMSIR = {
+  key: (ENV.SMSIR_API_KEY || "").trim(),
+  line: (ENV.SMSIR_LINE || "").trim(), // the line number the SMS is sent from
 };
-const SMS_ON = !!(KAVENEGAR.key && KAVENEGAR.sender);
-// Normalise any Iranian number to local form 09XXXXXXXXX (what Kavenegar expects as receptor).
+const SMS_ON = !!(SMSIR.key && SMSIR.line);
+// Normalise any Iranian number to local form 09XXXXXXXXX.
 function toIranLocal(phone) {
   let p = String(phone).replace(/[۰-۹]/g, (d) => "۰۱۲۳۴۵۶۷۸۹".indexOf(d)).replace(/\D/g, "");
   if (p.startsWith("0098")) p = p.slice(4);
@@ -279,14 +279,17 @@ function toIranLocal(phone) {
 async function sendSms(to, body) {
   if (!SMS_ON) { console.log(`[MOCK sms -> ${to}] ${body}`); return; }
   try {
-    const r = await fetch(`https://api.kavenegar.com/v1/${encodeURIComponent(KAVENEGAR.key)}/sms/send.json`, {
+    const r = await fetch("https://api.sms.ir/v1/send/bulk", {
       method: "POST",
-      headers: { "content-type": "application/x-www-form-urlencoded" },
-      body: new URLSearchParams({ receptor: toIranLocal(to), sender: KAVENEGAR.sender, message: body }),
+      headers: { "content-type": "application/json", accept: "application/json", "x-api-key": SMSIR.key },
+      body: JSON.stringify({
+        lineNumber: /^\d+$/.test(SMSIR.line) ? Number(SMSIR.line) : SMSIR.line,
+        messageText: body,
+        mobiles: [toIranLocal(to)],
+      }),
     });
     const data = await r.json().catch(() => ({}));
-    const status = data && data.return && data.return.status;
-    if (status !== 200) console.error("sms error:", (data.return && data.return.message) || r.status);
+    if (!r.ok || data.status !== 1) console.error("sms error:", data.message || r.status);
   } catch (e) { console.error("sms failed:", e.message); }
 }
 /* ---------- patient email (Resend via REST, optional) ---------- */
@@ -823,7 +826,7 @@ createServer(async (req, res) => {
   console.log(MAIL_ON ? `Patient email: Resend configured (from ${MAIL.from}).` : "Patient email: MOCK (set RESEND_API_KEY + MAIL_FROM to send real emails).");
   console.log(CLINIC_WHATSAPP ? `Online visits: WhatsApp ${CLINIC_WHATSAPP}.` : "Online visits: set CLINIC_WHATSAPP so confirmation emails include the number.");
   console.log(CHAT_ON ? `AI chatbot: Claude configured (model ${CHAT_MODEL}).` : "AI chatbot: off (set ANTHROPIC_API_KEY to enable — falls back to the rule-based bot).");
-  console.log(SMS_ON ? `Patient SMS: Kavenegar configured (sender ${KAVENEGAR.sender}).` : "Patient SMS: off (set KAVENEGAR_API_KEY + KAVENEGAR_SENDER to enable — the primary patient channel).");
+  console.log(SMS_ON ? `Patient SMS: SMS.ir configured (line ${SMSIR.line}).` : "Patient SMS: off (set SMSIR_API_KEY + SMSIR_LINE to enable — the primary patient channel).");
 });
 
 const BOT_COMMANDS = [
