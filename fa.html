@@ -416,7 +416,7 @@
             <div class="h-px flex-1 bg-white/20"></div>
           </div>
           <h3 class="mt-4 font-display text-[1.25rem] font-bold text-white">انتخاب زمان</h3>
-          <p class="mt-2 text-white/75 leading-loose text-[.96rem]">یک روز را انتخاب کنید تا ساعت‌های خالی باز شود؛ سپس نام، کد ملی، شماره موبایل و ایمیل‌تان را وارد کنید.</p>
+          <p class="mt-2 text-white/75 leading-loose text-[.96rem]">یک روز را انتخاب کنید تا ساعت‌های خالی باز شود؛ سپس نام، کد ملی و شماره موبایل‌تان را وارد کنید.</p>
         </div>
         <div class="reveal">
           <div class="flex items-center gap-3">
@@ -424,7 +424,7 @@
             <div class="h-px flex-1 bg-white/20"></div>
           </div>
           <h3 class="mt-4 font-display text-[1.25rem] font-bold text-white">تأیید ما</h3>
-          <p class="mt-2 text-white/75 leading-loose text-[.96rem]">درخواست شما برای ما ارسال می‌شود و پس از بررسی، ایمیل تأیید دریافت می‌کنید. در صورت نیاز، از همان ایمیل می‌توانید نوبت را لغو کنید.</p>
+          <p class="mt-2 text-white/75 leading-loose text-[.96rem]">درخواست شما برای ما ارسال می‌شود و پس از بررسی، پیامک تأیید دریافت می‌کنید. در صورت نیاز، از همان پیامک می‌توانید نوبت را لغو کنید.</p>
         </div>
         <div class="reveal">
           <div class="flex items-center gap-3">
@@ -446,7 +446,7 @@
     <div class="reveal">
       <span class="eyebrow"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="3"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>نوبت‌دهی آنلاین</span>
       <h2 class="mt-4 text-[2rem] md:text-[2.4rem] font-bold leading-[1.4]">زمان مناسب‌تان را انتخاب کنید.</h2>
-      <p class="mt-4 text-ink-soft leading-loose max-w-[48ch]">ابتدا یک روز را انتخاب کنید تا زمان‌های خالیِ آن باز شود؛ سپس فقط نام، کد ملی و شماره‌ی موبایل‌تان را وارد کنید. برای تأیید، ایمیل می‌فرستیم.</p>
+      <p class="mt-4 text-ink-soft leading-loose max-w-[48ch]">ابتدا یک روز را انتخاب کنید تا زمان‌های خالیِ آن باز شود؛ سپس فقط نام، کد ملی و شماره‌ی موبایل‌تان را وارد کنید. برای تأیید، پیامک می‌فرستیم.</p>
 
       <div class="mt-7 space-y-4">
         <div class="flex items-start gap-3">
@@ -478,7 +478,7 @@
           </button>
         </div>
         <div id="onlineNote" class="hidden mt-2 text-[.8rem] text-ink-soft leading-relaxed bg-teal-soft/60 rounded-xl px-3 py-2">
-          ویزیت آنلاین از طریق واتس‌اپ انجام می‌شود. پس از تأیید، شماره‌ی واتس‌اپ و زمان نوبت برایتان ایمیل می‌شود.
+          ویزیت آنلاین از طریق واتس‌اپ انجام می‌شود. پس از تأیید، شماره‌ی واتس‌اپ و زمان نوبت برایتان پیامک می‌شود.
         </div>
       </div>
       <div id="scheduler">
@@ -521,8 +521,8 @@
             <input class="field" id="phone" name="phone" type="tel" inputmode="tel" dir="ltr" style="text-align:left" placeholder="۰۹۱۲۰۰۰۰۰۰۰" required>
           </div>
           <div>
-            <label class="lbl" for="email">ایمیل <span class="req">*</span></label>
-            <input class="field" id="email" name="email" type="email" inputmode="email" autocomplete="email" dir="ltr" style="text-align:left" placeholder="you@example.com" required>
+            <label class="lbl" for="email">ایمیل <span class="text-ink-soft text-[.78rem]">(اختیاری)</span></label>
+            <input class="field" id="email" name="email" type="email" inputmode="email" autocomplete="email" dir="ltr" style="text-align:left" placeholder="(اختیاری) you@example.com">
           </div>
         </div>
         <div id="payPanel" class="hidden mt-4 rounded-2xl border border-marigold/40 bg-marigold-soft/40 p-4">
@@ -545,7 +545,7 @@
           <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
           تأیید نوبت
         </button>
-        <p class="text-[.8rem] text-ink-soft text-center mt-3">برای تأیید نوبت ایمیل می‌فرستیم و در صورت نیاز تماس می‌گیریم. اکنون پرداختی انجام نمی‌شود.</p>
+        <p class="text-[.8rem] text-ink-soft text-center mt-3">برای تأیید نوبت پیامک می‌فرستیم و در صورت نیاز تماس می‌گیریم. اکنون پرداختی انجام نمی‌شود.</p>
       </form>
 
       <div id="bookSuccess" class="hidden text-center py-6">
@@ -934,12 +934,12 @@ document.querySelectorAll('.acc-btn').forEach(btn => {
     if (!name.value.trim()){ setErr(name,true); bad=true; }
     if (!validCodeMelli(nidDigits)){ setErr(nid,true); bad=true; }
     if (phone.value.replace(/[^\d۰-۹]/g,'').length < 7){ setErr(phone,true); bad=true; }
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.value.trim())){ setErr(email,true); bad=true; }
+    if (email.value.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.value.trim())){ setErr(email,true); bad=true; }
     const onlineSel = visitType !== 'in-person';
     if (onlineSel && payRefEl.value.replace(/[^\dA-Za-z]/g,'').length < 4){ setErr(payRefEl,true); bad=true; }
     if (bad || !selected){
       errBox.textContent = !selected ? 'لطفاً ابتدا یک زمان را از بالا انتخاب کنید.'
-        : (onlineSel ? 'لطفاً مشخصات و کد پیگیری پرداخت را درست وارد کنید.' : 'لطفاً نام، کد ملی معتبر، شماره موبایل و ایمیل را درست وارد کنید.');
+        : (onlineSel ? 'لطفاً مشخصات و کد پیگیری پرداخت را درست وارد کنید.' : 'لطفاً نام، کد ملی معتبر و شماره موبایل را درست وارد کنید.');
       errBox.classList.remove('hidden');
       return;
     }
@@ -953,8 +953,8 @@ document.querySelectorAll('.acc-btn').forEach(btn => {
       body: JSON.stringify({ name:rec.name, nationalId:rec.nationalId, phone:rec.phone, email:rec.email, type:visitType, payRef:payRefEl.value.trim(), date:rec.date, time:rec.time, when, lang:'fa' }) }).catch(()=>{});
     const first = rec.name.split(' ')[0];
     successMsg.textContent = (visitType === 'in-person')
-      ? `با تشکر، ${first}! نوبت شما برای ${nice} ساعت ${fmtTime(selected.time)} ثبت شد. برای تأیید، ایمیل تأیید را به ${rec.email} می‌فرستیم.`
-      : `با تشکر، ${first}! درخواست ویزیت آنلاین شما برای ${nice} ساعت ${fmtTime(selected.time)} ثبت شد. پس از تأیید، شماره‌ی واتس‌اپ و زمان را به ${rec.email} ایمیل می‌کنیم.`;
+      ? `با تشکر، ${first}! نوبت شما برای ${nice} ساعت ${fmtTime(selected.time)} ثبت شد. پیامک تأیید به شماره‌ی موبایل‌تان ارسال می‌شود.`
+      : `با تشکر، ${first}! درخواست ویزیت آنلاین شما برای ${nice} ساعت ${fmtTime(selected.time)} ثبت شد. پس از تأیید، شماره‌ی واتس‌اپ و زمان را برایتان پیامک می‌کنیم.`;
     form.classList.add('hidden');
     success.classList.remove('hidden');
     success.scrollIntoView({behavior:'smooth', block:'center'});

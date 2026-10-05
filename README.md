@@ -7,7 +7,7 @@ the **week ahead**; the patient picks a visit type, picks a day, picks a **15-mi
 clinic's real per-weekday hours), and enters **name, national ID (کد ملی), mobile, and email**.
 **Online visits are prepaid** by card-to-card and run over WhatsApp. New bookings are pushed to the
 clinic's messaging apps — **Telegram and Bale (بله)** — with Confirm/Decline buttons, and the
-patient gets a branded **confirmation email (via Resend)** with a **one-click cancel link**. The
+patient gets a **confirmation SMS (via Kavenegar)** with a **one-click cancel link** (email via Resend is optional). The
 doctor can **cancel** a booking too, and **manage availability (days off, blocked slots) straight
 from the bot** using Persian (Jalali/شمسی) or Gregorian dates.
 
@@ -70,7 +70,8 @@ A single, self-contained web project:
 - **Backend (`server.mjs`):** serves the site and exposes `POST /api/book`, `GET /api/availability`,
   `GET /api/config` (online fee/card), `POST /api/chat` (AI assistant), and `GET /cancel` +
   `POST /api/cancel`. **Zero npm dependencies.** Runs in a safe **mock mode** (prints messages to
-  the console) until you add credentials. Patient email is via **Resend**.
+  the console) until you add credentials. Patient notifications are by **SMS (Kavenegar)**; **email
+  (Resend) is optional** and sent only when the patient provided an address.
 
 **Design choices:** a soft **pastel palette** (periwinkle/lavender + coral accent) in a
 **claymorphism** style (puffy, borderless cards and controls), with the **services shown as a bento
@@ -118,7 +119,7 @@ website/
 ├── fa.html               Persian (RTL) site
 ├── 1.png … 4.png         Photos used on the pages
 ├── server.mjs            Production server: static + /api/book + /api/availability
-│                         + Telegram/Bale bot + Twilio ; includes Jalali↔Gregorian conversion
+│                         + Telegram/Bale bot + Kavenegar SMS ; includes Jalali↔Gregorian conversion
 ├── serve.mjs             A tiny static-only server (local preview, no backend)
 ├── Dockerfile            How Coolify/Docker builds and runs the app
 ├── .dockerignore         Files kept out of the Docker image (secrets, data, docs, serve.mjs…)
@@ -166,10 +167,12 @@ local runs) or in your host's environment-variable settings (Vercel / Coolify).
 |---|---|
 | `PORT` | Port to listen on (default `3000`). |
 | `DATA_DIR` | Folder for `bookings.json` + `blocks.json`. Set to a mounted volume in production (e.g. `/app/data`) so data survives redeploys. |
-| `RESEND_API_KEY` | From **resend.com**. Enables the patient **confirmation emails**. |
-| `MAIL_FROM` | Email sender, e.g. `Dr. Foroogh Hashemi <booking@ainoor.io>` (the domain must be verified in Resend). |
+| `KAVENEGAR_API_KEY` | From **kavenegar.com**. Enables patient **SMS** — the primary notification channel (most patients don't use email). |
+| `KAVENEGAR_SENDER` | Your Kavenegar **line number** (sender). Use a **dedicated line** so SMS containing the cancel link isn't filtered. |
+| `PUBLIC_BASE_URL` | Public site URL, e.g. `https://demo.ainoor.io` — used to build the patient's **cancel link** (sent in the SMS). |
+| `RESEND_API_KEY` | **Optional.** From **resend.com**. Sends the patient a confirmation **email** too, *if* they provided one. |
+| `MAIL_FROM` | Email sender, e.g. `Dr. Foroogh Hashemi <booking@ainoor.io>` (the domain must be verified in Resend). Only needed with `RESEND_API_KEY`. |
 | `MAIL_REPLY_TO` | Where patient replies go — an inbox you actually read. Optional. |
-| `PUBLIC_BASE_URL` | Public site URL, e.g. `https://demo.ainoor.io` — used to build the patient's **cancel link**. |
 | `TELEGRAM_BOT_TOKEN` | From **@BotFather** (in Telegram). Enables Telegram. |
 | `TELEGRAM_STAFF_CHAT_ID` | The Telegram chat that receives bookings. Message the bot `/id` to learn it. |
 | `BALE_BOT_TOKEN` | From **@BotFather** (in the **Bale** app). Enables Bale — the same features as Telegram. |
@@ -180,7 +183,6 @@ local runs) or in your host's environment-variable settings (Vercel / Coolify).
 | `CLINIC_CARD` | Card number shown for **online-visit prepayment** (card-to-card). |
 | `CLINIC_CARD_NAME` | Card-holder name shown with the card. |
 | `ONLINE_FEE` | Online-visit fee, a display string, e.g. `۳۰۰٬۰۰۰ تومان`. |
-| `TWILIO_*` | **Legacy / optional.** The old SMS/WhatsApp-to-patient path (`TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_FROM_NUMBER`, `TWILIO_WHATSAPP_FROM`, `TWILIO_DEFAULT_COUNTRY`). Superseded by email; leave unset unless you specifically want patient SMS. |
 
 > **Never** put secrets in the HTML or commit `.env`. See `TELEGRAM-SETUP.md` for the full walkthrough.
 
@@ -313,27 +315,30 @@ When a booking arrives, staff tap **✅ Confirm / ❌ Decline** — this updates
 channel and **emails the patient** the result. A **confirmed** booking keeps a **🚫 Cancel
 appointment** button so staff can cancel it later (which reopens the slot and emails the patient).
 
-### Patient email (Resend) — the default patient notification
-Patient confirmations go by **email** (works today; SMS to Iran would need an Iranian gateway).
+### Patient SMS (Kavenegar) — the primary patient notification
+Most patients (e.g. parents booking for a child) don't use email, so **SMS is the default channel**.
+Uses **Kavenegar**, an Iranian gateway, via its REST API (zero-dep `fetch`).
+1. The clinic creates a **Kavenegar** account (requires an Iranian national ID — so **the doctor
+   usually registers it from inside Iran** and sends you the key + line).
+2. Get the **API key** and a **sender line number**. Prefer a **dedicated line (خط اختصاصی)** —
+   Iranian carriers often **block links on shared lines**, and our SMS carries the cancel link.
+3. Set `KAVENEGAR_API_KEY`, `KAVENEGAR_SENDER`, and `PUBLIC_BASE_URL` in Coolify → **Redeploy**.
+
+The patient gets an SMS on request / confirm / decline / cancel; the request and confirm texts carry
+the secure **cancel link** (`/cancel?id=&t=`). Numbers are auto-normalised to `09xxxxxxxxx`.
+> Note: the **Kavenegar dashboard/website** may be geo-blocked outside Iran, but the **API
+> (`api.kavenegar.com`) is reachable from the VPS** — the doctor manages the panel from Iran.
+> If the doctor only has a **shared line** (links filtered), switch the confirm SMS to a short
+> "call us to cancel" message instead of a link.
+
+### Patient email (Resend) — optional extra
+Email is **optional** now (the booking form no longer requires it). If you also want to email the
+patients who *do* provide an address, set up Resend:
 1. Create a free account at **resend.com** and an API key.
 2. **Verify your sending domain** (e.g. `ainoor.io`): add the DKIM `TXT`, the two sending `CNAME`s,
-   and the `_dmarc` `TXT` records it gives you to your DNS. The DKIM value must start with `p=`.
-   (Free tier = 1 verified domain.)
-3. Set `RESEND_API_KEY`, `MAIL_FROM` (`Name <booking@yourdomain>`), `MAIL_REPLY_TO`, and
-   `PUBLIC_BASE_URL` in Coolify → **Redeploy**.
-
-The patient gets a branded bilingual email on request / confirm / decline / cancel; the request and
-confirm emails carry a secure **cancel link** (`/cancel?id=&t=`). Moving a client to their own domain
-later = verify it + change `MAIL_FROM` (no code change).
-
-### Patient SMS / WhatsApp (optional — Twilio)
-- **SMS:** create a Twilio account + number, set `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`,
-  `TWILIO_FROM_NUMBER`, `TWILIO_DEFAULT_COUNTRY` (e.g. `+44`).
-- **WhatsApp:** same account; test with the WhatsApp **sandbox**, then a registered sender +
-  approved template for production. Set `TWILIO_WHATSAPP_FROM`.
-- **Until Twilio is configured, no patient text is actually sent** (it's logged, not delivered).
-  The on-page confirmation still shows and the doctor still gets every booking on Telegram/Bale.
-  If you're not using SMS yet, soften the confirmation copy so it doesn't promise a text.
+   and the `_dmarc` `TXT` records. The DKIM value must start with `p=`. (Free tier = 1 domain.)
+3. Set `RESEND_API_KEY`, `MAIL_FROM` (`Name <booking@yourdomain>`), `MAIL_REPLY_TO` → **Redeploy**.
+   A branded bilingual email then goes out alongside the SMS whenever the patient gave an email.
 
 Redeploy after changing any env var.
 
@@ -367,10 +372,10 @@ The repeatable process for each new doctor:
    with a **Persistent Storage** mount at `/app/data`.
 5. **Add a subdomain** for the client (`clinic-name.ainoor.io` or the client's own domain) and
    redeploy for HTTPS.
-6. **Add that client's own** env vars (see section 5): email (`RESEND_API_KEY`, `MAIL_FROM`,
-   `MAIL_REPLY_TO`, `PUBLIC_BASE_URL`), messaging (`TELEGRAM_*` and/or `BALE_*`), the AI chatbot
-   (`ANTHROPIC_API_KEY`), and — if offering online visits — `CLINIC_WHATSAPP`, `CLINIC_CARD`,
-   `CLINIC_CARD_NAME`, `ONLINE_FEE`.
+6. **Add that client's own** env vars (see section 5): patient SMS (`KAVENEGAR_API_KEY`,
+   `KAVENEGAR_SENDER`, `PUBLIC_BASE_URL`), staff messaging (`TELEGRAM_*` and/or `BALE_*`), the AI
+   chatbot (`ANTHROPIC_API_KEY`), optional email (`RESEND_API_KEY`, `MAIL_FROM`, `MAIL_REPLY_TO`),
+   and — if offering online visits — `CLINIC_WHATSAPP`, `CLINIC_CARD`, `CLINIC_CARD_NAME`, `ONLINE_FEE`.
 
 > Tip: register a client's **own domain in the client's name** so they own their brand. Keep the
 > bare `ainoor.io` for your agency. One VPS can host many client sites — scale the server up
@@ -392,7 +397,7 @@ The repeatable process for each new doctor:
 | Bookings disappear after a redeploy | `bookings.json` was inside the container. Fix: add **Persistent Storage** at `/app/data` + env `DATA_DIR=/app/data`. |
 | Telegram/Bale not sending | Running in mock mode (messages print to the container logs). Add `TELEGRAM_BOT_TOKEN`/`BALE_BOT_TOKEN` + the matching `*_STAFF_CHAT_ID` and redeploy. |
 | Confirmation **email** not arriving | Resend domain not verified, or `RESEND_API_KEY`/`MAIL_FROM` missing. Verify the domain's DNS in Resend (DKIM value starts with `p=`, the two sending CNAMEs, DMARC), set the env vars, redeploy, and check **spam** on the first send. |
-| Booking says "we'll text you" but no SMS arrives | Twilio isn't configured, so patient SMS is mock (logged only). Patient notifications default to **email** now; add `TWILIO_*` only if you also want SMS. |
+| Booking says "we'll text you" but no SMS arrives | Kavenegar not configured (mock, logged only), or the line blocked a link. Set `KAVENEGAR_API_KEY` + `KAVENEGAR_SENDER` and redeploy; if the SMS sends but the one with the link doesn't arrive, you're on a **shared line** — get a dedicated line or switch to a no-link cancel message. |
 | Bot doesn't reply to `/id` | Token not active yet — check you added it in Coolify and **redeployed**; look for `telegram: polling started` / `bale: polling started` in the logs. |
 | Website calendar / Persian page not updating after a change | Browser cache. Do a **hard refresh** (Ctrl/Cmd+Shift+R) or open in a private window. The server sends `no-store`, but tabs can hold a stale copy. |
 | DNS not resolving | Wait a few minutes after adding the A record; verify with `nslookup <subdomain>`. |

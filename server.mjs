@@ -19,11 +19,9 @@
 //   ONLINE_FEE=۳۰۰٬۰۰۰ تومان                   (online-visit fee, shown to the patient)
 //   ANTHROPIC_API_KEY=sk-ant-...               (enables the Claude AI chatbot — falls back to rule-based without it)
 //   CHAT_MODEL=claude-haiku-4-5                 (chatbot model; override to claude-opus-5-5 for more capability)
-//   TWILIO_ACCOUNT_SID=AC...                 (optional — enables patient SMS)
-//   TWILIO_AUTH_TOKEN=...
-//   TWILIO_FROM_NUMBER=+1555...
-//   TWILIO_WHATSAPP_FROM=whatsapp:+1555...   (optional — enables patient WhatsApp)
-//   TWILIO_DEFAULT_COUNTRY=+1                 (prefixed to local numbers without a +)
+//   KAVENEGAR_API_KEY=...                     (patient SMS — the primary channel; kavenegar.com)
+//   KAVENEGAR_SENDER=10008663                 (your Kavenegar line number; a dedicated line is
+//                                              recommended so SMS containing the cancel link isn't blocked)
 //   PORT=3000
 //
 // Without TELEGRAM_BOT_TOKEN the server runs in MOCK mode: bookings still work and the
@@ -101,7 +99,7 @@ const CHAT_MODEL = (ENV.CHAT_MODEL || "claude-haiku-4-5").trim();     // FAQ bot
 const CHAT_ON = !!ANTHROPIC_API_KEY;
 const CLINIC_INFO = `Dr. Foroogh Hashemi is a pediatrician caring for newborns through age 18.
 Working hours: Saturday, Monday and Wednesday 12:00–16:00; Sunday 12:00–15:00; Tuesday, Thursday and Friday closed.
-Appointments are booked on this website using the booking form on the page. There are two kinds: in-person, or online over WhatsApp (voice call or text chat). Online visits are prepaid by card-to-card before they are confirmed. After booking, the patient receives a confirmation email; for online visits the WhatsApp number and time are emailed once confirmed. Appointments can also be cancelled from the link in that email.
+Appointments are booked on this website using the booking form on the page. There are two kinds: in-person, or online over WhatsApp (voice call or text chat). Online visits are prepaid by card-to-card before they are confirmed. After booking, the patient receives a confirmation by SMS with a cancel link; for online visits the WhatsApp number and time are sent once confirmed. Appointments can be cancelled from the link in that SMS.
 Services: newborn care and jaundice; breastfeeding and nutrition counseling; growth and development monitoring to age 18; infectious and digestive issues (acute/chronic diarrhea and constipation, abdominal pain, colic, reflux); kidney and urinary (infections, stones, bedwetting); asthma and allergies (skin, eczema, respiratory, digestive); respiratory and ear infections (croup, bronchiolitis); periodic exams; puberty and adolescence, height-growth and obesity care; ear piercing in sterile conditions with the American Studex system and 24k-gold hypoallergenic earrings from 2 months of age.`;
 const chatSystem = () => `You are the friendly assistant on the website of Dr. Foroogh Hashemi, a pediatrician.
 
@@ -261,40 +259,35 @@ async function notifyStaff(b) {
   save();
 }
 
-/* ---------- patient SMS (Twilio via REST, optional) ---------- */
-const SMS = {
-  sid: (ENV.TWILIO_ACCOUNT_SID || "").trim(),
-  auth: (ENV.TWILIO_AUTH_TOKEN || "").trim(),
-  from: (ENV.TWILIO_FROM_NUMBER || "").trim(),
-  cc: (ENV.TWILIO_DEFAULT_COUNTRY || "").trim(),
+/* ---------- patient SMS (Kavenegar via REST, optional) ---------- */
+// Iranian SMS gateway. Patients mostly use SMS, not email, so this is the primary channel.
+// Needs KAVENEGAR_API_KEY + KAVENEGAR_SENDER (your line number). A DEDICATED line is
+// recommended — shared/public lines often block messages that contain links.
+const KAVENEGAR = {
+  key: (ENV.KAVENEGAR_API_KEY || "").trim(),
+  sender: (ENV.KAVENEGAR_SENDER || "").trim(), // the line number the SMS is sent from
 };
-const WA_FROM = (ENV.TWILIO_WHATSAPP_FROM || "").trim(); // e.g. whatsapp:+14155238886 (sandbox) or your WA sender
-function toE164(phone) {
-  let p = String(phone).replace(/[۰-۹]/g, (d) => "۰۱۲۳۴۵۶۷۸۹".indexOf(d)); // Persian digits -> ASCII
-  p = p.replace(/[^\d+]/g, "");
-  if (p.startsWith("+")) return p;
-  if (p.startsWith("00")) return "+" + p.slice(2);
-  if (p.startsWith("0") && SMS.cc) return SMS.cc + p.slice(1);
-  return SMS.cc ? SMS.cc + p : p;
-}
-async function twilioSend(params, label, to, body) {
-  if (!SMS.sid || !SMS.auth) { console.log(`[MOCK ${label} -> ${to}] ${body}`); return; }
-  try {
-    const creds = Buffer.from(`${SMS.sid}:${SMS.auth}`).toString("base64");
-    const r = await fetch(`https://api.twilio.com/2010-04-01/Accounts/${SMS.sid}/Messages.json`, {
-      method: "POST", headers: { Authorization: `Basic ${creds}`, "content-type": "application/x-www-form-urlencoded" }, body: new URLSearchParams(params),
-    });
-    if (!r.ok) console.error(`${label} error:`, (await r.json()).message);
-  } catch (e) { console.error(`${label} failed:`, e.message); }
+const SMS_ON = !!(KAVENEGAR.key && KAVENEGAR.sender);
+// Normalise any Iranian number to local form 09XXXXXXXXX (what Kavenegar expects as receptor).
+function toIranLocal(phone) {
+  let p = String(phone).replace(/[۰-۹]/g, (d) => "۰۱۲۳۴۵۶۷۸۹".indexOf(d)).replace(/\D/g, "");
+  if (p.startsWith("0098")) p = p.slice(4);
+  else if (p.startsWith("98") && p.length === 12) p = p.slice(2);
+  if (p.startsWith("9") && p.length === 10) p = "0" + p;
+  return p;
 }
 async function sendSms(to, body) {
-  if (!SMS.from) { console.log(`[MOCK sms -> ${to}] ${body}`); return; }
-  return twilioSend({ To: toE164(to), From: SMS.from, Body: body }, "sms", to, body);
-}
-async function sendWhatsApp(to, body) {
-  if (!WA_FROM) { console.log(`[MOCK whatsapp -> ${to}] ${body}`); return; }
-  const from = WA_FROM.startsWith("whatsapp:") ? WA_FROM : `whatsapp:${WA_FROM}`;
-  return twilioSend({ To: `whatsapp:${toE164(to)}`, From: from, Body: body }, "whatsapp", to, body);
+  if (!SMS_ON) { console.log(`[MOCK sms -> ${to}] ${body}`); return; }
+  try {
+    const r = await fetch(`https://api.kavenegar.com/v1/${encodeURIComponent(KAVENEGAR.key)}/sms/send.json`, {
+      method: "POST",
+      headers: { "content-type": "application/x-www-form-urlencoded" },
+      body: new URLSearchParams({ receptor: toIranLocal(to), sender: KAVENEGAR.sender, message: body }),
+    });
+    const data = await r.json().catch(() => ({}));
+    const status = data && data.return && data.return.status;
+    if (status !== 200) console.error("sms error:", (data.return && data.return.message) || r.status);
+  } catch (e) { console.error("sms failed:", e.message); }
 }
 /* ---------- patient email (Resend via REST, optional) ---------- */
 const MAIL = {
@@ -315,15 +308,24 @@ async function sendEmail(to, subject, html, text) {
   } catch (e) { console.error("email failed:", e.message); }
 }
 
-// Notify the patient on every configured channel: email (primary) + optional SMS/WhatsApp.
+// Notify the patient. SMS is the primary channel (most patients don't use email);
+// email is an optional bonus, sent only when the patient provided one.
 async function notifyPatient(b, kind) {
-  const msg = patientMsg(b, kind);
   const jobs = [];
-  if (MAIL_ON && b.email) { const em = emailContent(b, kind); jobs.push(sendEmail(b.email, em.subject, em.html, msg)); }
-  if (WA_FROM) jobs.push(sendWhatsApp(b.phone, msg));
-  if (SMS.from) jobs.push(sendSms(b.phone, msg));
-  if (!jobs.length) console.log(`[MOCK notify -> ${b.email || b.phone}] ${msg}`); // nothing configured yet
+  if (SMS_ON) jobs.push(sendSms(b.phone, smsText(b, kind)));
+  if (MAIL_ON && b.email) { const em = emailContent(b, kind); jobs.push(sendEmail(b.email, em.subject, em.html, patientMsg(b, kind))); }
+  if (!jobs.length) console.log(`[MOCK notify -> ${b.phone}] ${smsText(b, kind)}`); // nothing configured yet
   await Promise.allSettled(jobs);
+}
+
+// SMS body = the short message, plus a cancel link on the request/confirmation.
+function smsText(b, kind) {
+  let t = patientMsg(b, kind);
+  if (kind === "received" || kind === "confirmed") {
+    const url = cancelUrl(b);
+    if (url) t += b.lang === "fa" ? `\nلغو نوبت: ${url}` : `\nCancel: ${url}`;
+  }
+  return t;
 }
 
 const patientMsg = (b, kind) => {
@@ -642,11 +644,11 @@ async function handleBook(req, res) {
   const name = String(b.name || "").trim(), phone = String(b.phone || "").trim();
   const email = String(b.email || "").trim();
   const nationalId = toAsciiDigits(b.nationalId || "");
-  const emailOk = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+  const emailOk = !email || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email); // email is optional; validate only if given
   const type = VISIT_TYPES.has(b.type) ? b.type : "in-person";
   const payRef = toAsciiDigits(b.payRef || "") || String(b.payRef || "").trim().slice(0, 60);
   if (!name || phone.replace(/[^\d۰-۹]/g, "").length < 7 || !emailOk || !validCodeMelli(nationalId))
-    return json(res, 400, { ok: false, error: "name, valid national ID, mobile and email are required" });
+    return json(res, 400, { ok: false, error: "name, valid national ID and mobile are required (email optional, must be valid if given)" });
   if (isOnline(type) && payRef.replace(/\s/g, "").length < 4)
     return json(res, 400, { ok: false, error: "payment reference required for online visits" });
 
@@ -702,8 +704,8 @@ function cancelPage({ lang = "en", state, when = "", id = "", token = "" }) {
   const T = {
     confirm:  fa ? { h: "لغو نوبت", p: "آیا می‌خواهید این نوبت را لغو کنید؟", btn: "بله، لغو کن", keep: "نه، نگه‌دار" }
                  : { h: "Cancel appointment", p: "Do you want to cancel this appointment?", btn: "Yes, cancel it", keep: "No, keep it" },
-    done:     fa ? { h: "نوبت لغو شد", p: "نوبت شما لغو شد. ایمیل تأیید برایتان ارسال شد. هر زمان خواستید دوباره نوبت بگیرید." }
-                 : { h: "Appointment cancelled", p: "Your appointment has been cancelled. We've emailed you a confirmation. You can book again anytime." },
+    done:     fa ? { h: "نوبت لغو شد", p: "نوبت شما لغو شد. پیامک تأیید برایتان ارسال شد. هر زمان خواستید دوباره نوبت بگیرید." }
+                 : { h: "Appointment cancelled", p: "Your appointment has been cancelled. We've sent you a confirmation by SMS. You can book again anytime." },
     already:  fa ? { h: "قبلاً لغو شده", p: "این نوبت پیش‌تر لغو شده است." }
                  : { h: "Already cancelled", p: "This appointment has already been cancelled." },
     inactive: fa ? { h: "نوبت فعال نیست", p: "این نوبت دیگر فعال نیست. برای هماهنگی لطفاً با مطب تماس بگیرید." }
@@ -728,7 +730,7 @@ function cancelPage({ lang = "en", state, when = "", id = "", token = "" }) {
         const j = await r.json();
         if (j.ok) {
           document.getElementById('title').textContent = ${JSON.stringify(T.done ? (fa ? "نوبت لغو شد" : "Appointment cancelled") : "")};
-          document.getElementById('msg').textContent = ${JSON.stringify(fa ? "نوبت شما لغو شد. ایمیل تأیید برایتان ارسال شد." : "Your appointment has been cancelled. We've emailed you a confirmation.")};
+          document.getElementById('msg').textContent = ${JSON.stringify(fa ? "نوبت شما لغو شد. پیامک تأیید برایتان ارسال شد." : "Your appointment has been cancelled. We've sent you a confirmation by SMS.")};
           document.getElementById('act').style.display='none';
           document.getElementById('badge').textContent = ${JSON.stringify(fa ? "لغو شد" : "Cancelled")};
         } else { throw new Error(j.error||'failed'); }
@@ -821,8 +823,7 @@ createServer(async (req, res) => {
   console.log(MAIL_ON ? `Patient email: Resend configured (from ${MAIL.from}).` : "Patient email: MOCK (set RESEND_API_KEY + MAIL_FROM to send real emails).");
   console.log(CLINIC_WHATSAPP ? `Online visits: WhatsApp ${CLINIC_WHATSAPP}.` : "Online visits: set CLINIC_WHATSAPP so confirmation emails include the number.");
   console.log(CHAT_ON ? `AI chatbot: Claude configured (model ${CHAT_MODEL}).` : "AI chatbot: off (set ANTHROPIC_API_KEY to enable — falls back to the rule-based bot).");
-  console.log(SMS.from ? "Patient SMS: Twilio configured." : "Patient SMS: off (set TWILIO_FROM_NUMBER to enable).");
-  console.log(WA_FROM ? "Patient WhatsApp: Twilio configured." : "Patient WhatsApp: off (set TWILIO_WHATSAPP_FROM to enable).");
+  console.log(SMS_ON ? `Patient SMS: Kavenegar configured (sender ${KAVENEGAR.sender}).` : "Patient SMS: off (set KAVENEGAR_API_KEY + KAVENEGAR_SENDER to enable — the primary patient channel).");
 });
 
 const BOT_COMMANDS = [

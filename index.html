@@ -448,7 +448,7 @@
             <div class="h-px flex-1 bg-white/20"></div>
           </div>
           <h3 class="mt-4 font-display text-[1.25rem] font-semibold text-white">We confirm</h3>
-          <p class="mt-2 text-white/75 leading-relaxed text-[.96rem]">Your request reaches us, and once we review it you get a confirmation email. Need to change it? Cancel right from that email.</p>
+          <p class="mt-2 text-white/75 leading-relaxed text-[.96rem]">Your request reaches us, and once we review it you get a confirmation SMS. Need to change it? Cancel right from that text.</p>
         </div>
         <div class="reveal">
           <div class="flex items-center gap-3">
@@ -471,7 +471,7 @@
     <div class="reveal">
       <span class="eyebrow"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="3"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>Online booking</span>
       <h2 class="mt-4 text-[2.1rem] md:text-[2.5rem] font-semibold leading-[1.1]">Pick a time that works for you.</h2>
-      <p class="mt-4 text-ink-soft leading-relaxed max-w-[46ch]">First choose a day to open its available times. Then just enter your name, national ID, and mobile number. We'll email you to confirm.</p>
+      <p class="mt-4 text-ink-soft leading-relaxed max-w-[46ch]">First choose a day to open its available times. Then just enter your name, national ID, and mobile number. We'll text you to confirm.</p>
 
       <div class="mt-7 space-y-4">
         <div class="flex items-start gap-3">
@@ -504,7 +504,7 @@
           </button>
         </div>
         <div id="onlineNote" class="hidden mt-2 text-[.8rem] text-ink-soft leading-relaxed bg-teal-soft/60 rounded-xl px-3 py-2">
-          Online visits happen over WhatsApp. Once we confirm, we'll email you the WhatsApp number and your appointment time.
+          Online visits happen over WhatsApp. Once we confirm, we'll text you the WhatsApp number and your appointment time.
         </div>
       </div>
       <div id="scheduler">
@@ -547,8 +547,8 @@
             <input class="field" id="phone" name="phone" type="tel" inputmode="tel" placeholder="(555) 000-0000" required>
           </div>
           <div>
-            <label class="lbl" for="email">Email <span class="req">*</span></label>
-            <input class="field" id="email" name="email" type="email" inputmode="email" autocomplete="email" placeholder="you@example.com" required>
+            <label class="lbl" for="email">Email <span class="text-ink-soft text-[.78rem]">(optional)</span></label>
+            <input class="field" id="email" name="email" type="email" inputmode="email" autocomplete="email" placeholder="(optional) you@example.com">
           </div>
         </div>
         <div id="payPanel" class="hidden mt-4 rounded-2xl border border-marigold/40 bg-marigold-soft/40 p-4">
@@ -571,7 +571,7 @@
           <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
           Confirm appointment
         </button>
-        <p class="text-[.8rem] text-ink-soft text-center mt-3">We'll email you to confirm this visit, and may call if needed. No payment now.</p>
+        <p class="text-[.8rem] text-ink-soft text-center mt-3">We'll text you to confirm this visit, and may call if needed. No payment now.</p>
       </form>
 
       <!-- success state -->
@@ -961,12 +961,12 @@ document.querySelectorAll('.acc-btn').forEach(btn => {
     if (!name.value.trim()){ setErr(name,true); bad=true; }
     if (!validCodeMelli(nidDigits)){ setErr(nid,true); bad=true; }
     if (phone.value.replace(/\D/g,'').length < 7){ setErr(phone,true); bad=true; }
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.value.trim())){ setErr(email,true); bad=true; }
+    if (email.value.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.value.trim())){ setErr(email,true); bad=true; }
     const onlineSel = visitType !== 'in-person';
     if (onlineSel && payRefEl.value.replace(/[^\dA-Za-z]/g,'').length < 4){ setErr(payRefEl,true); bad=true; }
     if (bad || !selected){
       errBox.textContent = !selected ? 'Please pick a time above first.'
-        : (onlineSel ? 'Please enter your details and a valid payment tracking code.' : 'Please enter your name, a valid national ID, mobile number, and email.');
+        : (onlineSel ? 'Please enter your details and a valid payment tracking code.' : 'Please enter your name, a valid national ID, and mobile number.');
       errBox.classList.remove('hidden');
       return;
     }
@@ -981,8 +981,8 @@ document.querySelectorAll('.acc-btn').forEach(btn => {
       body: JSON.stringify({ name:rec.name, nationalId:rec.nationalId, phone:rec.phone, email:rec.email, type:visitType, payRef:payRefEl.value.trim(), date:rec.date, time:rec.time, when, lang:'en' }) }).catch(()=>{});
     const first = rec.name.split(' ')[0];
     successMsg.textContent = (visitType === 'in-person')
-      ? `Thanks, ${first}! Your appointment is set for ${nice} at ${fmtTime(selected.time)}. We'll email ${rec.email} to confirm.`
-      : `Thanks, ${first}! Your online visit request for ${nice} at ${fmtTime(selected.time)} is in. Once confirmed, we'll email ${rec.email} the WhatsApp number and time.`;
+      ? `Thanks, ${first}! Your appointment is set for ${nice} at ${fmtTime(selected.time)}. We'll text your mobile to confirm.`
+      : `Thanks, ${first}! Your online visit request for ${nice} at ${fmtTime(selected.time)} is in. Once confirmed, we'll text you the WhatsApp number and time.`;
     form.classList.add('hidden');
     success.classList.remove('hidden');
     success.scrollIntoView({behavior:'smooth', block:'center'});
