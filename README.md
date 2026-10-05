@@ -89,7 +89,7 @@ step (Tailwind via CDN).
         │  GET  /api/availability   → greys out days off / blocked / already-booked slots
         │  POST /api/book  { name, nationalId, phone, email, date, time, type, payRef, lang }
         │  POST /api/chat  { messages, lang }   → Claude reply (or rule-based fallback)
-        │  GET  /cancel?id=&t=  → confirm page   ·   POST /api/cancel  → frees the slot
+        │  GET  /c/<code>  (short cancel link in the SMS) → confirm page   ·   POST /api/cancel  → frees the slot
         ▼
   server.mjs  (Node 22, zero npm dependencies)
         ├─ serves the static site  ·  "/" → 302 /fa.html
@@ -327,7 +327,7 @@ Uses **SMS.ir**, an Iranian gateway, via its v1 REST API (`POST /v1/send/bulk`, 
    topped up with credit (اعتبار) or sends fail silently.
 
 The patient gets an SMS on request / confirm / decline / cancel; the request and confirm texts carry
-the secure **cancel link** (`/cancel?id=&t=`). Numbers are auto-normalised to `09xxxxxxxxx`.
+a short secure **cancel link** (`/c/<code>`, on the confirmation SMS only — keeps paid SMS parts down). Numbers are auto-normalised to `09xxxxxxxxx`.
 > Note: the SMS.ir **API** (`api.sms.ir`) is reachable from the VPS (verified). If you only have a
 > **shared line** (links filtered), switch the confirm SMS to a short "call us to cancel" message
 > instead of a link.

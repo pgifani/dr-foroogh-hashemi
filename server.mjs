@@ -79,7 +79,8 @@ const PUBLIC_BASE = (ENV.PUBLIC_BASE_URL || "").trim().replace(/\/$/, "");
 // Absolute link the patient taps to cancel. Falls back to the base captured at booking time.
 const cancelUrl = (b) => {
   const base = (b.base || PUBLIC_BASE || "").replace(/\/$/, "");
-  return base && b.cancelToken ? `${base}/cancel?id=${encodeURIComponent(b.id)}&t=${encodeURIComponent(b.cancelToken)}` : "";
+  // Short link (/c/<code>) keeps the SMS shorter → fewer paid parts.
+  return base && b.cancelCode ? `${base}/c/${b.cancelCode}` : "";
 };
 
 // Visit types: in-person, or online over WhatsApp (video / text).
@@ -321,10 +322,10 @@ async function notifyPatient(b, kind) {
   await Promise.allSettled(jobs);
 }
 
-// SMS body = the short message, plus a cancel link on the request/confirmation.
+// SMS body = the short message, plus the cancel link on the confirmation only (saves paid parts).
 function smsText(b, kind) {
   let t = patientMsg(b, kind);
-  if (kind === "received" || kind === "confirmed") {
+  if (kind === "confirmed") {
     const url = cancelUrl(b);
     if (url) t += b.lang === "fa" ? `\nلغو نوبت: ${url}` : `\nCancel: ${url}`;
   }
@@ -666,7 +667,7 @@ async function handleBook(req, res) {
     when: String(b.when || `${b.date} ${b.time}`).slice(0, 120),
     lang: b.lang === "fa" ? "fa" : "en",
     status: "pending", createdAt: new Date().toISOString(),
-    cancelToken: newToken(), base: PUBLIC_BASE || reqBase,
+    cancelToken: newToken(), cancelCode: newToken().slice(0, 12), base: PUBLIC_BASE || reqBase,
   };
   bookings.push(rec); save();
 
@@ -775,6 +776,16 @@ function handleCancelPage(req, res) {
   return sendHtml(res, 200, cancelPage({ lang: b.lang, state: "confirm", when: b.when, id: b.id, token: b.cancelToken }));
 }
 
+// Short cancel link /c/<code> — same page as /cancel, looked up by the short code (kept out of the SMS).
+function handleShortCancel(req, res) {
+  const code = (req.url || "").split("?")[0].slice(3); // strip "/c/"
+  const b = code && bookings.find((x) => x.cancelCode === code);
+  if (!b) return sendHtml(res, 404, cancelPage({ state: "invalid" }));
+  if (b.status === "cancelled") return sendHtml(res, 200, cancelPage({ lang: b.lang, state: "already", when: b.when }));
+  if (b.status === "declined") return sendHtml(res, 200, cancelPage({ lang: b.lang, state: "inactive", when: b.when }));
+  return sendHtml(res, 200, cancelPage({ lang: b.lang, state: "confirm", when: b.when, id: b.id, token: b.cancelToken }));
+}
+
 async function handleCancel(req, res) {
   let body;
   try { body = JSON.parse(await readBody(req)); } catch { return json(res, 400, { ok: false, error: "bad json" }); }
@@ -809,6 +820,7 @@ createServer(async (req, res) => {
   }
   if (req.method === "POST" && path === "/api/cancel") return handleCancel(req, res);
   if (req.method === "GET" && path === "/cancel") return handleCancelPage(req, res);
+  if (req.method === "GET" && path.startsWith("/c/")) return handleShortCancel(req, res);
   if (req.method === "GET" && path === "/api/bookings") return json(res, 200, bookings); // local convenience view
   if (req.method === "GET" && path === "/") { res.writeHead(302, { Location: "/fa.html" }); return res.end(); } // Persian is the default landing page
   if (req.method === "GET" && path === "/api/availability") {
