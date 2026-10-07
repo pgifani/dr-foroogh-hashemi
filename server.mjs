@@ -162,6 +162,51 @@ let blocks = { days: [], slots: [] };   // days: ["YYYY-MM-DD"], slots: ["YYYY-M
 try { if (existsSync(BLOCKS_DB)) blocks = { days: [], slots: [], ...JSON.parse(readFileSync(BLOCKS_DB, "utf8")) }; } catch {}
 const saveBlocks = () => { try { writeFileSync(BLOCKS_DB, JSON.stringify(blocks, null, 2)); } catch (e) { console.error("saveBlocks failed:", e.message); } };
 const isoAdd = (days) => { const d = new Date(); d.setUTCHours(0, 0, 0, 0); d.setUTCDate(d.getUTCDate() + days); return d.toISOString().split("T")[0]; };
+
+/* ---------- open slots, computed server-side (same rules as the picker in fa.html / index.html) ---------- */
+// Working hours per weekday (getUTCDay of the ISO date: 6=Sat, 0=Sun, 1=Mon, 3=Wed). Missing days are closed.
+const HOURS = { 6: [12, 16], 1: [12, 16], 3: [12, 16], 0: [12, 15] };
+const SLOT_STEP = 15, DAYS_AHEAD = 7;
+// Clinic-local "now" (Asia/Tehran, UTC+3:30, no DST since 2022) — the server itself may run in UTC.
+function tehranNow() {
+  try {
+    const p = Object.fromEntries(new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Tehran", year: "numeric", month: "2-digit",
+      day: "2-digit", hour: "2-digit", minute: "2-digit", hourCycle: "h23" }).formatToParts(new Date()).map((x) => [x.type, x.value]));
+    return { date: `${p.year}-${p.month}-${p.day}`, time: `${p.hour}:${p.minute}` };
+  } catch {
+    const s = new Date(Date.now() + 210 * 60000).toISOString();
+    return { date: s.slice(0, 10), time: s.slice(11, 16) };
+  }
+}
+const addDaysISO = (iso, n) => { const d = new Date(iso + "T00:00:00Z"); d.setUTCDate(d.getUTCDate() + n); return d.toISOString().slice(0, 10); };
+function slotTimes(iso) {
+  const h = HOURS[new Date(iso + "T00:00:00Z").getUTCDay()];
+  const a = [];
+  if (h) for (let m = h[0] * 60; m < h[1] * 60; m += SLOT_STEP) a.push(`${String(Math.floor(m / 60)).padStart(2, "0")}:${String(m % 60).padStart(2, "0")}`);
+  return a;
+}
+const takenSlots = () => new Set(bookings.filter((b) => b.status !== "declined" && b.status !== "cancelled").map((b) => `${b.date} ${b.time}`));
+function openSlotsFor(iso, now = tehranNow(), taken = takenSlots()) {
+  if (blocks.days.includes(iso)) return [];
+  return slotTimes(iso).filter((t) => `${iso} ${t}` >= `${now.date} ${now.time}` && !blocks.slots.includes(`${iso} ${t}`) && !taken.has(`${iso} ${t}`));
+}
+// True when date+time is inside the booking window, within working hours, and not blocked or taken.
+function isBookable(iso, time) {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(iso)) return false;
+  const now = tehranNow();
+  if (iso < now.date || iso > addDaysISO(now.date, DAYS_AHEAD - 1)) return false;
+  return openSlotsFor(iso, now).includes(time);
+}
+function slotsPayload() {
+  const now = tehranNow(), taken = takenSlots();
+  const days = [];
+  for (let i = 0; i < DAYS_AHEAD; i++) {
+    const date = addDaysISO(now.date, i);
+    const closed = !slotTimes(date).length || blocks.days.includes(date);
+    days.push({ date, label: faDate(date, false), closed, slots: closed ? [] : openSlotsFor(date, now, taken) });
+  }
+  return { tz: "Asia/Tehran", now: `${now.date} ${now.time}`, days };
+}
 /* ---------- Jalali (Persian) <-> Gregorian, for Persian date input & display ---------- */
 const _div = (a, b) => Math.trunc(a / b);
 const FA_MONTHS = ["فروردین","اردیبهشت","خرداد","تیر","مرداد","شهریور","مهر","آبان","آذر","دی","بهمن","اسفند"];
@@ -240,7 +285,7 @@ async function api(ch, method, payload) {
 }
 
 function staffText(b) {   // plain text so it renders identically on Telegram and Bale
-  const site = b.lang === "fa" ? "Persian site" : "English site";
+  const site = b.source === "voice" ? "📞 Voice agent (Persian)" : b.lang === "fa" ? "Persian site" : "English site";
   const pay = isOnline(b.type) ? `\n💳 Prepaid${ONLINE_FEE ? ` ${ONLINE_FEE}` : ""}${b.payRef ? ` · ref ${b.payRef}` : ""} (verify before confirming)` : "";
   return `🗓 New appointment request\n\n👤 ${b.name}${b.nationalId ? `\n🆔 ${b.nationalId}` : ""}\n📞 ${b.phone}${b.email ? `\n📧 ${b.email}` : ""}\n🩺 ${visitLabel(b.type || "in-person", "en")}${pay}\n🕒 ${b.when}\n🌐 ${site}\n\nStatus: ⏳ pending`;
 }
@@ -658,6 +703,11 @@ async function handleBook(req, res) {
   if (isOnline(type) && payRef.replace(/\s/g, "").length < 4)
     return json(res, 400, { ok: false, error: "payment reference required for online visits" });
 
+  // strict: reject slots that are taken, blocked, past or outside working hours (409). The voice agent always
+  // sends it. The web form doesn't yet — it posts fire-and-forget and would hide the error from the patient.
+  if (b.strict === true && !isBookable(String(b.date || ""), String(b.time || "")))
+    return json(res, 409, { ok: false, error: "slot unavailable" });
+
   const proto = String(req.headers["x-forwarded-proto"] || "https").split(",")[0].trim();
   const host = String(req.headers["x-forwarded-host"] || req.headers.host || "").split(",")[0].trim();
   const reqBase = host ? `${proto}://${host}` : "";
@@ -668,6 +718,7 @@ async function handleBook(req, res) {
     date: String(b.date || ""), time: String(b.time || ""),
     when: String(b.when || `${b.date} ${b.time}`).slice(0, 120),
     lang: b.lang === "fa" ? "fa" : "en",
+    source: b.source === "voice" ? "voice" : "web",
     status: "pending", createdAt: new Date().toISOString(),
     cancelToken: newToken(), cancelCode: newToken().slice(0, 12), base: PUBLIC_BASE || reqBase,
   };
@@ -687,14 +738,25 @@ const TYPES = { ".html": "text/html; charset=utf-8", ".css": "text/css; charset=
 
 const json = (res, code, obj) => { res.writeHead(code, { "content-type": "application/json; charset=utf-8" }); res.end(JSON.stringify(obj)); };
 
+// Only page assets are public. Everything else under ROOT (bookings.json / blocks.json — patient data —
+// the DATA_DIR volume, .env, server source, notes) must never be served.
+const PUBLIC_EXT = new Set([".html", ".css", ".js", ".svg", ".png", ".jpg", ".jpeg", ".webp", ".ico", ".woff", ".woff2"]);
+// The data volume (when it isn't ROOT itself, as in local dev — there the extension allowlist covers the .json files).
+const DATA_ABS = normalize(DATA_DIR).replace(/[\\/]$/, "") === normalize(ROOT).replace(/[\\/]$/, "") ? null : normalize(DATA_DIR).replace(/[\\/]$/, "");
+const notFound = (res) => { res.writeHead(404, { "content-type": "text/plain; charset=utf-8" }); res.end("404 Not Found"); };
+
 async function serveStatic(req, res) {
-  let rel = decodeURIComponent((req.url || "/").split("?")[0]);
+  let rel;
+  try { rel = decodeURIComponent((req.url || "/").split("?")[0]); } catch { return notFound(res); }
   if (rel.endsWith("/")) rel += "index.html";
   const full = normalize(join(ROOT, rel));
   if (!full.startsWith(ROOT.replace(/[\\/]$/, ""))) { res.writeHead(403); return res.end("403"); }
+  if (rel.split(/[\\/]/).some((seg) => seg.startsWith("."))) return notFound(res);   // dotfiles: .env, .git, .claude…
+  if (DATA_ABS && (full === DATA_ABS || full.startsWith(DATA_ABS + "/") || full.startsWith(DATA_ABS + "\\"))) return notFound(res);
   try {
     const s = await stat(full);
     const file = s.isDirectory() ? join(full, "index.html") : full;
+    if (!PUBLIC_EXT.has(extname(file).toLowerCase())) return notFound(res);
     const body = await readFile(file);
     res.writeHead(200, { "content-type": TYPES[extname(file).toLowerCase()] || "application/octet-stream", "cache-control": "no-store" });
     res.end(body);
@@ -823,8 +885,15 @@ createServer(async (req, res) => {
   if (req.method === "POST" && path === "/api/cancel") return handleCancel(req, res);
   if (req.method === "GET" && path === "/cancel") return handleCancelPage(req, res);
   if (req.method === "GET" && path.startsWith("/c/")) return handleShortCancel(req, res);
-  if (req.method === "GET" && path === "/api/bookings") return json(res, 200, bookings); // local convenience view
+  if (req.method === "GET" && path === "/api/bookings") {
+    // Local debugging only: needs ENABLE_BOOKINGS_DUMP=1 AND a direct loopback request (never via a proxy).
+    const addr = req.socket?.remoteAddress || "";
+    const local = ["127.0.0.1", "::1", "::ffff:127.0.0.1"].includes(addr) && !req.headers["x-forwarded-for"];
+    if (ENV.ENABLE_BOOKINGS_DUMP === "1" && local) return json(res, 200, bookings);
+    res.writeHead(404); return res.end("404");
+  }
   if (req.method === "GET" && path === "/") { res.writeHead(302, { Location: "/fa.html" }); return res.end(); } // Persian is the default landing page
+  if (req.method === "GET" && path === "/api/slots") return json(res, 200, slotsPayload()); // open slots for the next week (voice agent)
   if (req.method === "GET" && path === "/api/availability") {
     // The website reads this to grey out days off, blocked slots, and already-taken slots.
     const bookedSlots = bookings.filter((b) => b.status !== "declined" && b.status !== "cancelled").map((b) => `${b.date} ${b.time}`);
