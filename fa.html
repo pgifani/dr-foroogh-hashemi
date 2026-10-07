@@ -690,15 +690,6 @@
 /* ---------- year (Persian numerals) ---------- */
 document.getElementById('year').textContent = new Date().getFullYear().toLocaleString('fa-IR',{useGrouping:false});
 
-/* ---------- next available slot ---------- */
-(function(){
-  const OPEN = new Set([6,0,1,3]); // شنبه، یک‌شنبه، دوشنبه، چهارشنبه
-  const d = new Date();
-  for (let i=0;i<8;i++){ if (OPEN.has(d.getDay())) break; d.setDate(d.getDate()+1); }
-  const day = d.toLocaleDateString('fa-IR',{weekday:'long'});
-  document.getElementById('nextSlot').textContent = day + '، ۱۲:۰۰';
-})();
-
 /* ---------- navbar shadow on scroll ---------- */
 const navbar = document.getElementById('navbar');
 addEventListener('scroll', () => {
@@ -892,13 +883,21 @@ document.querySelectorAll('.acc-btn').forEach(btn => {
   }
 
   function init(){
-    if (!selectedDayISO){
-      const base = startOfToday();
-      for (let i=0;i<DAYS_AHEAD;i++){
-        const day = new Date(base); day.setDate(day.getDate()+i);
-        const dISO = iso(day);
-        if (openSlots(day, dISO).length){ selectedDayISO = dISO; break; }
-      }
+    // first day+time that is actually available (respects booked / blocked / past)
+    let firstISO = null, firstTime = null;
+    const base = startOfToday();
+    for (let i=0;i<DAYS_AHEAD;i++){
+      const day = new Date(base); day.setDate(day.getDate()+i);
+      const dISO = iso(day);
+      const slots = openSlots(day, dISO);
+      if (slots.length){ firstISO = dISO; firstTime = slots[0]; break; }
+    }
+    if (!selectedDayISO && firstISO) selectedDayISO = firstISO;
+    const badge = document.getElementById('nextSlot');
+    if (badge){
+      badge.textContent = firstISO
+        ? new Date(firstISO+'T00:00:00').toLocaleDateString('fa-IR',{weekday:'long'}) + '، ' + faDigit(firstTime)
+        : 'تماس بگیرید';
     }
     renderDays(); renderSlots();
   }
