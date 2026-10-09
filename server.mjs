@@ -54,8 +54,9 @@ const PORT = Number(ENV.PORT) || 3000;
 // Staff messaging channels. Telegram and Bale share the same bot API, so one code path serves both.
 // A channel is "active" when its bot token is set.
 const CHANNELS = [
-  { name: "telegram", base: "https://api.telegram.org/bot", token: (ENV.TELEGRAM_BOT_TOKEN || "").trim(), staff: (ENV.TELEGRAM_STAFF_CHAT_ID || "").trim() },
-  { name: "bale",     base: "https://tapi.bale.ai/bot",     token: (ENV.BALE_BOT_TOKEN || "").trim(),     staff: (ENV.BALE_STAFF_CHAT_ID || "").trim() },
+  { name: "telegram", base: "https://api.telegram.org/bot", fileBase: "https://api.telegram.org/file/bot", token: (ENV.TELEGRAM_BOT_TOKEN || "").trim(), staff: (ENV.TELEGRAM_STAFF_CHAT_ID || "").trim() },
+  // BALE_API_BASE only for local testing against a mock bot API; production uses tapi.bale.ai.
+  { name: "bale",     base: `${ENV.BALE_API_BASE || "https://tapi.bale.ai"}/bot`, fileBase: `${ENV.BALE_API_BASE || "https://tapi.bale.ai"}/file/bot`, token: (ENV.BALE_BOT_TOKEN || "").trim(), staff: (ENV.BALE_STAFF_CHAT_ID || "").trim() },
 ].filter((c) => c.token);
 const MOCK = CHANNELS.length === 0;
 
@@ -107,6 +108,7 @@ Services: newborn care and jaundice; breastfeeding and nutrition counseling; gro
 const chatSystem = () => `You are the friendly assistant on the website of Dr. Foroogh Hashemi, a pediatrician.
 
 ${CLINIC_INFO}
+${knowledgeBlock()}
 
 Rules you must follow:
 - Help ONLY with clinic logistics: appointments and booking, working hours, location, the services offered, what to bring, and how online visits and payment work.
@@ -206,6 +208,200 @@ function slotsPayload() {
     days.push({ date, label: faDate(date, false), closed, slots: closed ? [] : openSlotsFor(date, now, taken) });
   }
   return { tz: "Asia/Tehran", now: `${now.date} ${now.time}`, days };
+}
+
+/* ---------- clinic knowledge, taught by staff through the bot ----------
+   Shared by the website chatbot and the voice agent (GET /api/knowledge).
+   facts: short Persian facts for patients; say: pronunciation fixes for the voice ("هاشمی" → "هاشِمی"). */
+const KNOWLEDGE_DB = join(DATA_DIR, "knowledge.json");
+let knowledge = { facts: [], say: [] };
+try { if (existsSync(KNOWLEDGE_DB)) knowledge = { facts: [], say: [], ...JSON.parse(readFileSync(KNOWLEDGE_DB, "utf8")) }; } catch {}
+const saveKnowledge = () => { try { writeFileSync(KNOWLEDGE_DB, JSON.stringify(knowledge, null, 2)); } catch (e) { console.error("saveKnowledge failed:", e.message); } };
+const knowledgeBlock = () => knowledge.facts.length
+  ? `\nClinic staff notes (taught by the clinic team; they override the general info above if they conflict):\n${knowledge.facts.map((f) => "- " + f.text).join("\n")}\n`
+  : "";
+const knowledgePayload = () => ({ facts: knowledge.facts.map((f) => f.text), say: knowledge.say.map(({ word, as }) => ({ word, as })) });
+
+// A staff message (typed, or a voice-note transcript) → clean standalone facts, via Claude.
+// Falls back to the message as-is when Claude isn't configured or the call fails.
+const KNOWLEDGE_MODEL = (ENV.KNOWLEDGE_MODEL || "claude-sonnet-5-5").trim();
+async function draftFacts(raw) {
+  if (!ANTHROPIC_API_KEY) return { facts: [raw], reason: "" };
+  try {
+    const r = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: { "content-type": "application/json", "x-api-key": ANTHROPIC_API_KEY, "anthropic-version": "2023-06-01" },
+      body: JSON.stringify({
+        model: KNOWLEDGE_MODEL, max_tokens: 2000,
+        output_config: { effort: "low", format: { type: "json_schema", schema: {
+          type: "object", additionalProperties: false, required: ["facts", "rejected_reason"],
+          properties: { facts: { type: "array", items: { type: "string" } }, rejected_reason: { type: "string" } } } } },
+        system: `You maintain the knowledge list that a pediatric clinic's receptionist (a phone voice agent and a website chatbot) uses to answer patients' parents.
+A clinic staff member sent the message below. It may be a speech transcript with filler words or corrections.
+Rewrite it as short, standalone facts in clear, simple Persian, one sentence each, keeping every concrete detail (prices, days, hours, names, numbers) exactly. Don't add, guess or generalise anything.
+If it contains nothing a receptionist should tell patients (chit-chat, a question, a test), return no facts and explain briefly in Persian in rejected_reason.
+If it includes medical treatment or medication/dosing instructions, leave those parts out and say in rejected_reason (in Persian) that the receptionist doesn't give medical advice. Otherwise rejected_reason is "".`,
+        messages: [{ role: "user", content: raw.slice(0, 3000) }],
+      }),
+    });
+    if (!r.ok) throw new Error(`${r.status} ${(await r.text()).slice(0, 200)}`);
+    const data = await r.json();
+    const out = JSON.parse((data.content || []).filter((b) => b.type === "text").map((b) => b.text).join(""));
+    return { facts: (out.facts || []).map((f) => String(f).trim()).filter(Boolean), reason: String(out.rejected_reason || "") };
+  } catch (e) {
+    console.error("draftFacts failed:", e.message);
+    return { facts: [raw], reason: "" };
+  }
+}
+
+// Voice notes sent to the bot are transcribed with ElevenLabs Scribe (needs ELEVENLABS_API_KEY with speech-to-text).
+const ELEVENLABS_API_KEY = (ENV.ELEVENLABS_API_KEY || "").trim();
+async function transcribeVoiceNote(ch, fileId) {
+  if (!ELEVENLABS_API_KEY) throw new Error("ELEVENLABS_API_KEY not set on the website");
+  const f = await api(ch, "getFile", { file_id: fileId });
+  if (!f.ok || !f.result?.file_path) throw new Error("getFile failed");
+  const audio = await fetch(`${ch.fileBase}${ch.token}/${f.result.file_path}`);
+  if (!audio.ok) throw new Error(`download ${audio.status}`);
+  const form = new FormData();
+  form.append("model_id", "scribe_v2");
+  form.append("language_code", "fas");
+  form.append("file", new Blob([Buffer.from(await audio.arrayBuffer())], { type: "audio/ogg" }), "note.ogg");
+  const r = await fetch("https://api.elevenlabs.io/v1/speech-to-text", { method: "POST", headers: { "xi-api-key": ELEVENLABS_API_KEY }, body: form });
+  if (!r.ok) throw new Error(`STT ${r.status}: ${(await r.text()).slice(0, 160)}`);
+  return String((await r.json()).text || "").trim();
+}
+
+// Drafted facts wait here for a ✅/❌ tap; /learn without text opens a short window for the next message.
+const pendingFacts = new Map();   // id -> { facts, by, at }
+const learnWaiting = new Map();   // "<channel>:<chat>" -> { until, promptId }
+setInterval(() => {
+  const now = Date.now();
+  for (const [k, v] of pendingFacts) if (now - v.at > 3600000) pendingFacts.delete(k);
+  for (const [k, v] of learnWaiting) if (now > v.until) learnWaiting.delete(k);
+}, 60000).unref();
+
+async function proposeFacts(ch, chat, raw, by) {
+  const say = (text, extra = {}) => api(ch, "sendMessage", { chat_id: chat, text, ...extra });
+  const { facts, reason } = await draftFacts(raw);
+  if (!facts.length) return say(`چیزی برای یادگیری پیدا نکردم.${reason ? "\n" + reason : ""}`);
+  const id = newToken().slice(0, 10);
+  pendingFacts.set(id, { facts, by, at: Date.now() });
+  return say(`این رو یاد بگیرم؟\n\n${facts.map((f) => "• " + f).join("\n")}${reason ? `\n\n⚠️ ${reason}` : ""}`,
+    { reply_markup: { inline_keyboard: [[{ text: "✅ ذخیره", callback_data: `kn_ok:${id}` }, { text: "❌ لغو", callback_data: `kn_no:${id}` }]] } });
+}
+
+const KNOWLEDGE_HELP = `آموزش به دستیار (منشی صوتی و چت‌بات سایت)
+/learn <متن> – یاد دادن یک اطلاعات جدید (مثلاً: /learn هزینه ویزیت حضوری ۴۰۰ هزار تومان است)
+/learn – بعدش یک پیام صوتی یا متنی بفرستید
+/knowledge – فهرست چیزهایی که یاد گرفته
+/forget <شماره> – حذف یک مورد از فهرست
+/say <کلمه> = <تلفظ> – اصلاح تلفظ (مثلاً: /say هاشمی = هاشِمی)
+/unsay <کلمه> – حذف یک اصلاح تلفظ`;
+
+// Returns true when the message was a knowledge command or a pending teaching message (staff only).
+async function handleKnowledgeMessage(ch, m, isStaff) {
+  const chat = m.chat.id;
+  const say = (text, extra = {}) => api(ch, "sendMessage", { chat_id: chat, text, ...extra });
+  const raw = (m.text || "").trim();
+  const cmd = (raw.split(/\s+/)[0] || "").toLowerCase().replace(/@\w+$/, "");
+  const rest = raw.slice(raw.split(/\s+/)[0].length).trim();
+  const by = (m.from && (m.from.first_name || m.from.username)) || "staff";
+  const key = `${ch.name}:${chat}`;
+  const isCmd = ["/learn", "/knowledge", "/forget", "/say", "/unsay", "/teach"].includes(cmd);
+  const waiting = learnWaiting.get(key);
+  const replyToPrompt = waiting && m.reply_to_message && m.reply_to_message.message_id === waiting.promptId;
+  const isTeachingMsg = !isCmd && waiting && Date.now() < waiting.until && (replyToPrompt || !raw.startsWith("/"));
+  if (!isCmd && !isTeachingMsg) return false;
+  if (!isStaff) { await say("This command is only available to the clinic staff chat."); return true; }
+
+  if (cmd === "/teach") { await say(KNOWLEDGE_HELP); return true; }
+
+  if (cmd === "/learn") {
+    if (rest) { await proposeFacts(ch, chat, rest, by); return true; }
+    const p = await say("🎙 پیام صوتی یا متن را بفرستید (تا ۵ دقیقه).", { reply_markup: { force_reply: true } });
+    learnWaiting.set(key, { until: Date.now() + 5 * 60000, promptId: p.result?.message_id });
+    return true;
+  }
+
+  if (isTeachingMsg) {
+    learnWaiting.delete(key);
+    const voice = m.voice || m.audio;
+    if (voice) {
+      await say("در حال تبدیل صدا به متن…");
+      let text = "";
+      try { text = await transcribeVoiceNote(ch, voice.file_id); }
+      catch (e) { console.error("voice note failed:", e.message); await say("نتونستم پیام صوتی رو بخونم. لطفاً متنش رو بنویسید: /learn <متن>"); return true; }
+      if (!text) { await say("صدایی شنیده نشد. دوباره امتحان کنید: /learn"); return true; }
+      await say(`🎧 شنیدم:\n«${text}»`);
+      await proposeFacts(ch, chat, text, by);
+      return true;
+    }
+    if (raw) { await proposeFacts(ch, chat, raw, by); return true; }
+    await say("فقط متن یا پیام صوتی. دوباره: /learn");
+    return true;
+  }
+
+  if (cmd === "/knowledge") {
+    const facts = knowledge.facts.map((f, i) => `${toFa(i + 1)}. ${f.text}`).join("\n");
+    const says = knowledge.say.map((s) => `• ${s.word} ← ${s.as}`).join("\n");
+    await say(`📚 دانسته‌های دستیار (${toFa(knowledge.facts.length)} مورد)\n\n${facts || "هنوز چیزی یاد نگرفته. با /learn شروع کنید."}` +
+      (says ? `\n\n🗣 اصلاح تلفظ:\n${says}` : "") + `\n\nحذف: /forget <شماره>   ·   راهنما: /teach`);
+    return true;
+  }
+
+  if (cmd === "/forget") {
+    const n = Number(toAsciiDigits(rest));
+    if (!n || n < 1 || n > knowledge.facts.length) { await say("شماره‌ی مورد را بنویسید، مثلاً: /forget 2  (فهرست: /knowledge)"); return true; }
+    const [gone] = knowledge.facts.splice(n - 1, 1);
+    saveKnowledge();
+    await say(`🗑 حذف شد:\n${gone.text}`);
+    return true;
+  }
+
+  if (cmd === "/say") {
+    const mm = rest.match(/^(.+?)\s*=\s*(.+)$/);
+    if (!mm) { await say("به این شکل بنویسید:  /say هاشمی = هاشِمی"); return true; }
+    const word = mm[1].trim(), as = mm[2].trim();
+    knowledge.say = knowledge.say.filter((s) => s.word !== word).concat({ word, as, by, at: new Date().toISOString() });
+    saveKnowledge();
+    await say(`🗣 از این به بعد «${word}» این‌طور خوانده می‌شود: «${as}»`);
+    return true;
+  }
+
+  if (cmd === "/unsay") {
+    const before = knowledge.say.length;
+    knowledge.say = knowledge.say.filter((s) => s.word !== rest);
+    saveKnowledge();
+    await say(knowledge.say.length < before ? `حذف شد: «${rest}»` : `«${rest}» در فهرست تلفظ نبود.`);
+    return true;
+  }
+  return false;
+}
+
+// ✅/❌ on a drafted fact (staff only). Returns true when handled.
+async function handleKnowledgeCallback(ch, cq, action, id) {
+  if (action !== "kn_ok" && action !== "kn_no") return false;
+  if (ch.staff && String(cq.from && cq.from.id) !== String(ch.staff) && String(cq.message && cq.message.chat && cq.message.chat.id) !== String(ch.staff)) {
+    await api(ch, "answerCallbackQuery", { callback_query_id: cq.id, text: "Staff only." });
+    return true;
+  }
+  const p = pendingFacts.get(id);
+  pendingFacts.delete(id);
+  const msg = { chat_id: cq.message.chat.id, message_id: cq.message.message_id };
+  if (!p) {
+    await api(ch, "answerCallbackQuery", { callback_query_id: cq.id, text: "منقضی شده؛ دوباره /learn بزنید." });
+    return true;
+  }
+  if (action === "kn_ok") {
+    for (const text of p.facts) knowledge.facts.push({ id: newId(), text, by: p.by, at: new Date().toISOString() });
+    saveKnowledge();
+    await api(ch, "editMessageText", { ...msg, text: `✅ یاد گرفتم:\n\n${p.facts.map((f) => "• " + f).join("\n")}\n\nفهرست کامل: /knowledge` });
+    await api(ch, "answerCallbackQuery", { callback_query_id: cq.id, text: "ذخیره شد" });
+  } else {
+    await api(ch, "editMessageText", { ...msg, text: "❌ لغو شد. چیزی ذخیره نشد." });
+    await api(ch, "answerCallbackQuery", { callback_query_id: cq.id, text: "لغو شد" });
+  }
+  return true;
 }
 /* ---------- Jalali (Persian) <-> Gregorian, for Persian date input & display ---------- */
 const _div = (a, b) => Math.trunc(a / b);
@@ -537,6 +733,8 @@ async function handleCallback(ch, cq) {
   const action = ci < 0 ? data : data.slice(0, ci);
   const id = ci < 0 ? "" : data.slice(ci + 1);
 
+  if (await handleKnowledgeCallback(ch, cq, action, id)) return;   // ✅/❌ on a fact the bot is learning
+
   // Day on/off toggle from the /availability grid (staff only).
   if (action === "dayoff") {
     if (ch.staff && String(cq.from && cq.from.id) !== String(ch.staff) && String(cq.message && cq.message.chat && cq.message.chat.id) !== String(ch.staff)) {
@@ -598,11 +796,13 @@ async function handleMessage(ch, m) {
   const isStaff = !ch.staff || String(chat) === String(ch.staff);
   const say = (text, extra = {}) => api(ch, "sendMessage", { chat_id: chat, text, ...extra });
 
+  if (await handleKnowledgeMessage(ch, m, isStaff)) return;   // /learn, /knowledge, /say … and voice notes after /learn
+
   if (t === "/id" || t === "/start" || t === "/help")
     return void say(
       `Your chat ID is ${chat}\nPut it in ${envName} to receive booking requests here.\n\n` +
       `APPOINTMENTS\n/bookings – list all\n/pending – pending only\n/today – today's\n\n` +
-      `AVAILABILITY (staff)\n/availability – tap days to turn off/on (Persian dates)\n/off <date> – close a day (e.g. /off فردا  ·  /off 1405/07/11  ·  /off 2026-10-08)\n/on <date> – reopen a day\n/block <date> <time> – block one slot (e.g. /block 1405/07/11 10:00)\n/unblock <date> <time> – unblock a slot\n/blocked – show current blocks`);
+      `AVAILABILITY (staff)\n/availability – tap days to turn off/on (Persian dates)\n/off <date> – close a day (e.g. /off فردا  ·  /off 1405/07/11  ·  /off 2026-10-08)\n/on <date> – reopen a day\n/block <date> <time> – block one slot (e.g. /block 1405/07/11 10:00)\n/unblock <date> <time> – unblock a slot\n/blocked – show current blocks\n\nTEACH THE ASSISTANT (staff)\n/teach – how to teach the voice agent + chatbot (Persian)\n/learn – teach a new fact (text or voice note)\n/knowledge – what it has learned`);
 
   // ----- availability management (staff only) -----
   if (["/availability", "/dayoff", "/off", "/on", "/block", "/unblock", "/blocked"].includes(t)) {
@@ -894,6 +1094,7 @@ createServer(async (req, res) => {
   }
   if (req.method === "GET" && path === "/") { res.writeHead(302, { Location: "/fa.html" }); return res.end(); } // Persian is the default landing page
   if (req.method === "GET" && path === "/api/slots") return json(res, 200, slotsPayload()); // open slots for the next week (voice agent)
+  if (req.method === "GET" && path === "/api/knowledge") return json(res, 200, knowledgePayload()); // staff-taught facts (voice agent)
   if (req.method === "GET" && path === "/api/availability") {
     // The website reads this to grey out days off, blocked slots, and already-taken slots.
     const bookedSlots = bookings.filter((b) => b.status !== "declined" && b.status !== "cancelled").map((b) => `${b.date} ${b.time}`);
@@ -920,6 +1121,9 @@ const BOT_COMMANDS = [
   { command: "off", description: "Close a day — /off tomorrow" },
   { command: "on", description: "Reopen a day — /on 2026-10-08" },
   { command: "blocked", description: "Show current blocks" },
+  { command: "learn", description: "یاد دادن اطلاعات به دستیار (متن یا صوت)" },
+  { command: "knowledge", description: "فهرست دانسته‌های دستیار" },
+  { command: "teach", description: "راهنمای آموزش دستیار" },
   { command: "id", description: "Show this chat's ID" },
 ];
 for (const ch of CHANNELS) {
