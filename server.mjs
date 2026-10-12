@@ -614,6 +614,12 @@ async function staffClaude(messages) {
 // Is this staff-chat message meant for the bot? Private chats: always. Groups: a reply to the bot,
 // an @mention, or a message starting with «دستیار» / «ربات».
 const voiceWarnAt = {};   // channel -> last time we told the group voice notes can't be processed
+// Follow-up window: after the bot answers someone in a group, that person's next messages for a few minutes
+// count as part of the conversation (they naturally answer "بله" without tapping Reply or saying «دستیار»).
+const FOLLOW_UP_MS = 3 * 60000;
+const lastBotReply = new Map();   // "<channel>:<chat>:<user>" -> time the bot last answered that person
+const followUpKey = (ch, m) => `${ch.name}:${m.chat.id}:${m.from && m.from.id}`;
+const inFollowUp = (ch, m) => m.chat.type && m.chat.type !== "private" && Date.now() - (lastBotReply.get(followUpKey(ch, m)) || 0) < FOLLOW_UP_MS;
 const WAKE = /^\s*(?:خب|سلام|ببین)?[\s،,.]*(دستیار|ربات|بات)[\s،,.:!]*/;   // speech often starts «سلام دستیار…» / «خب دستیار…»
 function addressedToBot(ch, m) {
   if (!m.chat || m.chat.type === "private" || !m.chat.type) return true;
@@ -624,7 +630,8 @@ function addressedToBot(ch, m) {
 }
 
 // preHeard: a voice note already transcribed (group voice notes that start with the spoken wake word).
-async function staffAssistant(ch, m, preHeard = "") {
+// implicit: a group message inside the follow-up window that wasn't explicitly addressed to the bot.
+async function staffAssistant(ch, m, preHeard = "", implicit = false) {
   const chat = m.chat.id;
   const say = (text, extra = {}) => api(ch, "sendMessage", { chat_id: chat, text, ...(m.chat.type && m.chat.type !== "private" ? { reply_to_message_id: m.message_id } : {}), ...extra });
   if (!ANTHROPIC_API_KEY) return say("دستیار هوشمند فعال نیست (ANTHROPIC_API_KEY تنظیم نشده).");
@@ -657,7 +664,10 @@ async function staffAssistant(ch, m, preHeard = "") {
   const spokenStyle = voiceReply
     ? "\n[System note: this came as a voice note and your reply will be sent back as a voice note (its text also shows as a caption). Keep it short and conversational, at most three short sentences, no lists, markdown or emoji. Write numbers, dates, times and phone numbers as Persian words (phone numbers in the usual groups, e.g. «صفر نهصد و دوازده، …»).]"
     : "";
-  c.messages.push({ role: "user", content: `${notes}[${by}]: ${text}${spokenStyle}` });
+  const implicitNote = implicit
+    ? "\n[System note: this group message wasn't explicitly addressed to you; it came right after you spoke with this person, so it's probably their answer to you. If it's clearly meant for someone else in the group (staff chatting), reply with exactly SKIP and nothing else.]"
+    : "";
+  c.messages.push({ role: "user", content: `${notes}[${by}]: ${text}${spokenStyle}${implicitNote}` });
 
   const changes = [], spoken = [];
   try {
@@ -681,6 +691,9 @@ async function staffAssistant(ch, m, preHeard = "") {
     return say("ببخشید، یه مشکل فنی پیش اومد. دوباره بفرستید.");
   }
 
+  // A follow-up-window message that wasn't for the bot: stay quiet (the window is not renewed).
+  if (implicit && !changes.length && /^SKIP\W*$/i.test(spoken.join(" ").trim())) return;
+  if (m.chat.type && m.chat.type !== "private") lastBotReply.set(followUpKey(ch, m), Date.now());
   let reply = (heard ? `🎧 «${heard}»\n\n` : "") + (spoken.join("\n\n") || "انجام شد.");
   if (changes.length) reply += `\n\n${changes.map((x) => "✅ " + x.label).join("\n")}`;
   const buttons = changes.slice(0, 6).map((x, i) => [{ text: changes.length > 1 ? `↩️ برگرداندن ${toFa(i + 1)}` : "↩️ برگرداندن", callback_data: `undo:${x.id}` }]);
@@ -1214,6 +1227,8 @@ async function handleMessage(ch, m) {
 
   // Anything else from the staff chat that's meant for the bot → the conversational staff assistant.
   if (isStaff && !raw.startsWith("/") && addressedToBot(ch, m) && (raw || m.voice || m.audio || m.caption)) return void staffAssistant(ch, m);
+  // Typed follow-up from the person the bot just answered (no Reply / «دستیار» needed for 3 minutes).
+  if (isStaff && raw && !raw.startsWith("/") && inFollowUp(ch, m)) return void staffAssistant(ch, m, "", true);
 
   // A voice note in the staff group that isn't a reply to the bot: transcribe it, and answer only when it
   // starts with the spoken wake word («دستیار…»), like a typed message would. Other voice notes are ignored.
@@ -1232,6 +1247,7 @@ async function handleMessage(ch, m) {
       return;
     }
     if (WAKE.test(heard)) return void staffAssistant(ch, m, heard.replace(WAKE, "").trim() || heard);
+    if (heard && inFollowUp(ch, m)) return void staffAssistant(ch, m, heard, true);   // spoken follow-up
     console.log(`${ch.name}: group voice note ignored (doesn't start with «دستیار»)`);
   }
 }
@@ -1469,7 +1485,7 @@ createServer(async (req, res) => {
   if (req.method === "GET" && path === "/api/status") {
     // Setup diagnostics, yes/no only (no keys, no chat ids): is the staff assistant / voice notes / staff chat configured,
     // and does Telegram/Bale let the bot see all group messages (Group Privacy off)?
-    return json(res, 200, { build: "staff-assistant-4", staffAssistant: !!ANTHROPIC_API_KEY, voiceNotes: !!ELEVENLABS_API_KEY, voiceReplies: STAFF_TTS_ON,
+    return json(res, 200, { build: "staff-assistant-5", staffAssistant: !!ANTHROPIC_API_KEY, voiceNotes: !!ELEVENLABS_API_KEY, voiceReplies: STAFF_TTS_ON,
       channels: CHANNELS.map((c) => ({ name: c.name, staffChatSet: !!c.staff, staffChatIsGroup: c.staff.startsWith("-"),
         bot: c.username || null, groupPrivacyOff: c.readsAllGroupMessages ?? null })) });
   }
