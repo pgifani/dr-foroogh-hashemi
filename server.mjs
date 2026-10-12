@@ -99,15 +99,16 @@ const ONLINE_FEE = (ENV.ONLINE_FEE || "").trim();                     // display
 const ANTHROPIC_API_KEY = (ENV.ANTHROPIC_API_KEY || "").trim();
 const CHAT_MODEL = (ENV.CHAT_MODEL || "claude-haiku-4-5").trim();     // FAQ bot: Haiku is fast + cheap
 const CHAT_ON = !!ANTHROPIC_API_KEY;
+// {{HOURS}} is filled from the editable schedule (hoursSentence) whenever a prompt is built.
 const CLINIC_INFO = `Dr. Foroogh Hashemi is a pediatrician caring for newborns through age 18.
-Working hours: Saturday, Monday and Wednesday 12:00–16:00; Sunday 12:00–15:00; Tuesday, Thursday and Friday closed.
+{{HOURS}}
 Clinic address: Karaj, North Azadi St (Gohardasht), between 7th and 8th West St, opposite Gohardasht Pharmacy, No. 223, first floor.
 Clinic phone: 026-34456153. WhatsApp (for online visits): +98 936 278 3939.
 Appointments are booked on this website using the booking form on the page. There are two kinds: in-person, or online over WhatsApp (voice call or text chat). Online visits are prepaid by card-to-card before they are confirmed. After booking, the patient receives a confirmation by SMS with a cancel link; for online visits the WhatsApp number and time are sent once confirmed. Appointments can be cancelled from the link in that SMS.
 Services: newborn care and jaundice; breastfeeding and nutrition counseling; growth and development monitoring to age 18; infectious and digestive issues (acute/chronic diarrhea and constipation, abdominal pain, colic, reflux); kidney and urinary (infections, stones, bedwetting); asthma and allergies (skin, eczema, respiratory, digestive); respiratory and ear infections (croup, bronchiolitis); periodic exams; puberty and adolescence, height-growth and obesity care; ear piercing in sterile conditions with the American Studex system and 24k-gold hypoallergenic earrings from 2 months of age.`;
 const chatSystem = () => `You are the friendly assistant on the website of Dr. Foroogh Hashemi, a pediatrician.
 
-${CLINIC_INFO}
+${CLINIC_INFO.replace("{{HOURS}}", hoursSentence())}
 ${knowledgeBlock()}
 
 Rules you must follow:
@@ -166,9 +167,52 @@ const saveBlocks = () => { try { writeFileSync(BLOCKS_DB, JSON.stringify(blocks,
 const isoAdd = (days) => { const d = new Date(); d.setUTCHours(0, 0, 0, 0); d.setUTCDate(d.getUTCDate() + days); return d.toISOString().split("T")[0]; };
 
 /* ---------- open slots, computed server-side (same rules as the picker in fa.html / index.html) ---------- */
-// Working hours per weekday (getUTCDay of the ISO date: 6=Sat, 0=Sun, 1=Mon, 3=Wed). Missing days are closed.
-const HOURS = { 6: [12, 16], 1: [12, 16], 3: [12, 16], 0: [12, 15] };
+// Weekly working hours, editable by staff through the bot (DATA_DIR/schedule.json).
+// hours: { getUTCDay → [startHour, endHour] } with decimal hours (12.5 = 12:30); 6=Sat, 0=Sun, 1=Mon, 3=Wed. Missing = closed.
+const DEFAULT_HOURS = { 6: [12, 16], 1: [12, 16], 3: [12, 16], 0: [12, 15] };
+const SCHEDULE_DB = join(DATA_DIR, "schedule.json");
+let schedule = { hours: DEFAULT_HOURS };
+try { if (existsSync(SCHEDULE_DB)) schedule = { hours: DEFAULT_HOURS, ...JSON.parse(readFileSync(SCHEDULE_DB, "utf8")) }; } catch {}
+const saveSchedule = () => { try { writeFileSync(SCHEDULE_DB, JSON.stringify(schedule, null, 2)); } catch (e) { console.error("saveSchedule failed:", e.message); } };
 const SLOT_STEP = 15, DAYS_AHEAD = 7;
+
+// Human-readable hours, generated from `schedule` so every page/prompt says the same thing.
+const WEEK_ORDER = [6, 0, 1, 2, 3, 4, 5];   // Saturday first, as in Iran
+const DAY_FA = { 6: "شنبه", 0: "یک‌شنبه", 1: "دوشنبه", 2: "سه‌شنبه", 3: "چهارشنبه", 4: "پنجشنبه", 5: "جمعه" };
+const DAY_EN = { 6: "Sat", 0: "Sun", 1: "Mon", 2: "Tue", 3: "Wed", 4: "Thu", 5: "Fri" };
+const DAY_EN_LONG = { 6: "Saturday", 0: "Sunday", 1: "Monday", 2: "Tuesday", 3: "Wednesday", 4: "Thursday", 5: "Friday" };
+const hm = (h) => `${Math.floor(h)}:${String(Math.round((h % 1) * 60)).padStart(2, "0")}`;           // 12.5 → "12:30"
+const hFa = (h) => toFa(h % 1 ? hm(h) : String(h));                                                  // 12 → "۱۲", 12.5 → "۱۲:۳۰"
+const hEn = (h) => { const H = Math.floor(h) % 12 || 12, m = Math.round((h % 1) * 60); return m ? `${H}:${String(m).padStart(2, "0")}` : `${H}`; };
+function hoursGroups() {   // [{ days:[6,1,3], range:[12,16] }, …] in week order; closed days separately
+  const groups = [], closed = [];
+  for (const d of WEEK_ORDER) {
+    const r = schedule.hours[d];
+    if (!r) { closed.push(d); continue; }
+    const g = groups.find((x) => x.range[0] === r[0] && x.range[1] === r[1]);
+    g ? g.days.push(d) : groups.push({ days: [d], range: r });
+  }
+  return { groups, closed };
+}
+const joinFa = (a) => a.length > 1 ? a.slice(0, -1).join("، ") + " و " + a.at(-1) : a.join("");
+const joinEn = (a) => a.length > 1 ? a.slice(0, -1).join(", ") + " & " + a.at(-1) : a.join("");
+function hoursText() {
+  const { groups, closed } = hoursGroups();
+  const openFa = groups.map((g) => `${g.days.map((d) => DAY_FA[d]).join("، ")} ${hFa(g.range[0])} تا ${hFa(g.range[1])}`).join(" · ");
+  const openEn = groups.map((g) => `${g.days.map((d) => DAY_EN[d]).join(", ")} ${hEn(g.range[0])}–${hEn(g.range[1])} pm`).join(" · ");
+  const closedFa = closed.length ? `${closed.map((d) => DAY_FA[d]).join("، ")} تعطیل` : "";
+  const closedEn = closed.length ? `${joinEn(closed.map((d) => DAY_EN[d]))} closed` : "";
+  return {
+    fa: { open: openFa, closed: closedFa, long: [groups.map((g) => `${joinFa(g.days.map((d) => DAY_FA[d]))} ${hFa(g.range[0])} تا ${hFa(g.range[1])}`).join("، "), closed.length ? `${joinFa(closed.map((d) => DAY_FA[d]))} تعطیل` : ""].filter(Boolean).join("، ") },
+    en: { open: openEn, closed: closedEn, long: [openEn.replace(/ · /g, "; "), closedEn].filter(Boolean).join("; ") },
+  };
+}
+// One sentence for the AI prompts (website chatbot + voice agent).
+function hoursSentence() {
+  const { groups, closed } = hoursGroups();
+  const open = groups.map((g) => `${g.days.map((d) => DAY_EN_LONG[d]).join(", ")} ${hm(g.range[0])}–${hm(g.range[1])}`).join("; ");
+  return `Working hours: ${open || "none set"}${closed.length ? `; ${closed.map((d) => DAY_EN_LONG[d]).join(", ")} closed` : ""}.`;
+}
 // Clinic-local "now" (Asia/Tehran, UTC+3:30, no DST since 2022) — the server itself may run in UTC.
 function tehranNow() {
   try {
@@ -182,9 +226,9 @@ function tehranNow() {
 }
 const addDaysISO = (iso, n) => { const d = new Date(iso + "T00:00:00Z"); d.setUTCDate(d.getUTCDate() + n); return d.toISOString().slice(0, 10); };
 function slotTimes(iso) {
-  const h = HOURS[new Date(iso + "T00:00:00Z").getUTCDay()];
+  const h = schedule.hours[new Date(iso + "T00:00:00Z").getUTCDay()];
   const a = [];
-  if (h) for (let m = h[0] * 60; m < h[1] * 60; m += SLOT_STEP) a.push(`${String(Math.floor(m / 60)).padStart(2, "0")}:${String(m % 60).padStart(2, "0")}`);
+  if (h) for (let m = Math.round(h[0] * 60); m < Math.round(h[1] * 60); m += SLOT_STEP) a.push(`${String(Math.floor(m / 60)).padStart(2, "0")}:${String(m % 60).padStart(2, "0")}`);
   return a;
 }
 const takenSlots = () => new Set(bookings.filter((b) => b.status !== "declined" && b.status !== "cancelled").map((b) => `${b.date} ${b.time}`));
@@ -220,7 +264,7 @@ const saveKnowledge = () => { try { writeFileSync(KNOWLEDGE_DB, JSON.stringify(k
 const knowledgeBlock = () => knowledge.facts.length
   ? `\nClinic staff notes (taught by the clinic team; they override the general info above if they conflict):\n${knowledge.facts.map((f) => "- " + f.text).join("\n")}\n`
   : "";
-const knowledgePayload = () => ({ facts: knowledge.facts.map((f) => f.text), say: knowledge.say.map(({ word, as }) => ({ word, as })) });
+const knowledgePayload = () => ({ facts: knowledge.facts.map((f) => f.text), say: knowledge.say.map(({ word, as }) => ({ word, as })), hours: hoursSentence() });
 
 // A staff message (typed, or a voice-note transcript) → clean standalone facts, via Claude.
 // Falls back to the message as-is when Claude isn't configured or the call fails.
@@ -376,6 +420,258 @@ async function handleKnowledgeMessage(ch, m, isStaff) {
     return true;
   }
   return false;
+}
+
+/* ---------- staff assistant: normal conversation (text or voice notes) in the staff chat ----------
+   The doctor and staff talk to the bot; Claude reads/changes the clinic's knowledge, weekly hours, days off and
+   blocked times through tools, and can look up appointments (read-only). Every change needs an explicit "yes",
+   gets a receipt, and can be undone with a button. In a group it answers only when addressed. */
+const STAFF_MODEL = (ENV.STAFF_MODEL || "claude-sonnet-5-5").trim();
+const staffConvos = new Map();   // "<channel>:<chat>" -> { messages, at, notes }
+const storeVersion = { knowledge: 0, schedule: 0, blocks: 0 };
+const undoLog = new Map();       // id -> { store, before, version, label }
+const storeJson = (s) => JSON.stringify(s === "knowledge" ? knowledge : s === "schedule" ? schedule : blocks);
+function restoreStore(s, json) {
+  const v = JSON.parse(json);
+  if (s === "knowledge") { knowledge = v; saveKnowledge(); }
+  else if (s === "schedule") { schedule = v; saveSchedule(); }
+  else { blocks = v; saveBlocks(); }
+}
+const WD = { sat: 6, sun: 0, mon: 1, tue: 2, wed: 3, thu: 4, fri: 5 };
+const parseHM = (s) => { const m = String(s || "").trim().match(/^(\d{1,2})(?::(\d{2}))?$/); if (!m) return null; const h = +m[1] + (m[2] ? +m[2] / 60 : 0); return h >= 0 && h <= 24 && (h * 60) % SLOT_STEP === 0 ? h : null; };
+
+const STAFF_SYSTEM = `You are the staff assistant of Dr. Foroogh Hashemi's pediatric clinic in Karaj, Iran. You chat with the doctor and her staff in their private staff chat on Bale/Telegram. Messages arrive as "[Name]: text". Voice notes are transcribed automatically, so expect small recognition errors.
+
+You help them with four things:
+1. Patient-facing knowledge: the facts the phone receptionist (voice agent) and the website chatbot use to answer parents (prices, services, what to bring, policies, directions, insurance…).
+2. Availability: the weekly working hours, days off, and individually blocked appointment times.
+3. Appointments: answering questions about booked appointments (read-only; you can't book, cancel or confirm; staff do that with the buttons on each booking message).
+4. Pronunciation fixes for the phone voice (e.g. هاشمی → هاشِمی).
+
+Rules:
+- Reply in short, friendly, natural Persian, as plain text (no markdown, tables or headings). Use Persian digits in replies.
+- Before ANY change, look at the current state first (get_knowledge / get_schedule), then say exactly what you'll change (old → new) and ask for a clear yes. Only call a change tool after the latest message clearly confirms, with staff_confirmed=true. One clear instruction plus a yes is enough; don't ask twice.
+- Prefer updating or removing an existing fact over adding a contradicting one. Keep each fact one short standalone Persian sentence, phrased as a receptionist would tell a parent.
+- Never save medical treatment, medication or dosing advice as knowledge; explain kindly that the receptionist doesn't give medical advice.
+- Closing a day doesn't cancel its existing appointments. If a day or time being closed has bookings, tell them who's booked so they can contact those patients or cancel via the booking messages.
+- Weekly hours apply to all future weeks; for a one-off absence, close that date instead.
+- Dates: get_schedule gives today's date and a 14-day calendar with Persian labels. Use it to turn "فردا"، "شنبه‌ی بعد" or "۲۰ مهر" into exact dates, and say the Persian date back when confirming.
+- Appointment details (names, phones) are fine to share here: this is the staff-only chat. Copy phone numbers, times and dates exactly as the tools give them; never retype digits yourself.
+- If you're not sure what they mean, ask one short question. If a request is outside these four areas, say what you can help with.`;
+
+const STAFF_TOOLS = [
+  { name: "get_knowledge", description: "Current patient-facing facts (with ids) and pronunciation fixes.", input_schema: { type: "object", properties: {}, required: [] } },
+  { name: "add_fact", description: "Add one patient-facing fact (one short Persian sentence).", input_schema: { type: "object", properties: { text: { type: "string" }, staff_confirmed: { type: "boolean" } }, required: ["text", "staff_confirmed"] } },
+  { name: "update_fact", description: "Replace the text of an existing fact.", input_schema: { type: "object", properties: { id: { type: "string" }, text: { type: "string" }, staff_confirmed: { type: "boolean" } }, required: ["id", "text", "staff_confirmed"] } },
+  { name: "remove_fact", description: "Delete a fact.", input_schema: { type: "object", properties: { id: { type: "string" }, staff_confirmed: { type: "boolean" } }, required: ["id", "staff_confirmed"] } },
+  { name: "set_pronunciation", description: "Make the phone voice say `word` as `say_as` (e.g. هاشمی → هاشِمی, with diacritics).", input_schema: { type: "object", properties: { word: { type: "string" }, say_as: { type: "string" }, staff_confirmed: { type: "boolean" } }, required: ["word", "say_as", "staff_confirmed"] } },
+  { name: "remove_pronunciation", description: "Remove a pronunciation fix.", input_schema: { type: "object", properties: { word: { type: "string" }, staff_confirmed: { type: "boolean" } }, required: ["word", "staff_confirmed"] } },
+  { name: "get_schedule", description: "Weekly working hours, today's date/time in Tehran, and the next 14 days with Persian labels, whether each is open, closed by a day off, blocked times, and how many appointments are booked.", input_schema: { type: "object", properties: {}, required: [] } },
+  { name: "set_weekly_hours", description: "Set one weekday's regular hours for all future weeks. open=false closes that weekday. Times are HH:MM in 15-minute steps, 24-hour clock.", input_schema: { type: "object", properties: { weekday: { type: "string", enum: ["sat", "sun", "mon", "tue", "wed", "thu", "fri"] }, open: { type: "boolean" }, start: { type: "string", description: "e.g. 12:00 (ignored when open=false)" }, end: { type: "string", description: "e.g. 16:30" }, staff_confirmed: { type: "boolean" } }, required: ["weekday", "open", "staff_confirmed"] } },
+  { name: "close_day", description: "Close one specific date for bookings (a day off).", input_schema: { type: "object", properties: { date: { type: "string", description: "YYYY-MM-DD" }, staff_confirmed: { type: "boolean" } }, required: ["date", "staff_confirmed"] } },
+  { name: "open_day", description: "Reopen a date that was closed as a day off.", input_schema: { type: "object", properties: { date: { type: "string" }, staff_confirmed: { type: "boolean" } }, required: ["date", "staff_confirmed"] } },
+  { name: "block_times", description: "Block appointment times on a date (each HH:MM slot start, 15-minute grid), e.g. to keep 15:00–16:00 free.", input_schema: { type: "object", properties: { date: { type: "string" }, times: { type: "array", items: { type: "string" } }, staff_confirmed: { type: "boolean" } }, required: ["date", "times", "staff_confirmed"] } },
+  { name: "unblock_times", description: "Unblock previously blocked times on a date.", input_schema: { type: "object", properties: { date: { type: "string" }, times: { type: "array", items: { type: "string" } }, staff_confirmed: { type: "boolean" } }, required: ["date", "times", "staff_confirmed"] } },
+  { name: "list_appointments", description: "Booked appointments between two dates (inclusive), read-only: date, time, patient name, mobile, visit type, status (pending/confirmed/declined/cancelled), source (web/voice).", input_schema: { type: "object", properties: { from: { type: "string", description: "YYYY-MM-DD" }, to: { type: "string", description: "YYYY-MM-DD" } }, required: ["from", "to"] } },
+];
+
+// Runs one tool. `changes` collects { id, label } receipts (each with an undo entry).
+function runStaffTool(name, input, by, changes) {
+  const needYes = () => input.staff_confirmed === true ? null : { ok: false, error: "Ask the staff to confirm first, then call again with staff_confirmed=true." };
+  const change = (store, label, fn) => {
+    const before = storeJson(store);
+    const res = fn();
+    if (res && res.ok === false) return res;
+    storeVersion[store]++;
+    const id = newToken().slice(0, 10);
+    undoLog.set(id, { store, before, version: storeVersion[store], label });
+    changes.push({ id, label });
+    return { ok: true, ...(res || {}) };
+  };
+  const dayInfo = (iso) => { const n = bookings.filter((b) => b.date === iso && b.status !== "declined" && b.status !== "cancelled"); return n.map((b) => `${b.time} ${b.name} ${toFa(toAsciiDigits(b.phone))} (${b.status})`); };
+
+  switch (name) {
+    case "get_knowledge":
+      return { facts: knowledge.facts.map((f) => ({ id: f.id, text: f.text })), pronunciations: knowledge.say.map((s) => ({ word: s.word, say_as: s.as })) };
+    case "add_fact": return needYes() || change("knowledge", `➕ ${input.text}`, () => { knowledge.facts.push({ id: newId(), text: String(input.text).trim(), by, at: new Date().toISOString() }); saveKnowledge(); });
+    case "update_fact": {
+      const f = knowledge.facts.find((x) => x.id === input.id);
+      if (!f) return { ok: false, error: "No fact with that id; call get_knowledge." };
+      return needYes() || change("knowledge", `✏️ ${f.text} ← ${input.text}`, () => { f.text = String(input.text).trim(); f.by = by; f.at = new Date().toISOString(); saveKnowledge(); });
+    }
+    case "remove_fact": {
+      const f = knowledge.facts.find((x) => x.id === input.id);
+      if (!f) return { ok: false, error: "No fact with that id; call get_knowledge." };
+      return needYes() || change("knowledge", `🗑 ${f.text}`, () => { knowledge.facts = knowledge.facts.filter((x) => x.id !== input.id); saveKnowledge(); });
+    }
+    case "set_pronunciation": return needYes() || change("knowledge", `🗣 ${input.word} ← ${input.say_as}`, () => {
+      knowledge.say = knowledge.say.filter((s) => s.word !== input.word).concat({ word: String(input.word).trim(), as: String(input.say_as).trim(), by, at: new Date().toISOString() }); saveKnowledge(); });
+    case "remove_pronunciation": return needYes() || change("knowledge", `🗣🗑 ${input.word}`, () => {
+      if (!knowledge.say.some((s) => s.word === input.word)) return { ok: false, error: "No such pronunciation fix." };
+      knowledge.say = knowledge.say.filter((s) => s.word !== input.word); saveKnowledge(); });
+
+    case "get_schedule": {
+      const now = tehranNow(), taken = takenSlots();
+      const weekly = WEEK_ORDER.map((d) => ({ weekday: Object.keys(WD).find((k) => WD[k] === d), name: DAY_FA[d], hours: schedule.hours[d] ? `${hm(schedule.hours[d][0])}-${hm(schedule.hours[d][1])}` : "closed" }));
+      const days = [];
+      for (let i = 0; i < 14; i++) {
+        const iso = addDaysISO(now.date, i);
+        days.push({ date: iso, label: faDate(iso), weekly_open: slotTimes(iso).length > 0, day_off: blocks.days.includes(iso),
+          blocked_times: blocks.slots.filter((s) => s.startsWith(iso + " ")).map((s) => s.slice(11)),
+          booked: dayInfo(iso).length, free_slots: openSlotsFor(iso, now, taken).length });
+      }
+      return { now_in_tehran: `${now.date} ${now.time}`, today: faDate(now.date), weekly_hours: weekly, booking_window_days: DAYS_AHEAD, next_14_days: days };
+    }
+    case "set_weekly_hours": {
+      const d = WD[input.weekday];
+      if (d === undefined) return { ok: false, error: "Unknown weekday." };
+      let range = null;
+      if (input.open) {
+        const s = parseHM(input.start), e = parseHM(input.end);
+        if (s === null || e === null || e <= s) return { ok: false, error: "Give start/end as HH:MM on a 15-minute grid, end after start." };
+        range = [s, e];
+      }
+      return needYes() || change("schedule", `🕒 ${DAY_FA[d]}: ${range ? `${toFa(hm(range[0]))} تا ${toFa(hm(range[1]))}` : "تعطیل"}`, () => {
+        const hours = { ...schedule.hours };
+        if (range) hours[d] = range; else delete hours[d];
+        schedule = { ...schedule, hours }; saveSchedule();
+      });
+    }
+    case "close_day": case "open_day": {
+      const iso = parseDate(input.date);
+      if (!iso) return { ok: false, error: "Use YYYY-MM-DD." };
+      const closing = name === "close_day";
+      return needYes() || change("blocks", `${closing ? "⛔" : "✅"} ${faDate(iso)} ${closing ? "بسته شد" : "باز شد"}`, () => {
+        if (closing) { if (!blocks.days.includes(iso)) blocks.days.push(iso); } else blocks.days = blocks.days.filter((x) => x !== iso);
+        saveBlocks();
+        return closing ? { existing_appointments_not_cancelled: dayInfo(iso) } : {};
+      });
+    }
+    case "block_times": case "unblock_times": {
+      const iso = parseDate(input.date);
+      const times = (input.times || []).map((t) => { const h = parseHM(toAsciiDigits(t).replace(/^(\d{1,2})(\d{2})$/, "$1:$2") || t); return h === null ? null : hm(h).padStart(5, "0"); });
+      if (!iso || !times.length || times.includes(null)) return { ok: false, error: "Use a YYYY-MM-DD date and HH:MM times on the 15-minute grid." };
+      const blocking = name === "block_times";
+      return needYes() || change("blocks", `${blocking ? "⛔" : "✅"} ${faDate(iso)}: ${times.map(toFa).join("، ")}`, () => {
+        for (const t of times) { const k = `${iso} ${t}`; if (blocking) { if (!blocks.slots.includes(k)) blocks.slots.push(k); } else blocks.slots = blocks.slots.filter((x) => x !== k); }
+        saveBlocks();
+        return blocking ? { existing_appointments_at_those_times: dayInfo(iso).filter((x) => times.includes(x.slice(0, 5))) } : {};
+      });
+    }
+    case "list_appointments": {
+      const from = parseDate(input.from), to = parseDate(input.to);
+      if (!from || !to) return { ok: false, error: "Use YYYY-MM-DD dates." };
+      const list = bookings.filter((b) => b.date >= from && b.date <= to).sort((a, b) => (a.date + a.time).localeCompare(b.date + b.time))
+        // Numbers pre-converted to Persian digits so the model copies them instead of converting (it can slip a digit).
+        .map((b) => ({ date: b.date, label: faDate(b.date, false), time_fa: toFa(b.time), name: b.name, mobile_fa: toFa(toAsciiDigits(b.phone)), type: b.type || "in-person", status: b.status, source: b.source || "web" }));
+      return { count: list.length, appointments: list.slice(0, 80) };
+    }
+  }
+  return { ok: false, error: `Unknown tool ${name}` };
+}
+
+async function staffClaude(messages) {
+  const r = await fetch("https://api.anthropic.com/v1/messages", {
+    method: "POST",
+    headers: { "content-type": "application/json", "x-api-key": ANTHROPIC_API_KEY, "anthropic-version": "2023-06-01", "anthropic-beta": "server-side-fallback-2026-07-01" },
+    body: JSON.stringify({ model: STAFF_MODEL, max_tokens: 4000, system: STAFF_SYSTEM, tools: STAFF_TOOLS, messages,
+      output_config: { effort: "medium" }, fallbacks: "default", cache_control: { type: "ephemeral" } }),
+    signal: AbortSignal.timeout(90000),
+  });
+  if (!r.ok) throw new Error(`Claude ${r.status}: ${(await r.text()).slice(0, 300)}`);
+  return r.json();
+}
+
+// Is this staff-chat message meant for the bot? Private chats: always. Groups: a reply to the bot,
+// an @mention, or a message starting with «دستیار» / «ربات».
+const WAKE = /^\s*(دستیار|ربات|بات)[\s،,:]*/;
+function addressedToBot(ch, m) {
+  if (!m.chat || m.chat.type === "private" || !m.chat.type) return true;
+  const text = m.text || m.caption || "";
+  if (m.reply_to_message && m.reply_to_message.from && ch.botId && m.reply_to_message.from.id === ch.botId) return true;
+  if (ch.username && text.toLowerCase().includes("@" + ch.username.toLowerCase())) return true;
+  return WAKE.test(text);
+}
+
+async function staffAssistant(ch, m) {
+  const chat = m.chat.id;
+  const say = (text, extra = {}) => api(ch, "sendMessage", { chat_id: chat, text, ...(m.chat.type && m.chat.type !== "private" ? { reply_to_message_id: m.message_id } : {}), ...extra });
+  if (!ANTHROPIC_API_KEY) return say("دستیار هوشمند فعال نیست (ANTHROPIC_API_KEY تنظیم نشده).");
+  const by = (m.from && (m.from.first_name || m.from.username)) || "staff";
+  const key = `${ch.name}:${chat}`;
+  api(ch, "sendChatAction", { chat_id: chat, action: "typing" });   // best-effort
+
+  let text = (m.text || m.caption || "").replace(WAKE, "");
+  if (ch.username) text = text.replace(new RegExp("@" + ch.username, "ig"), "");
+  text = text.trim();
+  let heard = "";
+  const voice = m.voice || m.audio;
+  if (voice) {
+    try { heard = await transcribeVoiceNote(ch, voice.file_id); }
+    catch (e) { console.error("staff voice note failed:", e.message); return say("پیام صوتی رو نتونستم بخونم؛ لطفاً بنویسیدش."); }
+    if (!heard) return say("صدایی شنیده نشد؛ دوباره بفرستید.");
+    text = [text, heard].filter(Boolean).join("\n");
+  }
+  if (!text) return;
+
+  // Fresh conversation after 2 h of silence or when it grows long (never trimmed in the middle).
+  let c = staffConvos.get(key);
+  if (!c || Date.now() - c.at > 2 * 3600000 || c.messages.length > 60) c = { messages: [], notes: [] };
+  c.at = Date.now();
+  staffConvos.set(key, c);
+  const notes = c.notes.splice(0).map((n) => `[System note: ${n}]\n`).join("");
+  const start = c.messages.length;
+  c.messages.push({ role: "user", content: `${notes}[${by}]: ${text}` });
+
+  const changes = [], spoken = [];
+  try {
+    for (let i = 0; i < 8; i++) {
+      const data = await staffClaude(c.messages);
+      if (data.stop_reason === "refusal") { c.messages.length = start; return say("ببخشید، نمی‌تونم این کار رو انجام بدم."); }
+      c.messages.push({ role: "assistant", content: data.content });
+      const t = data.content.filter((b) => b.type === "text").map((b) => b.text).join("\n").trim();
+      if (t) spoken.push(t);
+      if (data.stop_reason !== "tool_use") break;
+      const results = data.content.filter((b) => b.type === "tool_use").map((b) => {
+        let out;
+        try { out = runStaffTool(b.name, b.input || {}, by, changes); } catch (e) { out = { ok: false, error: e.message }; }
+        return { type: "tool_result", tool_use_id: b.id, content: JSON.stringify(out), ...(out && out.ok === false ? { is_error: true } : {}) };
+      });
+      c.messages.push({ role: "user", content: results });
+    }
+  } catch (e) {
+    console.error("staff assistant failed:", e.message);
+    c.messages.length = start;
+    return say("ببخشید، یه مشکل فنی پیش اومد. دوباره بفرستید.");
+  }
+
+  let reply = (heard ? `🎧 «${heard}»\n\n` : "") + (spoken.join("\n\n") || "انجام شد.");
+  if (changes.length) reply += `\n\n${changes.map((x) => "✅ " + x.label).join("\n")}`;
+  const buttons = changes.slice(0, 6).map((x, i) => [{ text: changes.length > 1 ? `↩️ برگرداندن ${toFa(i + 1)}` : "↩️ برگرداندن", callback_data: `undo:${x.id}` }]);
+  await say(reply.slice(0, 4000), buttons.length ? { reply_markup: { inline_keyboard: buttons } } : {});
+}
+
+// ↩️ Undo for a change made through the staff assistant. Returns true when handled.
+async function handleUndoCallback(ch, cq, action, id) {
+  if (action !== "undo") return false;
+  if (ch.staff && String(cq.from && cq.from.id) !== String(ch.staff) && String(cq.message && cq.message.chat && cq.message.chat.id) !== String(ch.staff)) {
+    await api(ch, "answerCallbackQuery", { callback_query_id: cq.id, text: "Staff only." });
+    return true;
+  }
+  const u = undoLog.get(id);
+  if (!u) { await api(ch, "answerCallbackQuery", { callback_query_id: cq.id, text: "قابل برگرداندن نیست (منقضی شده)." }); return true; }
+  if (storeVersion[u.store] !== u.version) {
+    await api(ch, "answerCallbackQuery", { callback_query_id: cq.id, text: "بعد از این، تغییر دیگری انجام شده؛ لطفاً با پیام اصلاحش کنید.", show_alert: true });
+    return true;
+  }
+  restoreStore(u.store, u.before);
+  storeVersion[u.store]++;
+  undoLog.delete(id);
+  const who = (cq.from && (cq.from.first_name || cq.from.username)) || "staff";
+  for (const c of staffConvos.values()) c.notes.push(`${who} undid this change: ${u.label}`);
+  await api(ch, "answerCallbackQuery", { callback_query_id: cq.id, text: "برگردانده شد" });
+  await api(ch, "sendMessage", { chat_id: cq.message.chat.id, text: `↩️ برگردانده شد: ${u.label}` });
+  return true;
 }
 
 // ✅/❌ on a drafted fact (staff only). Returns true when handled.
@@ -734,6 +1030,7 @@ async function handleCallback(ch, cq) {
   const id = ci < 0 ? "" : data.slice(ci + 1);
 
   if (await handleKnowledgeCallback(ch, cq, action, id)) return;   // ✅/❌ on a fact the bot is learning
+  if (await handleUndoCallback(ch, cq, action, id)) return;        // ↩️ undo a change made in conversation
 
   // Day on/off toggle from the /availability grid (staff only).
   if (action === "dayoff") {
@@ -791,7 +1088,7 @@ async function handleMessage(ch, m) {
   const chat = m.chat.id;
   const raw = (m.text || "").trim();
   const parts = raw.split(/\s+/);
-  const t = (parts[0] || "").toLowerCase();       // the command word
+  const t = (parts[0] || "").toLowerCase().replace(/@\w+$/, "");   // the command word (groups send /cmd@botname)
   const envName = ch.name === "bale" ? "BALE_STAFF_CHAT_ID" : "TELEGRAM_STAFF_CHAT_ID";
   const isStaff = !ch.staff || String(chat) === String(ch.staff);
   const say = (text, extra = {}) => api(ch, "sendMessage", { chat_id: chat, text, ...extra });
@@ -802,7 +1099,7 @@ async function handleMessage(ch, m) {
     return void say(
       `Your chat ID is ${chat}\nPut it in ${envName} to receive booking requests here.\n\n` +
       `APPOINTMENTS\n/bookings – list all\n/pending – pending only\n/today – today's\n\n` +
-      `AVAILABILITY (staff)\n/availability – tap days to turn off/on (Persian dates)\n/off <date> – close a day (e.g. /off فردا  ·  /off 1405/07/11  ·  /off 2026-10-08)\n/on <date> – reopen a day\n/block <date> <time> – block one slot (e.g. /block 1405/07/11 10:00)\n/unblock <date> <time> – unblock a slot\n/blocked – show current blocks\n\nTEACH THE ASSISTANT (staff)\n/teach – how to teach the voice agent + chatbot (Persian)\n/learn – teach a new fact (text or voice note)\n/knowledge – what it has learned`);
+      `AVAILABILITY (staff)\n/availability – tap days to turn off/on (Persian dates)\n/off <date> – close a day (e.g. /off فردا  ·  /off 1405/07/11  ·  /off 2026-10-08)\n/on <date> – reopen a day\n/block <date> <time> – block one slot (e.g. /block 1405/07/11 10:00)\n/unblock <date> <time> – unblock a slot\n/blocked – show current blocks\n\nTALK TO THE ASSISTANT (staff)\nJust write or send a voice note in Persian (in a group: reply to the bot, @mention it, or start with «دستیار»). It can update patient answers, weekly hours, days off and blocked times, and look up appointments.\n\nTEACH WITH COMMANDS\n/teach – how to teach the voice agent + chatbot (Persian)\n/learn – teach a new fact (text or voice note)\n/knowledge – what it has learned`);
 
   // ----- availability management (staff only) -----
   if (["/availability", "/dayoff", "/off", "/on", "/block", "/unblock", "/blocked"].includes(t)) {
@@ -863,6 +1160,9 @@ async function handleMessage(ch, m) {
     if (list.length > MAX) text += `\n\n… and ${list.length - MAX} more.`;
     return void api(ch, "sendMessage", { chat_id: chat, text });
   }
+
+  // Anything else from the staff chat that's meant for the bot → the conversational staff assistant.
+  if (isStaff && !raw.startsWith("/") && addressedToBot(ch, m) && (raw || m.voice || m.audio || m.caption)) return void staffAssistant(ch, m);
 }
 
 async function pollChannel(ch) {
@@ -1098,7 +1398,7 @@ createServer(async (req, res) => {
   if (req.method === "GET" && path === "/api/availability") {
     // The website reads this to grey out days off, blocked slots, and already-taken slots.
     const bookedSlots = bookings.filter((b) => b.status !== "declined" && b.status !== "cancelled").map((b) => `${b.date} ${b.time}`);
-    return json(res, 200, { blockedDays: blocks.days, blockedSlots: blocks.slots, bookedSlots });
+    return json(res, 200, { blockedDays: blocks.days, blockedSlots: blocks.slots, bookedSlots, hours: schedule.hours, hoursText: hoursText() });
   }
   if (req.method === "GET") return serveStatic(req, res);
   res.writeHead(405); res.end("405");
@@ -1128,5 +1428,7 @@ const BOT_COMMANDS = [
 ];
 for (const ch of CHANNELS) {
   api(ch, "setMyCommands", { commands: BOT_COMMANDS });   // best-effort; ignored if unsupported
+  // The bot's own id/username: in a group, the staff assistant answers replies to it and @mentions.
+  api(ch, "getMe", {}).then((r) => { if (r.ok && r.result) { ch.botId = r.result.id; ch.username = r.result.username || ""; } });
   pollChannel(ch);
 }
