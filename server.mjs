@@ -584,6 +584,7 @@ async function staffClaude(messages) {
 
 // Is this staff-chat message meant for the bot? Private chats: always. Groups: a reply to the bot,
 // an @mention, or a message starting with «دستیار» / «ربات».
+const voiceWarnAt = {};   // channel -> last time we told the group voice notes can't be processed
 const WAKE = /^\s*(?:خب|سلام|ببین)?[\s،,.]*(دستیار|ربات|بات)[\s،,.:!]*/;   // speech often starts «سلام دستیار…» / «خب دستیار…»
 function addressedToBot(ch, m) {
   if (!m.chat || m.chat.type === "private" || !m.chat.type) return true;
@@ -1170,7 +1171,17 @@ async function handleMessage(ch, m) {
   if (isStaff && (m.voice || m.audio) && m.chat.type && m.chat.type !== "private") {
     let heard = "";
     try { heard = await transcribeVoiceNote(ch, (m.voice || m.audio).file_id); }
-    catch (e) { return void console.error(`${ch.name}: group voice note not transcribed:`, e.message); }
+    catch (e) {
+      console.error(`${ch.name}: group voice note not transcribed:`, e.message);
+      // Say why once an hour, rather than ignoring every voice note in silence.
+      if (!voiceWarnAt[ch.name] || Date.now() - voiceWarnAt[ch.name] > 3600000) {
+        voiceWarnAt[ch.name] = Date.now();
+        await api(ch, "sendMessage", { chat_id: m.chat.id, text: ELEVENLABS_API_KEY
+          ? "⚠️ پیام صوتی رو نتونستم به متن تبدیل کنم. لطفاً دوباره بفرستید یا بنویسید."
+          : "⚠️ پیام‌های صوتی فعلاً پردازش نمی‌شوند: کلید ELEVENLABS_API_KEY روی سایت (Coolify) تنظیم نشده. فعلاً بنویسید." });
+      }
+      return;
+    }
     if (WAKE.test(heard)) return void staffAssistant(ch, m, heard.replace(WAKE, "").trim() || heard);
     console.log(`${ch.name}: group voice note ignored (doesn't start with «دستیار»)`);
   }
@@ -1406,6 +1417,13 @@ createServer(async (req, res) => {
   if (req.method === "GET" && path === "/") { res.writeHead(302, { Location: "/fa.html" }); return res.end(); } // Persian is the default landing page
   if (req.method === "GET" && path === "/api/slots") return json(res, 200, slotsPayload()); // open slots for the next week (voice agent)
   if (req.method === "GET" && path === "/api/knowledge") return json(res, 200, knowledgePayload()); // staff-taught facts (voice agent)
+  if (req.method === "GET" && path === "/api/status") {
+    // Setup diagnostics, yes/no only (no keys, no chat ids): is the staff assistant / voice notes / staff chat configured,
+    // and does Telegram/Bale let the bot see all group messages (Group Privacy off)?
+    return json(res, 200, { build: "staff-assistant-3", staffAssistant: !!ANTHROPIC_API_KEY, voiceNotes: !!ELEVENLABS_API_KEY,
+      channels: CHANNELS.map((c) => ({ name: c.name, staffChatSet: !!c.staff, staffChatIsGroup: c.staff.startsWith("-"),
+        bot: c.username || null, groupPrivacyOff: c.readsAllGroupMessages ?? null })) });
+  }
   if (req.method === "GET" && path === "/api/availability") {
     // The website reads this to grey out days off, blocked slots, and already-taken slots.
     const bookedSlots = bookings.filter((b) => b.status !== "declined" && b.status !== "cancelled").map((b) => `${b.date} ${b.time}`);
@@ -1440,6 +1458,6 @@ const BOT_COMMANDS = [
 for (const ch of CHANNELS) {
   api(ch, "setMyCommands", { commands: BOT_COMMANDS });   // best-effort; ignored if unsupported
   // The bot's own id/username: in a group, the staff assistant answers replies to it and @mentions.
-  api(ch, "getMe", {}).then((r) => { if (r.ok && r.result) { ch.botId = r.result.id; ch.username = r.result.username || ""; } });
+  api(ch, "getMe", {}).then((r) => { if (r.ok && r.result) { ch.botId = r.result.id; ch.username = r.result.username || ""; ch.readsAllGroupMessages = r.result.can_read_all_group_messages ?? null; } });
   pollChannel(ch);
 }
