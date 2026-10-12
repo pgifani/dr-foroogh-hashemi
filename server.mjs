@@ -315,6 +315,35 @@ async function transcribeVoiceNote(ch, fileId) {
   return String((await r.json()).text || "").trim();
 }
 
+// Voice replies for the staff assistant: a voice note in → a voice note back (same voice as the phone agent).
+const STAFF_VOICE_ID = (ENV.STAFF_VOICE_ID || ENV.ELEVENLABS_VOICE_ID || "").trim();
+const STAFF_TTS_MODEL = (ENV.TTS_MODEL || "eleven_v4_turbo").trim();
+const STAFF_TTS_ON = !!(ELEVENLABS_API_KEY && STAFF_VOICE_ID);
+const escapeRe = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+// Text → what the voice should say: no symbols/emoji, staff pronunciation fixes (/say) applied to whole words.
+const speechText = (t) => knowledge.say.reduce((out, { word, as }) =>
+  out.replace(new RegExp(`(^|[^\\p{L}\\p{M}])${escapeRe(word)}(?=$|[^\\p{L}\\p{M}])`, "gu"), `$1${as}`),
+  String(t).replace(/[*_#`>|~•]/g, "").replace(/\p{Extended_Pictographic}/gu, "").replace(/\s+/g, " ").trim());
+async function speakOgg(text) {   // OGG/Opus: the native voice-note format of Telegram and Bale
+  const r = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${encodeURIComponent(STAFF_VOICE_ID)}?output_format=opus_48000_32`, {
+    method: "POST", headers: { "xi-api-key": ELEVENLABS_API_KEY, "content-type": "application/json" },
+    body: JSON.stringify({ text: speechText(text).slice(0, 2500), model_id: STAFF_TTS_MODEL }),
+  });
+  if (!r.ok) throw new Error(`TTS ${r.status}: ${(await r.text()).slice(0, 160)}`);
+  return Buffer.from(await r.arrayBuffer());
+}
+// Bot API call with a file upload (multipart). Object fields (reply_markup) are sent as JSON strings.
+async function apiUpload(ch, method, fields, file) {
+  try {
+    const form = new FormData();
+    for (const [k, v] of Object.entries(fields)) if (v !== undefined) form.append(k, typeof v === "object" ? JSON.stringify(v) : String(v));
+    form.append(file.field, new Blob([file.data], { type: file.type }), file.name);
+    const j = await (await fetch(`${ch.base}${ch.token}/${method}`, { method: "POST", body: form })).json();
+    if (!j.ok) console.error(`${ch.name}.${method} error:`, j.description || JSON.stringify(j).slice(0, 200));
+    return j;
+  } catch (e) { console.error(`${ch.name}.${method} failed:`, e.message); return { ok: false }; }
+}
+
 // Drafted facts wait here for a ✅/❌ tap; /learn without text opens a short window for the next message.
 const pendingFacts = new Map();   // id -> { facts, by, at }
 const learnWaiting = new Map();   // "<channel>:<chat>" -> { until, promptId }
@@ -601,7 +630,9 @@ async function staffAssistant(ch, m, preHeard = "") {
   if (!ANTHROPIC_API_KEY) return say("دستیار هوشمند فعال نیست (ANTHROPIC_API_KEY تنظیم نشده).");
   const by = (m.from && (m.from.first_name || m.from.username)) || "staff";
   const key = `${ch.name}:${chat}`;
-  api(ch, "sendChatAction", { chat_id: chat, action: "typing" });   // best-effort
+  const voiceIn = !!(preHeard || m.voice || m.audio);
+  const voiceReply = voiceIn && STAFF_TTS_ON;   // voice in → voice out; typed in → text out
+  api(ch, "sendChatAction", { chat_id: chat, action: voiceReply ? "record_voice" : "typing" });   // best-effort
 
   let text = (m.text || m.caption || "").replace(WAKE, "");
   if (ch.username) text = text.replace(new RegExp("@" + ch.username, "ig"), "");
@@ -623,7 +654,10 @@ async function staffAssistant(ch, m, preHeard = "") {
   staffConvos.set(key, c);
   const notes = c.notes.splice(0).map((n) => `[System note: ${n}]\n`).join("");
   const start = c.messages.length;
-  c.messages.push({ role: "user", content: `${notes}[${by}]: ${text}` });
+  const spokenStyle = voiceReply
+    ? "\n[System note: this came as a voice note and your reply will be sent back as a voice note (its text also shows as a caption). Keep it short and conversational, at most three short sentences, no lists, markdown or emoji. Write numbers, dates, times and phone numbers as Persian words (phone numbers in the usual groups, e.g. «صفر نهصد و دوازده، …»).]"
+    : "";
+  c.messages.push({ role: "user", content: `${notes}[${by}]: ${text}${spokenStyle}` });
 
   const changes = [], spoken = [];
   try {
@@ -650,7 +684,22 @@ async function staffAssistant(ch, m, preHeard = "") {
   let reply = (heard ? `🎧 «${heard}»\n\n` : "") + (spoken.join("\n\n") || "انجام شد.");
   if (changes.length) reply += `\n\n${changes.map((x) => "✅ " + x.label).join("\n")}`;
   const buttons = changes.slice(0, 6).map((x, i) => [{ text: changes.length > 1 ? `↩️ برگرداندن ${toFa(i + 1)}` : "↩️ برگرداندن", callback_data: `undo:${x.id}` }]);
-  await say(reply.slice(0, 4000), buttons.length ? { reply_markup: { inline_keyboard: buttons } } : {});
+  const markup = buttons.length ? { reply_markup: { inline_keyboard: buttons } } : {};
+
+  if (voiceReply) {
+    // Speak the answer itself (not the 🎧 echo or the receipts); the full text rides along as the caption.
+    try {
+      const audio = await speakOgg(spoken.join(" ") || "انجام شد.");
+      const fits = reply.length <= 1000;   // captions are capped at 1024 characters
+      const sent = await apiUpload(ch, "sendVoice", {
+        chat_id: chat, ...(m.chat.type && m.chat.type !== "private" ? { reply_to_message_id: m.message_id } : {}),
+        ...(fits ? { caption: reply, ...markup } : {}),
+      }, { field: "voice", data: audio, type: "audio/ogg", name: "reply.ogg" });
+      if (sent.ok) { if (!fits) await say(reply.slice(0, 4000), markup); return; }
+    } catch (e) { console.error("staff voice reply failed:", e.message); }
+    // Fall through to a text reply if speech or upload failed.
+  }
+  await say(reply.slice(0, 4000), markup);
 }
 
 // ↩️ Undo for a change made through the staff assistant. Returns true when handled.
@@ -1420,7 +1469,7 @@ createServer(async (req, res) => {
   if (req.method === "GET" && path === "/api/status") {
     // Setup diagnostics, yes/no only (no keys, no chat ids): is the staff assistant / voice notes / staff chat configured,
     // and does Telegram/Bale let the bot see all group messages (Group Privacy off)?
-    return json(res, 200, { build: "staff-assistant-3", staffAssistant: !!ANTHROPIC_API_KEY, voiceNotes: !!ELEVENLABS_API_KEY,
+    return json(res, 200, { build: "staff-assistant-4", staffAssistant: !!ANTHROPIC_API_KEY, voiceNotes: !!ELEVENLABS_API_KEY, voiceReplies: STAFF_TTS_ON,
       channels: CHANNELS.map((c) => ({ name: c.name, staffChatSet: !!c.staff, staffChatIsGroup: c.staff.startsWith("-"),
         bot: c.username || null, groupPrivacyOff: c.readsAllGroupMessages ?? null })) });
   }
