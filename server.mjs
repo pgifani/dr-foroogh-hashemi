@@ -584,7 +584,7 @@ async function staffClaude(messages) {
 
 // Is this staff-chat message meant for the bot? Private chats: always. Groups: a reply to the bot,
 // an @mention, or a message starting with «دستیار» / «ربات».
-const WAKE = /^\s*(دستیار|ربات|بات)[\s،,:]*/;
+const WAKE = /^\s*(?:خب|سلام|ببین)?[\s،,.]*(دستیار|ربات|بات)[\s،,.:!]*/;   // speech often starts «سلام دستیار…» / «خب دستیار…»
 function addressedToBot(ch, m) {
   if (!m.chat || m.chat.type === "private" || !m.chat.type) return true;
   const text = m.text || m.caption || "";
@@ -593,7 +593,8 @@ function addressedToBot(ch, m) {
   return WAKE.test(text);
 }
 
-async function staffAssistant(ch, m) {
+// preHeard: a voice note already transcribed (group voice notes that start with the spoken wake word).
+async function staffAssistant(ch, m, preHeard = "") {
   const chat = m.chat.id;
   const say = (text, extra = {}) => api(ch, "sendMessage", { chat_id: chat, text, ...(m.chat.type && m.chat.type !== "private" ? { reply_to_message_id: m.message_id } : {}), ...extra });
   if (!ANTHROPIC_API_KEY) return say("دستیار هوشمند فعال نیست (ANTHROPIC_API_KEY تنظیم نشده).");
@@ -604,14 +605,14 @@ async function staffAssistant(ch, m) {
   let text = (m.text || m.caption || "").replace(WAKE, "");
   if (ch.username) text = text.replace(new RegExp("@" + ch.username, "ig"), "");
   text = text.trim();
-  let heard = "";
+  let heard = preHeard;
   const voice = m.voice || m.audio;
-  if (voice) {
+  if (voice && !heard) {
     try { heard = await transcribeVoiceNote(ch, voice.file_id); }
     catch (e) { console.error("staff voice note failed:", e.message); return say("پیام صوتی رو نتونستم بخونم؛ لطفاً بنویسیدش."); }
     if (!heard) return say("صدایی شنیده نشد؛ دوباره بفرستید.");
-    text = [text, heard].filter(Boolean).join("\n");
   }
+  text = [text, heard].filter(Boolean).join("\n");
   if (!text) return;
 
   // Fresh conversation after 2 h of silence or when it grows long (never trimmed in the middle).
@@ -1163,6 +1164,16 @@ async function handleMessage(ch, m) {
 
   // Anything else from the staff chat that's meant for the bot → the conversational staff assistant.
   if (isStaff && !raw.startsWith("/") && addressedToBot(ch, m) && (raw || m.voice || m.audio || m.caption)) return void staffAssistant(ch, m);
+
+  // A voice note in the staff group that isn't a reply to the bot: transcribe it, and answer only when it
+  // starts with the spoken wake word («دستیار…»), like a typed message would. Other voice notes are ignored.
+  if (isStaff && (m.voice || m.audio) && m.chat.type && m.chat.type !== "private") {
+    let heard = "";
+    try { heard = await transcribeVoiceNote(ch, (m.voice || m.audio).file_id); }
+    catch (e) { return void console.error(`${ch.name}: group voice note not transcribed:`, e.message); }
+    if (WAKE.test(heard)) return void staffAssistant(ch, m, heard.replace(WAKE, "").trim() || heard);
+    console.log(`${ch.name}: group voice note ignored (doesn't start with «دستیار»)`);
+  }
 }
 
 async function pollChannel(ch) {
