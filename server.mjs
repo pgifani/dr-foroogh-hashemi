@@ -87,13 +87,69 @@ const cancelUrl = (b) => {
 // Visit types: in-person, or online over WhatsApp (video / text).
 const VISIT_TYPES = new Set(["in-person", "video", "text"]);
 const isOnline = (t) => t === "video" || t === "text";
-const CLINIC_WHATSAPP = (ENV.CLINIC_WHATSAPP || "").trim();           // e.g. +98912…
-const waDigits = CLINIC_WHATSAPP.replace(/[^\d]/g, "");
-const waLink = waDigits ? `https://wa.me/${waDigits}` : "";
 // Online visits are prepaid by card-to-card. These are shown to the patient (display only).
+// The card stays an env var on purpose: it is NOT editable from the bot (wrong card = misdirected payments).
 const CLINIC_CARD = (ENV.CLINIC_CARD || "").trim();                   // e.g. 6037-9900-0000-0000
 const CLINIC_CARD_NAME = (ENV.CLINIC_CARD_NAME || "").trim();         // card holder, e.g. فروغ هاشمی
-const ONLINE_FEE = (ENV.ONLINE_FEE || "").trim();                     // display string, e.g. ۳۰۰٬۰۰۰ تومان
+const ONLINE_FEE = (ENV.ONLINE_FEE || "").trim();                     // fallback online fee (display string), e.g. ۳۰۰٬۰۰۰ تومان
+
+/* ---------- site settings, editable by staff through the bot (DATA_DIR/settings.json) ----------
+   Visit prices (tomans; null = not shown), an announcement banner, and the clinic phone / WhatsApp.
+   Used by the booking form (/api/config), staff messages, patient SMS/email, and both AI assistants. */
+const digitsOnly = (s) => String(s || "").replace(/[۰-۹]/g, (d) => "۰۱۲۳۴۵۶۷۸۹".indexOf(d)).replace(/\D/g, "");
+function normalizeIranNumber(s) {   // "+98 936 278 3939" / "0098…" / "936…" → "09362783939"
+  let d = digitsOnly(s);
+  if (d.startsWith("0098")) d = "0" + d.slice(4);
+  else if (d.startsWith("98") && d.length === 12) d = "0" + d.slice(2);
+  else if (d.length === 10 && !d.startsWith("0")) d = "0" + d;
+  return /^0\d{10}$/.test(d) ? d : "";
+}
+const SETTINGS_DB = join(DATA_DIR, "settings.json");
+const DEFAULT_SETTINGS = {
+  fees: { "in-person": null, video: null, text: null },
+  announcement: { fa: "", en: "" },
+  phone: "02634456153",
+  whatsapp: normalizeIranNumber(ENV.CLINIC_WHATSAPP) || "09362783939",
+};
+let settings = structuredClone(DEFAULT_SETTINGS);
+try {
+  if (existsSync(SETTINGS_DB)) {
+    const s = JSON.parse(readFileSync(SETTINGS_DB, "utf8"));
+    settings = { ...settings, ...s, fees: { ...settings.fees, ...(s.fees || {}) }, announcement: { ...settings.announcement, ...(s.announcement || {}) } };
+  }
+} catch {}
+const saveSettings = () => { try { writeFileSync(SETTINGS_DB, JSON.stringify(settings, null, 2)); } catch (e) { console.error("saveSettings failed:", e.message); } };
+
+const tomanFa = (n) => `${String(n).replace(/\B(?=(\d{3})+(?!\d))/g, "٬").replace(/\d/g, (d) => "۰۱۲۳۴۵۶۷۸۹"[d])} تومان`;
+const tomanEn = (n) => `${Number(n).toLocaleString("en-US")} Toman`;
+// The fee shown for a visit type, or "" when none is set. Online visits fall back to the ONLINE_FEE env string.
+function feeText(type, lang = "fa") {
+  const n = settings.fees[type];
+  if (Number.isFinite(n) && n > 0) return lang === "fa" ? tomanFa(n) : tomanEn(n);
+  return isOnline(type) ? ONLINE_FEE : "";
+}
+const phoneDisplay = (d, lang) => {   // landline 026-34456153; mobile 0936 278 3939
+  const s = /^09/.test(d) ? `${d.slice(0, 4)} ${d.slice(4, 7)} ${d.slice(7)}` : `${d.slice(0, 3)}-${d.slice(3)}`;
+  return lang === "fa" ? s.replace(/\d/g, (x) => "۰۱۲۳۴۵۶۷۸۹"[x]) : s;
+};
+const waNumber = () => settings.whatsapp ? "98" + settings.whatsapp.slice(1) : "";
+const waLinkNow = () => settings.whatsapp ? `https://wa.me/${waNumber()}` : "";
+const clinicWhatsapp = () => settings.whatsapp ? phoneDisplay(settings.whatsapp, "en") : "";   // used in SMS/email text
+function contactPayload() {
+  return {
+    phone: { fa: phoneDisplay(settings.phone, "fa"), en: phoneDisplay(settings.phone, "en"), tel: "+98" + settings.phone.slice(1) },
+    whatsapp: settings.whatsapp ? { fa: phoneDisplay(settings.whatsapp, "fa"), en: phoneDisplay(settings.whatsapp, "en"), wa: waNumber() } : null,
+  };
+}
+// Sentences for the AI prompts (website chatbot + voice agent).
+const contactSentence = () => `Clinic phone: ${phoneDisplay(settings.phone, "en")}.${settings.whatsapp ? ` WhatsApp (for online visits): ${phoneDisplay(settings.whatsapp, "en")}.` : ""}`;
+function feesSentence() {
+  const parts = [["in-person", "In-person visit"], ["video", "Online voice visit (WhatsApp call)"], ["text", "Online text visit (WhatsApp chat)"]]
+    .map(([t, label]) => { const f = feeText(t, "en"); return f ? `${label}: ${f}` : ""; }).filter(Boolean);
+  return parts.length ? `Visit fees: ${parts.join("; ")}.` : "";
+}
+const noticeSentence = () => settings.announcement.fa || settings.announcement.en
+  ? `Current clinic announcement (shown at the top of the website): ${settings.announcement.fa || settings.announcement.en}` : "";
 
 /* ---------- AI care-assistant chatbot (Claude via REST, optional) ---------- */
 const ANTHROPIC_API_KEY = (ENV.ANTHROPIC_API_KEY || "").trim();
@@ -103,12 +159,16 @@ const CHAT_ON = !!ANTHROPIC_API_KEY;
 const CLINIC_INFO = `Dr. Foroogh Hashemi is a pediatrician caring for newborns through age 18.
 {{HOURS}}
 Clinic address: Karaj, North Azadi St (Gohardasht), between 7th and 8th West St, opposite Gohardasht Pharmacy, No. 223, first floor.
-Clinic phone: 026-34456153. WhatsApp (for online visits): +98 936 278 3939.
+{{CONTACT}}
+{{FEES}}
 Appointments are booked on this website using the booking form on the page. There are two kinds: in-person, or online over WhatsApp (voice call or text chat). Online visits are prepaid by card-to-card before they are confirmed. After booking, the patient receives a confirmation by SMS with a cancel link; for online visits the WhatsApp number and time are sent once confirmed. Appointments can be cancelled from the link in that SMS.
 Services: newborn care and jaundice; breastfeeding and nutrition counseling; growth and development monitoring to age 18; infectious and digestive issues (acute/chronic diarrhea and constipation, abdominal pain, colic, reflux); kidney and urinary (infections, stones, bedwetting); asthma and allergies (skin, eczema, respiratory, digestive); respiratory and ear infections (croup, bronchiolitis); periodic exams; puberty and adolescence, height-growth and obesity care; ear piercing in sterile conditions with the American Studex system and 24k-gold hypoallergenic earrings from 2 months of age.`;
+// CLINIC_INFO with the live, staff-editable parts filled in.
+const clinicInfo = () => [CLINIC_INFO.replace("{{HOURS}}", hoursSentence()).replace("{{CONTACT}}", contactSentence()).replace("{{FEES}}", feesSentence()), noticeSentence()]
+  .filter(Boolean).join("\n").replace(/\n{2,}/g, "\n");
 const chatSystem = () => `You are the friendly assistant on the website of Dr. Foroogh Hashemi, a pediatrician.
 
-${CLINIC_INFO.replace("{{HOURS}}", hoursSentence())}
+${clinicInfo()}
 ${knowledgeBlock()}
 
 Rules you must follow:
@@ -264,7 +324,8 @@ const saveKnowledge = () => { try { writeFileSync(KNOWLEDGE_DB, JSON.stringify(k
 const knowledgeBlock = () => knowledge.facts.length
   ? `\nClinic staff notes (taught by the clinic team; they override the general info above if they conflict):\n${knowledge.facts.map((f) => "- " + f.text).join("\n")}\n`
   : "";
-const knowledgePayload = () => ({ facts: knowledge.facts.map((f) => f.text), say: knowledge.say.map(({ word, as }) => ({ word, as })), hours: hoursSentence() });
+const knowledgePayload = () => ({ facts: knowledge.facts.map((f) => f.text), say: knowledge.say.map(({ word, as }) => ({ word, as })), hours: hoursSentence(),
+  contact: contactSentence(), fees: feesSentence(), notice: noticeSentence() });
 
 // A staff message (typed, or a voice-note transcript) → clean standalone facts, via Claude.
 // Falls back to the message as-is when Claude isn't configured or the call fails.
@@ -457,27 +518,32 @@ async function handleKnowledgeMessage(ch, m, isStaff) {
    gets a receipt, and can be undone with a button. In a group it answers only when addressed. */
 const STAFF_MODEL = (ENV.STAFF_MODEL || "claude-sonnet-5-5").trim();
 const staffConvos = new Map();   // "<channel>:<chat>" -> { messages, at, notes }
-const storeVersion = { knowledge: 0, schedule: 0, blocks: 0 };
+const storeVersion = { knowledge: 0, schedule: 0, blocks: 0, settings: 0 };
 const undoLog = new Map();       // id -> { store, before, version, label }
-const storeJson = (s) => JSON.stringify(s === "knowledge" ? knowledge : s === "schedule" ? schedule : blocks);
+const storeJson = (s) => JSON.stringify(s === "knowledge" ? knowledge : s === "schedule" ? schedule : s === "settings" ? settings : blocks);
 function restoreStore(s, json) {
   const v = JSON.parse(json);
   if (s === "knowledge") { knowledge = v; saveKnowledge(); }
   else if (s === "schedule") { schedule = v; saveSchedule(); }
+  else if (s === "settings") { settings = v; saveSettings(); }
   else { blocks = v; saveBlocks(); }
 }
+const VISIT_FA = { "in-person": "ویزیت حضوری", video: "ویزیت آنلاین صوتی", text: "ویزیت آنلاین متنی" };
 const WD = { sat: 6, sun: 0, mon: 1, tue: 2, wed: 3, thu: 4, fri: 5 };
 const parseHM = (s) => { const m = String(s || "").trim().match(/^(\d{1,2})(?::(\d{2}))?$/); if (!m) return null; const h = +m[1] + (m[2] ? +m[2] / 60 : 0); return h >= 0 && h <= 24 && (h * 60) % SLOT_STEP === 0 ? h : null; };
 
 const STAFF_SYSTEM = `You are the staff assistant of Dr. Foroogh Hashemi's pediatric clinic in Karaj, Iran. You chat with the doctor and her staff in their private staff chat on Bale/Telegram. Messages arrive as "[Name]: text". Voice notes are transcribed automatically, so expect small recognition errors.
 
-You help them with four things:
+You help them with five things:
 1. Patient-facing knowledge: the facts the phone receptionist (voice agent) and the website chatbot use to answer parents (prices, services, what to bring, policies, directions, insurance…).
 2. Availability: the weekly working hours, days off, and individually blocked appointment times.
 3. Appointments: answering questions about booked appointments (read-only; you can't book, cancel or confirm; staff do that with the buttons on each booking message).
 4. Pronunciation fixes for the phone voice (e.g. هاشمی → هاشِمی).
+5. Website settings: visit prices (in-person, online voice over WhatsApp, online text over WhatsApp), the announcement banner at the top of the website, and the clinic phone and WhatsApp numbers. These show on the website's booking form and pages, in patient messages, and in the phone agent's and website chatbot's answers. The card number patients pay into can't be changed here; tell them it's changed in the website's server settings (Coolify) by whoever manages the website.
 
 Rules:
+- Prices belong in the website settings (set_visit_price), not as knowledge facts. Prices are in tomans: if someone says «۳۵۰» or «سیصد و پنجاه» for a visit price they mean ۳۵۰٬۰۰۰ تومان; confirm the full amount. If an old knowledge fact states a different price, offer to remove it so nothing contradicts.
+- The announcement banner is short (one sentence). Write it in Persian, and also give an English version for the English page.
 - Reply in short, friendly, natural Persian, as plain text (no markdown, tables or headings). Use Persian digits in replies.
 - Before ANY change, look at the current state first (get_knowledge / get_schedule), then say exactly what you'll change (old → new) and ask for a clear yes. Only call a change tool after the latest message clearly confirms, with staff_confirmed=true. One clear instruction plus a yes is enough; don't ask twice.
 - Prefer updating or removing an existing fact over adding a contradicting one. Keep each fact one short standalone Persian sentence, phrased as a receptionist would tell a parent.
@@ -486,7 +552,7 @@ Rules:
 - Weekly hours apply to all future weeks; for a one-off absence, close that date instead.
 - Dates: get_schedule gives today's date and a 14-day calendar with Persian labels. Use it to turn "فردا"، "شنبه‌ی بعد" or "۲۰ مهر" into exact dates, and say the Persian date back when confirming.
 - Appointment details (names, phones) are fine to share here: this is the staff-only chat. Copy phone numbers, times and dates exactly as the tools give them; never retype digits yourself.
-- If you're not sure what they mean, ask one short question. If a request is outside these four areas, say what you can help with.`;
+- If you're not sure what they mean, ask one short question. If a request is outside these five areas, say what you can help with.`;
 
 const STAFF_TOOLS = [
   { name: "get_knowledge", description: "Current patient-facing facts (with ids) and pronunciation fixes.", input_schema: { type: "object", properties: {}, required: [] } },
@@ -501,6 +567,10 @@ const STAFF_TOOLS = [
   { name: "open_day", description: "Reopen a date that was closed as a day off.", input_schema: { type: "object", properties: { date: { type: "string" }, staff_confirmed: { type: "boolean" } }, required: ["date", "staff_confirmed"] } },
   { name: "block_times", description: "Block appointment times on a date (each HH:MM slot start, 15-minute grid), e.g. to keep 15:00–16:00 free.", input_schema: { type: "object", properties: { date: { type: "string" }, times: { type: "array", items: { type: "string" } }, staff_confirmed: { type: "boolean" } }, required: ["date", "times", "staff_confirmed"] } },
   { name: "unblock_times", description: "Unblock previously blocked times on a date.", input_schema: { type: "object", properties: { date: { type: "string" }, times: { type: "array", items: { type: "string" } }, staff_confirmed: { type: "boolean" } }, required: ["date", "times", "staff_confirmed"] } },
+  { name: "get_site_settings", description: "Current website settings: visit prices (per type), announcement banner (fa/en), clinic phone and WhatsApp.", input_schema: { type: "object", properties: {}, required: [] } },
+  { name: "set_visit_price", description: "Set the price shown for one visit type, in tomans (e.g. 350000). Use 0 to stop showing a price for that type.", input_schema: { type: "object", properties: { visit_type: { type: "string", enum: ["in-person", "video", "text"], description: "in-person, video = online voice visit over WhatsApp, text = online text visit over WhatsApp" }, toman: { type: "integer" }, staff_confirmed: { type: "boolean" } }, required: ["visit_type", "toman", "staff_confirmed"] } },
+  { name: "set_announcement", description: "Set the announcement banner at the top of the website (one short sentence; Persian for the Persian page, English for the English page). Empty strings remove the banner.", input_schema: { type: "object", properties: { fa: { type: "string" }, en: { type: "string" }, staff_confirmed: { type: "boolean" } }, required: ["fa", "en", "staff_confirmed"] } },
+  { name: "set_contact", description: "Change the clinic phone (landline) and/or WhatsApp number shown on the website and given to patients. Iranian numbers, 11 digits starting with 0.", input_schema: { type: "object", properties: { phone: { type: "string" }, whatsapp: { type: "string" }, staff_confirmed: { type: "boolean" } }, required: ["staff_confirmed"] } },
   { name: "list_appointments", description: "Booked appointments between two dates (inclusive), read-only: date, time, patient name, mobile, visit type, status (pending/confirmed/declined/cancelled), source (web/voice).", input_schema: { type: "object", properties: { from: { type: "string", description: "YYYY-MM-DD" }, to: { type: "string", description: "YYYY-MM-DD" } }, required: ["from", "to"] } },
 ];
 
@@ -585,6 +655,37 @@ function runStaffTool(name, input, by, changes) {
         for (const t of times) { const k = `${iso} ${t}`; if (blocking) { if (!blocks.slots.includes(k)) blocks.slots.push(k); } else blocks.slots = blocks.slots.filter((x) => x !== k); }
         saveBlocks();
         return blocking ? { existing_appointments_at_those_times: dayInfo(iso).filter((x) => times.includes(x.slice(0, 5))) } : {};
+      });
+    }
+    case "get_site_settings":
+      return {
+        prices: Object.fromEntries(["in-person", "video", "text"].map((t) => [t, { label: VISIT_FA[t], shown: feeText(t, "fa") || "(no price shown)", from_settings: Number.isFinite(settings.fees[t]) && settings.fees[t] > 0 }])),
+        announcement: settings.announcement,
+        phone: phoneDisplay(settings.phone, "fa"), whatsapp: settings.whatsapp ? phoneDisplay(settings.whatsapp, "fa") : "(not set)",
+        card_number: "not editable here (set in Coolify)",
+      };
+    case "set_visit_price": {
+      const t = input.visit_type, n = Math.round(Number(input.toman));
+      if (!VISIT_TYPES.has(t)) return { ok: false, error: "visit_type must be in-person, video or text." };
+      if (!Number.isFinite(n) || n < 0 || (n > 0 && n < 1000) || n > 100000000) return { ok: false, error: "Give the full price in tomans (e.g. 350000), or 0 to hide it." };
+      const old = feeText(t, "fa") || "بدون قیمت";
+      return needYes() || change("settings", `💰 ${VISIT_FA[t]}: ${old} ← ${n ? tomanFa(n) : "بدون نمایش قیمت"}`, () => {
+        settings = { ...settings, fees: { ...settings.fees, [t]: n || null } }; saveSettings();
+      });
+    }
+    case "set_announcement": {
+      const fa = String(input.fa || "").trim().slice(0, 200), en = String(input.en || "").trim().slice(0, 200);
+      return needYes() || change("settings", fa || en ? `📢 اعلان: ${fa || en}` : "📢 اعلان حذف شد", () => {
+        settings = { ...settings, announcement: { fa, en } }; saveSettings();
+      });
+    }
+    case "set_contact": {
+      const phone = input.phone ? normalizeIranNumber(input.phone) : null, wa = input.whatsapp ? normalizeIranNumber(input.whatsapp) : null;
+      if ((input.phone && !phone) || (input.whatsapp && !wa)) return { ok: false, error: "Numbers must be Iranian, 11 digits starting with 0 (e.g. 02634456153 or 09362783939). Ask again." };
+      if (!phone && !wa) return { ok: false, error: "Give a phone and/or a WhatsApp number." };
+      const label = [phone && `☎️ تلفن: ${phoneDisplay(settings.phone, "fa")} ← ${phoneDisplay(phone, "fa")}`, wa && `💬 واتس‌اپ: ${settings.whatsapp ? phoneDisplay(settings.whatsapp, "fa") : "—"} ← ${phoneDisplay(wa, "fa")}`].filter(Boolean).join("، ");
+      return needYes() || change("settings", label, () => {
+        settings = { ...settings, ...(phone ? { phone } : {}), ...(wa ? { whatsapp: wa } : {}) }; saveSettings();
       });
     }
     case "list_appointments": {
@@ -842,7 +943,7 @@ async function api(ch, method, payload) {
 
 function staffText(b) {   // plain text so it renders identically on Telegram and Bale
   const site = b.source === "voice" ? "📞 Voice agent (Persian)" : b.lang === "fa" ? "Persian site" : "English site";
-  const pay = isOnline(b.type) ? `\n💳 Prepaid${ONLINE_FEE ? ` ${ONLINE_FEE}` : ""}${b.payRef ? ` · ref ${b.payRef}` : ""} (verify before confirming)` : "";
+  const pay = isOnline(b.type) ? `\n💳 Prepaid${feeText(b.type) ? ` ${feeText(b.type)}` : ""}${b.payRef ? ` · ref ${b.payRef}` : ""} (verify before confirming)` : "";
   return `🗓 New appointment request\n\n👤 ${b.name}${b.nationalId ? `\n🆔 ${b.nationalId}` : ""}\n📞 ${b.phone}${b.email ? `\n📧 ${b.email}` : ""}\n🩺 ${visitLabel(b.type || "in-person", "en")}${pay}\n🕒 ${b.when}\n🌐 ${site}\n\nStatus: ⏳ pending`;
 }
 const bookingMarkup = (b) => ({ inline_keyboard: [[
@@ -945,8 +1046,8 @@ const patientMsg = (b, kind) => {
     if (isOnline(b.type)) {
       const act = b.type === "video" ? (fa ? "تماس صوتی بگیرید" : "voice-call us") : (fa ? "پیام دهید" : "message us");
       return fa
-        ? `ویزیت آنلاین شما تأیید شد ✅ ${b.when}. در زمان نوبت، در واتس‌اپ ${act}: ${CLINIC_WHATSAPP}`
-        : `Your online visit is confirmed ✅ ${b.when}. At your appointment time, ${act} on WhatsApp: ${CLINIC_WHATSAPP}`;
+        ? `ویزیت آنلاین شما تأیید شد ✅ ${b.when}. در زمان نوبت، در واتس‌اپ ${act}: ${clinicWhatsapp()}`
+        : `Your online visit is confirmed ✅ ${b.when}. At your appointment time, ${act} on WhatsApp: ${clinicWhatsapp()}`;
     }
     return fa
       ? `نوبت شما تأیید شد ✅ ${b.when}. منتظر دیدن‌تان هستیم! دکتر هاشمی`
@@ -1028,12 +1129,12 @@ function emailContent(b, kind) {
         </p>
       </td></tr>`
     : "";
-  const onlineBlock = (kind === "confirmed" && online && waLink)
+  const onlineBlock = (kind === "confirmed" && online && waLinkNow())
     ? `<tr><td style="padding:18px 28px 0;">
         <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#e9f8ef;border:1px solid #bfe6cd;border-radius:12px;">
           <tr><td style="padding:16px 18px;">
             <div style="font-size:12px;color:#157a3a;text-transform:uppercase;letter-spacing:.04em;">${fa ? "واتس‌اپ" : "WhatsApp"}</div>
-            <a href="${esc(waLink)}" style="display:inline-block;font-size:17px;color:#157a3a;font-weight:700;text-decoration:none;margin-top:4px;direction:ltr;">${esc(CLINIC_WHATSAPP)}</a>
+            <a href="${esc(waLinkNow())}" style="display:inline-block;font-size:17px;color:#157a3a;font-weight:700;text-decoration:none;margin-top:4px;direction:ltr;">${esc(clinicWhatsapp())}</a>
             <p style="font-size:13.5px;line-height:1.7;color:#3c4b47;margin:8px 0 0;">${
               b.type === "video"
                 ? (fa ? "در زمان نوبت، روی شماره بزنید و در واتس‌اپ <strong>تماس صوتی</strong> بگیرید." : "At your appointment time, tap the number and start a <strong>WhatsApp voice call</strong>.")
@@ -1467,7 +1568,13 @@ createServer(async (req, res) => {
   if (req.method === "POST" && path === "/api/chat") return handleChat(req, res);
   if (req.method === "GET" && path === "/api/config") {
     // Public display values for the booking UI (online-visit prepayment).
-    return json(res, 200, { online: { fee: ONLINE_FEE, card: CLINIC_CARD, cardName: CLINIC_CARD_NAME } });
+    // Booking-form display values: card (env only), per-type fees, announcement banner, contact numbers.
+    return json(res, 200, {
+      online: { fee: feeText("video"), card: CLINIC_CARD, cardName: CLINIC_CARD_NAME },
+      fees: { fa: { "in-person": feeText("in-person", "fa"), video: feeText("video", "fa"), text: feeText("text", "fa") },
+              en: { "in-person": feeText("in-person", "en"), video: feeText("video", "en"), text: feeText("text", "en") } },
+      announcement: settings.announcement, contact: contactPayload(),
+    });
   }
   if (req.method === "POST" && path === "/api/cancel") return handleCancel(req, res);
   if (req.method === "GET" && path === "/cancel") return handleCancelPage(req, res);
@@ -1485,7 +1592,7 @@ createServer(async (req, res) => {
   if (req.method === "GET" && path === "/api/status") {
     // Setup diagnostics, yes/no only (no keys, no chat ids): is the staff assistant / voice notes / staff chat configured,
     // and does Telegram/Bale let the bot see all group messages (Group Privacy off)?
-    return json(res, 200, { build: "staff-assistant-5", staffAssistant: !!ANTHROPIC_API_KEY, voiceNotes: !!ELEVENLABS_API_KEY, voiceReplies: STAFF_TTS_ON,
+    return json(res, 200, { build: "site-settings-1", staffAssistant: !!ANTHROPIC_API_KEY, voiceNotes: !!ELEVENLABS_API_KEY, voiceReplies: STAFF_TTS_ON,
       channels: CHANNELS.map((c) => ({ name: c.name, staffChatSet: !!c.staff, staffChatIsGroup: c.staff.startsWith("-"),
         bot: c.username || null, groupPrivacyOff: c.readsAllGroupMessages ?? null })) });
   }
@@ -1502,7 +1609,7 @@ createServer(async (req, res) => {
     ? "Staff channels: MOCK mode (no TELEGRAM_BOT_TOKEN / BALE_BOT_TOKEN). Messages print to the console."
     : `Staff channels: ${CHANNELS.map(c => `${c.name}${c.staff ? "" : " (chat id NOT set — message the bot /id)"}`).join(", ")}`);
   console.log(MAIL_ON ? `Patient email: Resend configured (from ${MAIL.from}).` : "Patient email: MOCK (set RESEND_API_KEY + MAIL_FROM to send real emails).");
-  console.log(CLINIC_WHATSAPP ? `Online visits: WhatsApp ${CLINIC_WHATSAPP}.` : "Online visits: set CLINIC_WHATSAPP so confirmation emails include the number.");
+  console.log(`Online visits: WhatsApp ${clinicWhatsapp() || "(not set)"} (editable via the staff bot).`);
   console.log(CHAT_ON ? `AI chatbot: Claude configured (model ${CHAT_MODEL}).` : "AI chatbot: off (set ANTHROPIC_API_KEY to enable — falls back to the rule-based bot).");
   console.log(SMS_ON ? `Patient SMS: SMS.ir configured (line ${SMSIR.line}).` : "Patient SMS: off (set SMSIR_API_KEY + SMSIR_LINE to enable — the primary patient channel).");
 });
