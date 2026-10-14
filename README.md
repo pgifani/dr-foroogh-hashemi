@@ -11,6 +11,12 @@ patient gets a **confirmation SMS (via SMS.ir)** with a **one-click cancel link*
 doctor can **cancel** a booking too, and **manage availability (days off, blocked slots) straight
 from the bot** using Persian (Jalali/شمسی) or Gregorian dates.
 
+Since Oct 2026 the bot is also a **conversational staff assistant**: the doctor and staff simply *talk* to it
+(text or Persian voice notes) to change **weekly hours, days off, visit prices, the website announcement banner,
+phone/WhatsApp and the answers patients get**, or to ask about appointments — every change is confirmed first and
+can be undone. Those live settings feed the website, the AI chatbot and the separate **Persian voice receptionist**
+(repo `pgifani/dr-hashemi-voice-agent`, which books through this server's `/api/slots` + `/api/book`).
+
 This README is both the documentation for this project **and a step-by-step playbook** so you
 can build and deploy the next doctor's site from scratch.
 
@@ -67,6 +73,19 @@ A single, self-contained web project:
 - **Availability managed from the bot:** the doctor closes a day or a single time from the chat
   (`/availability` buttons, `/off فردا`, `/block 1405/07/11 10:00`, …) and the website's calendar
   reflects it immediately. Persian (Jalali) **and** Gregorian dates both work.
+- **Staff assistant (talk to the bot):** in the staff chat (private, or a group when addressed with «دستیار», a
+  Reply, an @mention, or within 3 minutes of the bot answering you) staff write or send voice notes. Claude with tools
+  updates patient-facing **facts** (`knowledge.json`), **weekly hours** (`schedule.json`), **days off / blocked times**,
+  **visit prices per type, the announcement banner, phone & WhatsApp** (`settings.json`) and **pronunciations** for the
+  voice agent, and answers appointment questions (read-only). Every change shows old → new, needs «آره», and gets an
+  ↩️ undo button. Medical/dosing advice is never saved; the payment card is env-only. Commands: `/learn`, `/knowledge`,
+  `/forget`, `/say`, `/unsay`, `/teach`. Optional voice-note *replies* (`ELEVENLABS_VOICE_ID`).
+- **Live site settings:** the booking form's per-type **fee**, the top **announcement banner**, every phone/WhatsApp
+  spot and the weekly **hours text + calendar** are loaded from the server (`/api/config`, `/api/availability`), so a
+  change made in the bot shows on the site immediately. The HTML keeps the old values only as a first-paint fallback.
+- **For the voice agent:** `GET /api/slots` (open slots for 7 days, Asia/Tehran), `POST /api/book` with `strict:true`
+  (409 for taken/blocked/past/out-of-hours) and `source:"voice"` (tagged in staff messages), and `GET /api/knowledge`
+  (facts, pronunciations, hours/contact/fees/announcement sentences).
 - **Backend (`server.mjs`):** serves the site and exposes `POST /api/book`, `GET /api/availability`,
   `GET /api/config` (online fee/card), `POST /api/chat` (AI assistant), and `GET /cancel` +
   `POST /api/cancel`. **Zero npm dependencies.** Runs in a safe **mock mode** (prints messages to
@@ -90,10 +109,14 @@ step (Tailwind via CDN).
         │  POST /api/book  { name, nationalId, phone, email, date, time, type, payRef, lang }
         │  POST /api/chat  { messages, lang }   → Claude reply (or rule-based fallback)
         │  GET  /c/<code>  (short cancel link in the SMS) → confirm page   ·   POST /api/cancel  → frees the slot
+        │
+  Voice agent (separate app)  GET /api/slots · POST /api/book {strict:true, source:"voice"} · GET /api/knowledge
+  Setup check                 GET /api/status  (yes/no: assistant, voice notes, staff chat is a group, Group Privacy off)
         ▼
   server.mjs  (Node 22, zero npm dependencies)
-        ├─ serves the static site  ·  "/" → 302 /fa.html
-        ├─ stores bookings → bookings.json  ·  availability blocks → blocks.json   (DATA_DIR)
+        ├─ serves ONLY page assets (html/css/js/images/fonts) · "/" → 302 /fa.html
+        ├─ stores bookings.json · blocks.json · knowledge.json · schedule.json · settings.json   (DATA_DIR)
+        ├─ staff assistant: Claude + tools over the staff chat (text / voice notes via ElevenLabs Scribe), undo log
         ├─ emails the patient via Resend (request / confirmed / declined / cancelled + cancel link;
         │                                 confirmed online visit also carries the WhatsApp number)
         ├─ asks the Anthropic Claude API for chatbot replies (falls back to rule-based on no key/error)
@@ -131,9 +154,10 @@ website/
 └── README.md             ← this file
 ```
 
-Runtime data files created on the data volume (never committed): `bookings.json` (patient
-requests) and `blocks.json` (the doctor's days off / blocked slots). `.env` holds secrets and is
-also never committed.
+Runtime data files created on the data volume (never committed, never served): `bookings.json` (patient
+requests), `blocks.json` (days off / blocked slots), `knowledge.json` (staff-taught facts + pronunciations),
+`schedule.json` (weekly hours) and `settings.json` (visit prices, announcement, phone/WhatsApp). `.env` holds
+secrets and is also never committed.
 
 ---
 
@@ -179,10 +203,16 @@ local runs) or in your host's environment-variable settings (Vercel / Coolify).
 | `BALE_STAFF_CHAT_ID` | The Bale chat that receives bookings. Message the Bale bot `/id` to learn it. |
 | `ANTHROPIC_API_KEY` | From **console.anthropic.com**. Enables the **real Claude chatbot** (without it, the bot uses the built-in rule-based fallback). |
 | `CHAT_MODEL` | Chatbot model. Default `claude-haiku-4-5` (fast + cheap for FAQ). Override to `claude-opus-5-5` / `claude-sonnet-5-5` for more capability. |
-| `CLINIC_WHATSAPP` | Clinic WhatsApp number for **online visits**, e.g. `+98912…`. Sent to the patient on confirmation. |
-| `CLINIC_CARD` | Card number shown for **online-visit prepayment** (card-to-card). |
+| `CLINIC_WHATSAPP` | Starting WhatsApp number for **online visits**, e.g. `+98912…`. After that, staff change it from the bot (`settings.json` wins). |
+| `CLINIC_CARD` | Card number shown for **online-visit prepayment** (card-to-card). **Env only on purpose** — not editable from the bot. |
 | `CLINIC_CARD_NAME` | Card-holder name shown with the card. |
-| `ONLINE_FEE` | Online-visit fee, a display string, e.g. `۳۰۰٬۰۰۰ تومان`. |
+| `ONLINE_FEE` | Fallback online-visit fee (display string, e.g. `۳۰۰٬۰۰۰ تومان`) until staff set per-type prices in the bot. |
+| `ELEVENLABS_API_KEY` | Transcribes staff **voice notes** to the bot (ElevenLabs Scribe; the key needs Speech-to-Text). |
+| `STAFF_MODEL` | Staff-assistant model (default `claude-sonnet-5-5`). |
+| `KNOWLEDGE_MODEL` | Model that cleans `/learn` messages into facts (default `claude-sonnet-5-5`). |
+| `ELEVENLABS_VOICE_ID` / `STAFF_VOICE_ID` | **Optional** — makes the assistant answer voice notes with voice notes (`TTS_MODEL`, default `eleven_v4_turbo`). Leave unset for text replies. |
+| `ENABLE_BOOKINGS_DUMP` | Debug only: `1` re-enables `GET /api/bookings`, and only for direct loopback requests. |
+| `BALE_API_BASE` | Tests only: point the Bale channel at a mock Bot API (see the `clinic-staff-assistant` skill). |
 
 > **Never** put secrets in the HTML or commit `.env`. See `TELEGRAM-SETUP.md` for the full walkthrough.
 
@@ -315,6 +345,24 @@ When a booking arrives, staff tap **✅ Confirm / ❌ Decline** — this updates
 channel and **emails the patient** the result. A **confirmed** booking keeps a **🚫 Cancel
 appointment** button so staff can cancel it later (which reopens the slot and emails the patient).
 
+### Talk to the staff assistant
+Write or send a Persian voice note. In a **private chat** every message goes to the assistant; in a **group** start
+with **«دستیار»** (typed or spoken), Reply to the bot, @mention it, or just answer within **3 minutes** of its reply.
+Telegram groups need **@BotFather → Group Privacy → Turn off** (then re-add the bot).
+
+| Ask | Effect |
+|---|---|
+| «دستیار، فردا نیستم، ببندش» / «چهارشنبه ۳ تا ۴ رو ببند» | day off / blocked times (names any already-booked patients) |
+| «از این به بعد پنجشنبه‌ها ۴ تا ۷» | weekly hours → site calendar + hours text + both AIs |
+| «حضوری ۴۵۰، آنلاین صوتی ۳۵۰، متنی ۲۵۰» | per-type prices on the booking form, staff messages, both AIs |
+| «یه اطلاعیه بذار: …» / «اطلاعیه رو بردار» | banner at the top of both pages (it writes the English) |
+| «شماره واتس‌اپ جدید ۰۹۱۲…» | every phone/WhatsApp spot, chatbot links, patient messages, voice agent |
+| «برای چکاپ کارت واکسن بیارن» / «چی‌ها رو بلدی؟» | patient-facing facts for the chatbot + voice agent |
+| «امروز کیا نوبت دارن؟» | read-only appointment list |
+
+It always shows old → new and waits for «آره»; the reply carries ✅ receipts and ↩️ undo buttons.
+`/teach` shows the command-style alternatives (`/learn`, `/knowledge`, `/forget`, `/say`, `/unsay`).
+
 ### Patient SMS (SMS.ir) — the primary patient notification
 Most patients (e.g. parents booking for a child) don't use email, so **SMS is the default channel**.
 Uses **SMS.ir**, an Iranian gateway, via its v1 REST API (`POST /v1/send/bulk`, `X-API-KEY` header; zero-dep `fetch`).
@@ -358,11 +406,13 @@ The repeatable process for each new doctor:
 2. **Edit the content** in `index.html` **and** `fa.html` (keep the two in sync):
    - Name, tagline, services, hours text, address, phone, email (the doctor's name appears in a few
      spots in each file; also in `CLINIC_INFO` in `server.mjs`).
-   - **Set the weekly schedule** — the `HOURS` map in the booking script of each file (near the top
-     of the picker IIFE): `const HOURS = { 6:[12,16], 1:[12,16], 3:[12,16], 0:[12,15] };` where the
-     key is the JS weekday (**Sun=0 … Sat=6**) and the value is `[startHour, endHour]`; a weekday
-     that's **absent = closed**. `DAYS_AHEAD` controls how far ahead booking opens. Update the
-     displayed hours text too (hero badge, sidebar, contact).
+   - **Set the starting weekly schedule** — `DEFAULT_HOURS` in `server.mjs` is the source of truth
+     (saved to `schedule.json`; staff change it later from the bot). Mirror it in the HTML fallback
+     `let HOURS = { 6:[12,16], 1:[12,16], 3:[12,16], 0:[12,15] };` and the `data-hours` text in both files
+     (key = JS weekday **Sun=0 … Sat=6**, value `[startHour, endHour]`, decimals allowed; absent = closed).
+     `DAYS_AHEAD` controls how far ahead booking opens.
+   - **Defaults for live settings** — `DEFAULT_SETTINGS` (phone, WhatsApp) in `server.mjs` and the matching
+     `[data-contact]` fallback text in both HTML files; the staff-assistant identity line in `STAFF_SYSTEM`.
    - **Update the chatbot's knowledge** — the `CLINIC_INFO` string in `server.mjs` (hours, services,
      address, phone, policies). The guardrails in `chatSystem()` normally stay as-is.
    - Replace the photos (`1.png … 4.png`) and the doctor's portrait.
@@ -402,6 +452,12 @@ The repeatable process for each new doctor:
 | Bot doesn't reply to `/id` | Token not active yet — check you added it in Coolify and **redeployed**; look for `telegram: polling started` / `bale: polling started` in the logs. |
 | Website calendar / Persian page not updating after a change | Browser cache. Do a **hard refresh** (Ctrl/Cmd+Shift+R) or open in a private window. The server sends `no-store`, but tabs can hold a stale copy. |
 | DNS not resolving | Wait a few minutes after adding the A record; verify with `nslookup <subdomain>`. |
+| Staff assistant answers `/help` but ignores everything else in the group | The staff chat ID isn't this group. Send `/id` **in the group**, set the negative number (keep the `-`, no quotes), Deploy. Check `GET /api/status` → `staffChatIsGroup: true`. |
+| Voice notes to the bot get no answer | `GET /api/status`: `voiceNotes:false` → add `ELEVENLABS_API_KEY` to the **website** app. Telegram group: Group Privacy must be off (re-add the bot). In a group the note must start with «دستیار» or be a Reply / follow-up. |
+| "I told it to open a day but nothing happened" | The confirmation was sent as a plain message outside the 3-minute follow-up window → answer «آره» as a Reply, or `/on 1405/07/22`. |
+| One grey tick on messages to the bot | Normal — bots never show "read". |
+| Price / banner / phone changed in the bot but the page shows old values | Hard refresh (the HTML fallback shows until `/api/config` loads). The voice agent picks changes up on its next call. |
+| Coolify "Restart" didn't apply new code | Use the purple **Deploy** button — Restart keeps the old build. |
 
 ---
 
@@ -411,7 +467,12 @@ The repeatable process for each new doctor:
   gitignored. Secrets live only in the host's environment variables.
 - **Staff-only bot commands.** `/bookings` and all availability commands only respond to the
   configured staff chat id — so if someone else finds the bot, they can't see patient data or
-  change availability.
+  change availability. The same applies to the staff assistant and its ✅/↩️ buttons.
+- **Nothing private is served.** The static server only serves page assets (html/css/js/images/fonts);
+  dotfiles, the data volume, `*.json` data, server code and notes return 404. `GET /api/bookings` is disabled
+  (debug-only via `ENABLE_BOOKINGS_DUMP=1` from loopback). This closed a real leak on the first deployment.
+- **Payment card is env-only** — the assistant cannot change where patients send money.
+- **`GET /api/status`** exposes only yes/no setup flags (no keys, no chat IDs).
 - **Patient data = privacy law** (GDPR/etc.). This collects **name, national ID, mobile, email** —
   national ID is sensitive, so add a privacy policy + consent before going fully live, keep
   `bookings.json` on the private data volume (gitignored), and keep the chatbot to **non-medical**
@@ -430,10 +491,14 @@ The repeatable process for each new doctor:
   fallback). Next: add a "book an appointment" tool so the bot can start a booking directly.
 - ✅ **Done — online visits + card-to-card prepayment.** Next: a real payment gateway
   (Zarinpal/IDPay) for auto-verified payment instead of manual card-to-card.
-- **Config-driven template:** move all client-specific text (name, schedule, services, clinic
-  facts) into one config file so a new site is "fill in the blanks" rather than editing both HTML
-  files + `server.mjs`.
-- **Client dashboard:** let each doctor see bookings and edit their hours.
+- ✅ **Done — staff assistant + live settings:** staff edit hours, days off, prices, banner, phone/WhatsApp and
+  patient facts by talking to the bot (this replaces most of the planned "client dashboard").
+- ✅ **Done — Persian voice receptionist** (separate repo) booking through `/api/slots` + strict `/api/book`.
+- **Config-driven template:** move the remaining client-specific text (name, services, address) into one config
+  file so a new site is "fill in the blanks" rather than editing both HTML files + `server.mjs`.
+- **Web form + `strict` booking:** make the website form wait for `/api/book` and handle 409 (today it posts
+  fire-and-forget without `strict`, so web double-booking is still possible).
+- **Bale private chats for several staff** (a list of staff chat IDs) where Bale won't allow bots in groups.
 - **Move to a database** (SQLite → Postgres) once you have several clients.
 - **Object storage + CDN** when you add heavy media (e.g. the future UGC video product).
 
