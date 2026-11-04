@@ -89,7 +89,11 @@ const VISIT_TYPES = new Set(["in-person", "video", "text"]);
 const isOnline = (t) => t === "video" || t === "text";
 // Online visits are prepaid by card-to-card. These are shown to the patient (display only).
 // The card stays an env var on purpose: it is NOT editable from the bot (wrong card = misdirected payments).
-const CLINIC_CARD = (ENV.CLINIC_CARD || "6037-9972-7009-5384").trim();   // display-only card-to-card number for online prepayment
+// Display-only card-to-card number for online prepayment. Use the real card by default and
+// ignore an empty or placeholder env value (e.g. 6037-XXXX-XXXX-XXXX left over from setup).
+const REAL_CLINIC_CARD = "6037-9972-7009-5384";
+const envCard = (ENV.CLINIC_CARD || "").trim();
+const CLINIC_CARD = (/[xX]/.test(envCard) || envCard.replace(/\D/g, "").length < 16) ? REAL_CLINIC_CARD : envCard;
 const CLINIC_CARD_NAME = (ENV.CLINIC_CARD_NAME || "فروغ هاشمی").trim();   // card holder shown with the card
 const ONLINE_FEE = (ENV.ONLINE_FEE || "").trim();                     // fallback online fee (display string), e.g. ۳۰۰٬۰۰۰ تومان
 
