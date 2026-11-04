@@ -89,8 +89,8 @@ const VISIT_TYPES = new Set(["in-person", "video", "text"]);
 const isOnline = (t) => t === "video" || t === "text";
 // Online visits are prepaid by card-to-card. These are shown to the patient (display only).
 // The card stays an env var on purpose: it is NOT editable from the bot (wrong card = misdirected payments).
-const CLINIC_CARD = (ENV.CLINIC_CARD || "").trim();                   // e.g. 6037-9900-0000-0000
-const CLINIC_CARD_NAME = (ENV.CLINIC_CARD_NAME || "").trim();         // card holder, e.g. فروغ هاشمی
+const CLINIC_CARD = (ENV.CLINIC_CARD || "6037-9972-7009-5384").trim();   // display-only card-to-card number for online prepayment
+const CLINIC_CARD_NAME = (ENV.CLINIC_CARD_NAME || "فروغ هاشمی").trim();   // card holder shown with the card
 const ONLINE_FEE = (ENV.ONLINE_FEE || "").trim();                     // fallback online fee (display string), e.g. ۳۰۰٬۰۰۰ تومان
 
 /* ---------- site settings, editable by staff through the bot (DATA_DIR/settings.json) ----------
@@ -123,8 +123,11 @@ const saveSettings = () => { try { writeFileSync(SETTINGS_DB, JSON.stringify(set
 const tomanFa = (n) => `${String(n).replace(/\B(?=(\d{3})+(?!\d))/g, "٬").replace(/\d/g, (d) => "۰۱۲۳۴۵۶۷۸۹"[d])} تومان`;
 const tomanEn = (n) => `${Number(n).toLocaleString("en-US")} Toman`;
 // The fee shown for a visit type, or "" when none is set. Online visits fall back to the ONLINE_FEE env string.
+// Standard prices (tomans); staff can still override per type through the bot (settings.fees).
+const DEFAULT_FEE = { "in-person": null, video: 600000, text: 300000 };
 function feeText(type, lang = "fa") {
-  const n = settings.fees[type];
+  let n = settings.fees[type];
+  if (!(Number.isFinite(n) && n > 0)) n = DEFAULT_FEE[type];
   if (Number.isFinite(n) && n > 0) return lang === "fa" ? tomanFa(n) : tomanEn(n);
   return isOnline(type) ? ONLINE_FEE : "";
 }
@@ -144,7 +147,7 @@ function contactPayload() {
 // Sentences for the AI prompts (website chatbot + voice agent).
 const contactSentence = () => `Clinic phone: ${phoneDisplay(settings.phone, "en")}.${settings.whatsapp ? ` WhatsApp (for online visits): ${phoneDisplay(settings.whatsapp, "en")}.` : ""}`;
 function feesSentence() {
-  const parts = [["in-person", "In-person visit"], ["video", "Online voice visit (WhatsApp call)"], ["text", "Online text visit (WhatsApp chat)"]]
+  const parts = [["in-person", "In-person visit"], ["video", "Telephone visit"], ["text", "Online text visit (via Bale)"]]
     .map(([t, label]) => { const f = feeText(t, "en"); return f ? `${label}: ${f}` : ""; }).filter(Boolean);
   return parts.length ? `Visit fees: ${parts.join("; ")}.` : "";
 }
@@ -161,7 +164,7 @@ const CLINIC_INFO = `Dr. Foroogh Hashemi is a pediatrician caring for newborns t
 Clinic address: Karaj, North Azadi St (Gohardasht), between 7th and 8th West St, opposite Gohardasht Pharmacy, No. 223, first floor.
 {{CONTACT}}
 {{FEES}}
-Appointments are booked on this website using the booking form on the page. There are two kinds: in-person, or online over WhatsApp (voice call or text chat). Online visits are prepaid by card-to-card before they are confirmed. After booking, the patient receives a confirmation by SMS with a cancel link; for online visits the WhatsApp number and time are sent once confirmed. Appointments can be cancelled from the link in that SMS.
+Appointments are booked on this website using the booking form on the page. There are two kinds: in-person, or online — a telephone visit (phone call) or a text visit (over the Bale messenger). Online visits are prepaid by card-to-card before they are confirmed. For a telephone or text visit, the patient may send a photo or video over WhatsApp or Bale if needed. A text visit is only for reviewing and treating a single issue; its window is 48 hours, and the hours from 10pm to 8am are not counted. After booking, the patient receives a confirmation by SMS with a cancel link, and the time is confirmed once the prepayment is verified. Appointments can be cancelled from the link in that SMS.
 Services: newborn care and jaundice; breastfeeding and nutrition counseling; growth and development monitoring to age 18; infectious and digestive issues (acute/chronic diarrhea and constipation, abdominal pain, colic, reflux); kidney and urinary (infections, stones, bedwetting); asthma and allergies (skin, eczema, respiratory, digestive); respiratory and ear infections (croup, bronchiolitis); periodic exams; puberty and adolescence, height-growth and obesity care; ear piercing in sterile conditions with the American Studex system and 24k-gold hypoallergenic earrings from 2 months of age.`;
 // CLINIC_INFO with the live, staff-editable parts filled in.
 const clinicInfo = () => [CLINIC_INFO.replace("{{HOURS}}", hoursSentence()).replace("{{CONTACT}}", contactSentence()).replace("{{FEES}}", feesSentence()), noticeSentence()]
@@ -214,8 +217,8 @@ async function handleChat(req, res) {
 }
 function visitLabel(type, lang) {
   const fa = lang === "fa";
-  if (type === "video") return fa ? "ویزیت آنلاین صوتی (واتس‌اپ)" : "Online voice visit (WhatsApp)";
-  if (type === "text")  return fa ? "ویزیت آنلاین متنی (واتس‌اپ)"   : "Online text visit (WhatsApp)";
+  if (type === "video") return fa ? "ویزیت تلفنی" : "Telephone visit";
+  if (type === "text")  return fa ? "ویزیت متنی (بله)" : "Online text visit (Bale)";
   return fa ? "ویزیت حضوری" : "In-person visit";
 }
 
@@ -528,7 +531,7 @@ function restoreStore(s, json) {
   else if (s === "settings") { settings = v; saveSettings(); }
   else { blocks = v; saveBlocks(); }
 }
-const VISIT_FA = { "in-person": "ویزیت حضوری", video: "ویزیت آنلاین صوتی", text: "ویزیت آنلاین متنی" };
+const VISIT_FA = { "in-person": "ویزیت حضوری", video: "ویزیت تلفنی", text: "ویزیت متنی (بله)" };
 const WD = { sat: 6, sun: 0, mon: 1, tue: 2, wed: 3, thu: 4, fri: 5 };
 const parseHM = (s) => { const m = String(s || "").trim().match(/^(\d{1,2})(?::(\d{2}))?$/); if (!m) return null; const h = +m[1] + (m[2] ? +m[2] / 60 : 0); return h >= 0 && h <= 24 && (h * 60) % SLOT_STEP === 0 ? h : null; };
 
